@@ -1,4 +1,6 @@
 import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import ValidateForm from 'src/app/helpers/ValidateForm';
 
 @Component({
   selector: 'app-signup',
@@ -9,10 +11,25 @@ export class SignupComponent implements OnInit {
   type: string = 'password';
   isText: boolean = false;
   eyeIcon: string = 'fa-eye-slash';
-  constructor() {}
+  signUpForm!: FormGroup;
+  constructor(private fb: FormBuilder) {}
 
-  ngOnInit(): void {}
-
+  ngOnInit(): void {
+    this.signUpForm = this.fb.group({
+      firstName: ['', Validators.required],
+      lastName: ['', Validators.required],
+      username: ['', Validators.required],
+      password: ['', Validators.required],
+      email: ['', Validators.required],
+    });
+  }
+  onSignUp() {
+    if (this.signUpForm.valid) {
+      //zovi bazu
+    } else {
+      ValidateForm.validateAllFormFields(this.signUpForm);
+    }
+  }
   hideShowPass() {
     this.isText = !this.isText;
     this.eyeIcon = this.isText ? 'fa-eye' : 'fa-eye-slash';
