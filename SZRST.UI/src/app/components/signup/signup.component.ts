@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import ValidateForm from 'src/app/helpers/ValidateForm';
+import { AuthService } from 'src/app/services/auth.service';
 
 @Component({
   selector: 'app-signup',
@@ -12,20 +14,33 @@ export class SignupComponent implements OnInit {
   isText: boolean = false;
   eyeIcon: string = 'fa-eye-slash';
   signUpForm!: FormGroup;
-  constructor(private fb: FormBuilder) {}
+  constructor(
+    private fb: FormBuilder,
+    private authService: AuthService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     this.signUpForm = this.fb.group({
-      firstName: ['', Validators.required],
-      lastName: ['', Validators.required],
-      username: ['', Validators.required],
-      password: ['', Validators.required],
+      ime: ['', Validators.required],
+      prezime: ['', Validators.required],
+      korisnickoIme: ['', Validators.required],
+      lozinka: ['', Validators.required],
       email: ['', Validators.required],
     });
   }
   onSignUp() {
     if (this.signUpForm.valid) {
-      //zovi bazu
+      this.authService.signUp(this.signUpForm.value).subscribe({
+        next: (res) => {
+          alert(res.message);
+          this.signUpForm.reset();
+        },
+        error: (err) => {
+          alert(err?.error.message);
+        },
+      });
+      this.router.navigate(['login']);
     } else {
       ValidateForm.validateAllFormFields(this.signUpForm);
     }

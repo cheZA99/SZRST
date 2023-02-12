@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using SZRST.API.Models;
 
-namespace SZRST.API.Models
+namespace SZRST.API.Context
 {
     public class SZRSTContext : DbContext
     {

@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import ValidateForm from 'src/app/helpers/ValidateForm';
+import { AuthService } from 'src/app/services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -13,12 +15,16 @@ export class LoginComponent implements OnInit {
   eyeIcon: string = 'fa-eye-slash';
 
   loginForm!: FormGroup;
-  constructor(private fb: FormBuilder) {}
+  constructor(
+    private fb: FormBuilder,
+    private authService: AuthService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     this.loginForm = this.fb.group({
-      username: ['', Validators.required],
-      password: ['', Validators.required],
+      korisnickoIme: ['', Validators.required],
+      lozinka: ['', Validators.required],
     });
   }
 
@@ -28,9 +34,18 @@ export class LoginComponent implements OnInit {
     this.type = this.isText ? 'text' : 'password';
   }
 
-  onSubmit() {
+  onLogin() {
     if (this.loginForm.valid) {
-      //zovi bazu
+      this.authService.login(this.loginForm.value).subscribe({
+        next: (res) => {
+          alert(res.message);
+          this.loginForm.reset();
+          this.router.navigate(['dashboard']);
+        },
+        error: (err) => {
+          alert(err?.error.message);
+        },
+      });
     } else {
       ValidateForm.validateAllFormFields(this.loginForm);
     }

@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
-using SZRST.API.Models;
+using SZRST.API.Context;
 
 namespace SZRST.API
 {
@@ -22,8 +22,15 @@ namespace SZRST.API
         public void ConfigureServices(IServiceCollection services)
         {
 
-            services.AddControllers();
             services.AddDbContext<SZRSTContext>(options => options.UseSqlServer(Configuration.GetConnectionString("SZRSTDb")));
+            services.AddControllers();
+            services.AddCors(option =>
+            {
+                option.AddPolicy("MyPolicy", builder =>
+                {
+                    builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+                });
+            });
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "SZRST.API", Version = "v1" });
@@ -43,6 +50,10 @@ namespace SZRST.API
             app.UseHttpsRedirection();
 
             app.UseRouting();
+
+            app.UseCors("MyPolicy");
+
+            app.UseAuthentication();
 
             app.UseAuthorization();
 
