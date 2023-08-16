@@ -11,8 +11,8 @@
               <div class="form-group pt-3">
                 <small
                   *ngIf="
-                    signUpForm.controls['ime'].dirty &&
-                    signUpForm.hasError('required', 'ime')
+                    signUpForm.controls['firstName'].dirty &&
+                    signUpForm.hasError('required', 'firstName')
                   "
                   class="text-danger"
                   >*Ime je obavenzo</small
@@ -20,19 +20,23 @@
                 <div
                   class="input-field"
                   [class.error]="
-                    signUpForm.controls['ime'].dirty &&
-                    signUpForm.hasError('required', 'ime')
+                    signUpForm.controls['firstName'].dirty &&
+                    signUpForm.hasError('required', 'firstName')
                   "
                 >
                   <span class="fa fa-user p-2"></span>
-                  <input formControlName="ime" type="text" placeholder="Ime" />
+                  <input
+                    formControlName="firstName"
+                    type="text"
+                    placeholder="Ime"
+                  />
                 </div>
               </div>
               <div class="form-group pt-3">
                 <small
                   *ngIf="
-                    signUpForm.controls['prezime'].dirty &&
-                    signUpForm.hasError('required', 'prezime')
+                    signUpForm.controls['lastName'].dirty &&
+                    signUpForm.hasError('required', 'lastName')
                   "
                   class="text-danger"
                   >*Prezime je obavenzo</small
@@ -40,13 +44,13 @@
                 <div
                   class="input-field"
                   [class.error]="
-                    signUpForm.controls['prezime'].dirty &&
-                    signUpForm.hasError('required', 'prezime')
+                    signUpForm.controls['lastName'].dirty &&
+                    signUpForm.hasError('required', 'lastName')
                   "
                 >
                   <span class="fa fa-user-o p-2"></span>
                   <input
-                    formControlName="prezime"
+                    formControlName="lastName"
                     type="text"
                     placeholder="Prezime"
                   />
@@ -79,8 +83,8 @@
               <div class="form-group pt-3">
                 <small
                   *ngIf="
-                    signUpForm.controls['korisnickoIme'].dirty &&
-                    signUpForm.hasError('required', 'korisnickoIme')
+                    signUpForm.controls['username'].dirty &&
+                    signUpForm.hasError('required', 'username')
                   "
                   class="text-danger"
                   >*Korisničko Ime je obavenzo</small
@@ -88,13 +92,13 @@
                 <div
                   class="input-field"
                   [class.error]="
-                    signUpForm.controls['korisnickoIme'].dirty &&
-                    signUpForm.hasError('required', 'korisnickoIme')
+                    signUpForm.controls['username'].dirty &&
+                    signUpForm.hasError('required', 'username')
                   "
                 >
                   <span class="fa fa-user-circle p-2"></span>
                   <input
-                    formControlName="korisnickoIme"
+                    formControlName="username"
                     type="text"
                     placeholder="Korisničko Ime"
                   />
@@ -103,8 +107,8 @@
               <div class="form-group pt-3">
                 <small
                   *ngIf="
-                    signUpForm.controls['lozinka'].dirty &&
-                    signUpForm.hasError('required', 'lozinka')
+                    signUpForm.controls['password'].dirty &&
+                    signUpForm.hasError('required', 'password')
                   "
                   class="text-danger"
                   >*Lozinka je obavezna</small
@@ -112,13 +116,13 @@
                 <div
                   class="input-field"
                   [class.error]="
-                    signUpForm.controls['lozinka'].dirty &&
-                    signUpForm.hasError('required', 'lozinka')
+                    signUpForm.controls['password'].dirty &&
+                    signUpForm.hasError('required', 'password')
                   "
                 >
                   <span class="fa fa-lock p-2"></span>
                   <input
-                    formControlName="lozinka"
+                    formControlName="password"
                     [type]="type"
                     placeholder="Lozinka"
                   />
@@ -126,6 +130,30 @@
                     (click)="hideShowPass()"
                     className="fa {{ eyeIcon }}"
                   ></span>
+                </div>
+              </div>
+              <div class="form-group pt-3">
+                <small
+                  *ngIf="
+                    signUpForm.controls['confirmPassword'].dirty &&
+                    signUpForm.hasError('required', 'confirmPassword')
+                  "
+                  class="text-danger"
+                  >*Potvrda lozinke je obavezna</small
+                >
+                <div
+                  class="input-field"
+                  [class.error]="
+                    signUpForm.controls['confirmPassword'].dirty &&
+                    signUpForm.hasError('required', 'confirmPassword')
+                  "
+                >
+                  <span class="fa fa-lock p-2"></span>
+                  <input
+                    formControlName="confirmPassword"
+                    [type]="type"
+                    placeholder="Potvrdi lozinku"
+                  />
                 </div>
                 <button
                   (click)="onSignUp()"

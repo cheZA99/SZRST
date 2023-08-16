@@ -3,7 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import ValidateForm from 'src/app/helpers/ValidateForm';
 import { AuthService } from 'src/app/services/auth.service';
-
+import { ToastrService } from 'ngx-toastr';
 @Component({
   selector: 'app-login',
   templateUrl: './login.component.html',
@@ -18,13 +18,14 @@ export class LoginComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private toastr: ToastrService
   ) {}
 
   ngOnInit(): void {
     this.loginForm = this.fb.group({
-      korisnickoIme: ['', Validators.required],
-      lozinka: ['', Validators.required],
+      email: ['', Validators.required],
+      password: ['', Validators.required],
     });
   }
 
@@ -38,11 +39,12 @@ export class LoginComponent implements OnInit {
     if (this.loginForm.valid) {
       this.authService.login(this.loginForm.value).subscribe({
         next: (res) => {
-          alert(res.message);
+          this.toastr.success();
           this.loginForm.reset();
           this.router.navigate(['dashboard']);
         },
         error: (err) => {
+          this.toastr.error(err?.error.message);
           alert(err?.error.message);
         },
       });

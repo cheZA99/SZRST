@@ -22,15 +22,17 @@ export class SignupComponent implements OnInit {
 
   ngOnInit(): void {
     this.signUpForm = this.fb.group({
-      ime: ['', Validators.required],
-      prezime: ['', Validators.required],
-      korisnickoIme: ['', Validators.required],
-      lozinka: ['', Validators.required],
+      firstName: ['', Validators.required],
+      lastName: ['', Validators.required],
+      username: ['', Validators.required],
+      password: ['', Validators.required],
+      confirmPassword: ['', Validators.required],
       email: ['', Validators.required],
     });
   }
   onSignUp() {
     if (this.signUpForm.valid) {
+      debugger;
       this.authService.signUp(this.signUpForm.value).subscribe({
         next: (res) => {
           alert(res.message);

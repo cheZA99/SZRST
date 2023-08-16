@@ -5,10 +5,11 @@ import { HttpClient } from '@angular/common/http';
   providedIn: 'root',
 })
 export class AuthService {
-  private baseUrl: string = 'https://localhost:5001/api/Korisnik/';
+  private baseUrl: string = 'https://localhost:5001/api/Auth/';
   constructor(private http: HttpClient) {}
 
   signUp(userObj: any) {
+    debugger;
     return this.http.post<any>(`${this.baseUrl}register`, userObj);
   }
 
