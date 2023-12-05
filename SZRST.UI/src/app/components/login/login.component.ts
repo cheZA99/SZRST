@@ -37,15 +37,27 @@ export class LoginComponent implements OnInit {
 
   onLogin() {
     if (this.loginForm.valid) {
+      // Check if email follows a valid format
+      if (!/^\S+@\S+\.\S+$/.test(this.loginForm.value.email)) {
+        this.toastr.error(
+          "Molimo unesite ispravnu e-poštu. Trebala bi slijediti format 'ime@primjer.com'."
+        );
+        return;
+      }
+      // Check if the password length is less than 5 characters
+      if (this.loginForm.value.password.length < 5) {
+        this.toastr.error(
+          'Vaša lozinka mora biti dugačka minimalno 5 karaktera.'
+        );
+        return;
+      }
       this.authService.login(this.loginForm.value).subscribe({
-        next: (res) => {
-          this.toastr.success();
+        next: () => {
           this.loginForm.reset();
           this.router.navigate(['dashboard']);
         },
         error: (err) => {
           this.toastr.error(err?.error.message);
-          alert(err?.error.message);
         },
       });
     } else {

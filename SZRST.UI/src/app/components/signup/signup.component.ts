@@ -3,7 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import ValidateForm from 'src/app/helpers/ValidateForm';
 import { AuthService } from 'src/app/services/auth.service';
-
+import { ToastrService } from 'ngx-toastr';
 @Component({
   selector: 'app-signup',
   templateUrl: './signup.component.html',
@@ -17,7 +17,8 @@ export class SignupComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private toastr: ToastrService
   ) {}
 
   ngOnInit(): void {
@@ -33,14 +34,38 @@ export class SignupComponent implements OnInit {
   onSignUp() {
     if (this.signUpForm.valid) {
       debugger;
+      // Check if email follows a valid format
+      if (!/^\S+@\S+\.\S+$/.test(this.signUpForm.value.email)) {
+        this.toastr.error(
+          "Molimo unesite ispravnu e-poštu. Trebala bi slijediti format 'ime@primjer.com'."
+        );
+        return;
+      }
+      // Check if the password length is less than 5 characters
+      if (
+        this.signUpForm.value.password.length < 5 ||
+        this.signUpForm.value.confirmPassword.length < 5
+      ) {
+        this.toastr.error(
+          'Vaša lozinka mora biti dugačka minimalno 5 karaktera.'
+        );
+        return;
+      }
+      // if (!/\W/.test(this.signUpForm.value.password)) {
+      //   // Password doesn't contain a non-alphanumeric character
+      //   this.toastr.error(
+      //     'Lozinke moraju sadržavati barem jedan znak koji nije slovo ili broj.'
+      //   );
+      //   return;
+      // }
       this.authService.signUp(this.signUpForm.value).subscribe({
         next: (res) => {
-          alert(res.message);
+          this.toastr.success(res.message);
           this.signUpForm.reset();
           this.router.navigate(['login']);
         },
         error: (err) => {
-          alert(err?.error.message);
+          this.toastr.error(err?.error.message);
         },
       });
     } else {

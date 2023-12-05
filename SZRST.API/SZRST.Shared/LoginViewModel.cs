@@ -14,6 +14,4 @@ namespace SZRST.Shared
         public string Password { get; set; }
 
     }
-
-
 }

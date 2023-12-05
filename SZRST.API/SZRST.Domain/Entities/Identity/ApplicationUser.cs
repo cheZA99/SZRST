@@ -14,7 +14,7 @@ namespace Domain.Entities
         public bool IsAdministrator { get; set; }
         public bool IsEmployee { get; set; }
         public bool IsClient { get; set; }
-        public ICollection<IdentityRole> Roles { get; set; }
+        public ICollection<ApplicationUserRole> Roles { get; set; }
 
     }
 }

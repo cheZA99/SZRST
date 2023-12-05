@@ -10,8 +10,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace SZRST.Infrastructure.Migrations
 {
     [DbContext(typeof(SZRSTContext))]
-    [Migration("20230731165706_initialCreate")]
-    partial class initialCreate
+    [Migration("20231205203318_InitialCreate")]
+    partial class InitialCreate
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -357,30 +357,6 @@ namespace SZRST.Infrastructure.Migrations
                     b.ToTable("User");
                 });
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int?>("ApplicationUserId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ConcurrencyStamp")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("NormalizedName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ApplicationUserId");
-
-                    b.ToTable("IdentityRole");
-                });
-
             modelBuilder.Entity("Domain.Entities.ApplicationRoleClaim", b =>
                 {
                     b.HasOne("Domain.Entities.ApplicationRole", null)
@@ -427,7 +403,7 @@ namespace SZRST.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("Domain.Entities.ApplicationUser", "User")
-                        .WithMany()
+                        .WithMany("Roles")
                         .HasForeignKey("UserId1");
 
                     b.Navigation("Role");
@@ -451,13 +427,6 @@ namespace SZRST.Infrastructure.Migrations
                         .HasForeignKey("Domain.Entities.User", "ApplicationUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
-                {
-                    b.HasOne("Domain.Entities.ApplicationUser", null)
-                        .WithMany("Roles")
-                        .HasForeignKey("ApplicationUserId");
                 });
 
             modelBuilder.Entity("Domain.Entities.ApplicationUser", b =>

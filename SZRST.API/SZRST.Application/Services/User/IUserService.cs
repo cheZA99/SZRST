@@ -49,7 +49,7 @@ namespace Application.Services
             if (model.Password != model.ConfirmPassword)
                 return new UserManagerResponse
                 {
-                    Message = "Confirm password doesn't match the password",
+                    Message = "Lozinke se ne podudaraju.",
                     IsSuccess = false,
                 };
 
@@ -60,8 +60,8 @@ namespace Application.Services
                 DateCreated = DateTime.UtcNow,
                 DateModified = DateTime.UtcNow,
                 IsClient = true,
-                IsAdministrator=false,
-                IsEmployee=false,
+                IsAdministrator = false,
+                IsEmployee = false,
             };
 
             var result = await _userManger.CreateAsync(user, model.Password);
@@ -75,20 +75,31 @@ namespace Application.Services
 
                 string url = $"{_configuration["AppUrl"]}/api/auth/confirmemail?userid={user.Id}&token={validEmailToken}";
 
-                await _mailService.SendEmailAsync(user.Email, "Confirm your email", $"<h1>Welcome to Auth Demo</h1>" +
-                    $"<p>Please confirm your email by <a href='{url}'>Clicking here</a></p>");
+                //await _mailService.SendEmailAsync(user.Email, "Confirm your email", $"<h1>Welcome to Auth Demo</h1>" +
+                //    $"<p>Please confirm your email by <a href='{url}'>Clicking here</a></p>");
 
 
                 return new UserManagerResponse
                 {
-                    Message = "User created successfully!",
+                    Message = "Korisnik uspješno kreiran",
                     IsSuccess = true,
                 };
+            }
+            var errorMessages = new IdentityErrorMessages();
+            foreach (var error in result.Errors)
+            {
+                string errorMessage = errorMessages.GetErrorMessage(error.Code);
+                var response = new UserManagerResponse
+                {
+                    Message = errorMessage,
+                    IsSuccess = false,
+                };
+                return response;
             }
 
             return new UserManagerResponse
             {
-                Message = "User did not create",
+                Message = "Korisnika nemoguće kreirati",
                 IsSuccess = false,
                 Errors = result.Errors.Select(e => e.Description)
             };
@@ -103,7 +114,7 @@ namespace Application.Services
             {
                 return new UserManagerResponse
                 {
-                    Message = "There is no user with that Email address",
+                    Message = "Ne postoji korisnik s tom email adresom.",
                     IsSuccess = false,
                 };
             }
@@ -113,7 +124,7 @@ namespace Application.Services
             if (!result)
                 return new UserManagerResponse
                 {
-                    Message = "Invalid password",
+                    Message = "Pogrešni podaci za prijavu. Molimo pokušajte ponovo.",
                     IsSuccess = false,
                 };
 
@@ -149,7 +160,7 @@ namespace Application.Services
                 return new UserManagerResponse
                 {
                     IsSuccess = false,
-                    Message = "User not found"
+                    Message = "Korisnik ne postoji"
                 };
 
             var decodedToken = WebEncoders.Base64UrlDecode(token);

@@ -9,7 +9,6 @@ export class AuthService {
   constructor(private http: HttpClient) {}
 
   signUp(userObj: any) {
-    debugger;
     return this.http.post<any>(`${this.baseUrl}register`, userObj);
   }
 
