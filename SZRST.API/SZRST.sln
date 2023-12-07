@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30907.101
+# Visual Studio Version 17
+VisualStudioVersion = 17.6.33815.320
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SZRST.WebApi", "SZRST.API\SZRST.WebApi.csproj", "{51671C6C-EE18-472D-8DCE-718EA11F8A42}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SZRST.Web", "SZRST.API\SZRST.Web.csproj", "{51671C6C-EE18-472D-8DCE-718EA11F8A42}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SZRST.Application", "SZRST.Application\SZRST.Application.csproj", "{F97ECC24-9E26-49DB-93EE-1367B35C3A65}"
 EndProject
@@ -11,7 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SZRST.Domain", "SZRST.Domai
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SZRST.Infrastructure", "SZRST.Infrastructure\SZRST.Infrastructure.csproj", "{970F1A5A-159C-4F68-8830-B7A6E58C4CE2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SZRST.Shared", "SZRST.Shared\SZRST.Shared.csproj", "{24ADBCAE-9120-426D-88F1-D468C73F8998}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SZRST.Shared", "SZRST.Shared\SZRST.Shared.csproj", "{24ADBCAE-9120-426D-88F1-D468C73F8998}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
