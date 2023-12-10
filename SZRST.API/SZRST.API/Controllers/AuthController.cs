@@ -12,12 +12,12 @@ namespace SZRST.API.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-        private IUserService _userService;
+        private IAuthService _authService;
         private IMailService _mailService;
         private IConfiguration _configuration;
-        public AuthController(IUserService userService, IMailService mailService, IConfiguration configuration)
+        public AuthController(IAuthService AuthService, IMailService mailService, IConfiguration configuration)
         {
-            _userService = userService;
+            _authService = AuthService;
             _mailService = mailService;
             _configuration = configuration;
         }
@@ -28,7 +28,7 @@ namespace SZRST.API.Controllers
         {
             if (ModelState.IsValid)
             {
-                var result = await _userService.RegisterUserAsync(model);
+                var result = await _authService.RegisterUserAsync(model);
 
                 if (result.IsSuccess)
                     return Ok(result); // Status Code: 200 
@@ -45,7 +45,7 @@ namespace SZRST.API.Controllers
         {
             if (ModelState.IsValid)
             {
-                var result = await _userService.LoginUserAsync(model);
+                var result = await _authService.LoginUserAsync(model);
 
                 if (result.IsSuccess)
                 {
@@ -66,7 +66,7 @@ namespace SZRST.API.Controllers
             if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(token))
                 return NotFound();
 
-            var result = await _userService.ConfirmEmailAsync(userId, token);
+            var result = await _authService.ConfirmEmailAsync(userId, token);
 
             if (result.IsSuccess)
             {
@@ -83,7 +83,7 @@ namespace SZRST.API.Controllers
             if (string.IsNullOrEmpty(email))
                 return NotFound();
 
-            var result = await _userService.ForgetPasswordAsync(email);
+            var result = await _authService.ForgetPasswordAsync(email);
 
             if (result.IsSuccess)
                 return Ok(result); // 200
@@ -97,7 +97,7 @@ namespace SZRST.API.Controllers
         {
             if (ModelState.IsValid)
             {
-                var result = await _userService.ResetPasswordAsync(model);
+                var result = await _authService.ResetPasswordAsync(model);
 
                 if (result.IsSuccess)
                     return Ok(result);

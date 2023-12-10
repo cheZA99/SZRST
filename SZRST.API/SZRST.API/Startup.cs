@@ -41,7 +41,7 @@ namespace SZRST.WebApi
             c.SwaggerDoc("v1", new OpenApiInfo { Title = "SZRST.API", Version = "v1" }));
 
             services.AddDbContext<SZRSTContext>(options => options.UseSqlServer(Configuration.GetConnectionString("SZRST")));
-            services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
+            services.AddIdentity<User, Role>(options =>
             {
                 options.Password.RequireDigit = true;
                 options.Password.RequireLowercase = true;
@@ -72,7 +72,7 @@ namespace SZRST.WebApi
 
             #region Binding
 
-            services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IAuthService, AuthService>();
             services.AddSingleton<ProblemDetailsFactory, UserManagmentProblemDetailsFactory>();
             services.AddTransient<IMailService, SendGridMailService>();
 

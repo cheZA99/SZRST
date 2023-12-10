@@ -14,7 +14,7 @@ using Domain.Entities;
 
 namespace Application.Services
 {
-    public interface IUserService
+    public interface IAuthService
     {
 
         Task<UserManagerResponse> RegisterUserAsync(RegisterViewModel model);
@@ -28,13 +28,14 @@ namespace Application.Services
         Task<UserManagerResponse> ResetPasswordAsync(ResetPasswordViewModel model);
     }
 
-    public class UserService : IUserService
+    public class AuthService : IAuthService
     {
 
-        private UserManager<ApplicationUser> _userManger;
+        private UserManager<User> _userManger;
         private IConfiguration _configuration;
         private IMailService _mailService;
-        public UserService(UserManager<ApplicationUser> userManager, IConfiguration configuration, IMailService mailService)
+
+        public AuthService(UserManager<User> userManager, IConfiguration configuration, IMailService mailService)
         {
             _userManger = userManager;
             _configuration = configuration;
@@ -52,22 +53,19 @@ namespace Application.Services
                     Message = "Lozinke se ne podudaraju.",
                     IsSuccess = false,
                 };
-
-            var user = new ApplicationUser
+            var user = new User
             {
                 Email = model.Email,
                 UserName = model.Username,
                 DateCreated = DateTime.UtcNow,
                 DateModified = DateTime.UtcNow,
-                IsClient = true,
-                IsAdministrator = false,
-                IsEmployee = false,
             };
 
             var result = await _userManger.CreateAsync(user, model.Password);
 
             if (result.Succeeded)
             {
+                await _userManger.AddToRoleAsync(user, "Customer");
                 var confirmEmailToken = await _userManger.GenerateEmailConfirmationTokenAsync(user);
 
                 var encodedEmailToken = Encoding.UTF8.GetBytes(confirmEmailToken);
@@ -77,7 +75,6 @@ namespace Application.Services
 
                 //await _mailService.SendEmailAsync(user.Email, "Confirm your email", $"<h1>Welcome to Auth Demo</h1>" +
                 //    $"<p>Please confirm your email by <a href='{url}'>Clicking here</a></p>");
-
 
                 return new UserManagerResponse
                 {

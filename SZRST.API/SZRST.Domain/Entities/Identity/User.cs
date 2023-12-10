@@ -4,17 +4,15 @@ using System.Collections.Generic;
 
 namespace Domain.Entities
 {
-    public class ApplicationUser : IdentityUser<int>, IBaseEntity<int>
+    public class User : IdentityUser<int>, IBaseEntity<int>
     {
         public DateTime DateCreated { get; set; }
         public DateTime DateModified { get; set; }
         public bool IsDeleted { get; set; }
         public bool Active { get; set; }
-        public User User { get; set; }
-        public bool IsAdministrator { get; set; }
-        public bool IsEmployee { get; set; }
-        public bool IsClient { get; set; }
-        public ICollection<ApplicationUserRole> Roles { get; set; }
-
+        public ICollection<UserClaim> Claims { get; set; }
+        public ICollection<UserLogin> Logins { get; set; }
+        public ICollection<UserToken> Tokens { get; set; }
+        public ICollection<UserRole> UserRoles { get; set; }
     }
 }
