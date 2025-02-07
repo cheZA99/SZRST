@@ -32,6 +32,7 @@ export class SignupComponent implements OnInit {
     });
   }
   onSignUp() {
+    console.log("Ovdje je")
     if (this.signUpForm.valid) {
       debugger;
       // Check if email follows a valid format
@@ -42,7 +43,7 @@ export class SignupComponent implements OnInit {
         return;
       }
       // Check if the password length is less than 5 characters
-      if (
+      /*if (
         this.signUpForm.value.password.length < 5 ||
         this.signUpForm.value.confirmPassword.length < 5
       ) {
@@ -50,7 +51,7 @@ export class SignupComponent implements OnInit {
           'Vaša lozinka mora biti dugačka minimalno 5 karaktera.'
         );
         return;
-      }
+      }*/
       // if (!/\W/.test(this.signUpForm.value.password)) {
       //   // Password doesn't contain a non-alphanumeric character
       //   this.toastr.error(

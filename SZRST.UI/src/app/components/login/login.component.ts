@@ -45,14 +45,15 @@ export class LoginComponent implements OnInit {
         return;
       }
       // Check if the password length is less than 5 characters
-      if (this.loginForm.value.password.length < 5) {
+      /*if (this.loginForm.value.password.length < 5) {
         this.toastr.error(
           'Vaša lozinka mora biti dugačka minimalno 5 karaktera.'
         );
         return;
-      }
+      }*/
       this.authService.login(this.loginForm.value).subscribe({
         next: () => {
+          console.log("login success");
           this.loginForm.reset();
           this.router.navigate(['dashboard']);
         },

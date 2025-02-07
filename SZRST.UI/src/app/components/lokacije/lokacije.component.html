@@ -1,0 +1,85 @@
+<!-- Open the modal using ID.showModal() method -->
+<!-- Open the modal using ID.showModal() method -->
+
+<div role="tablist" class="tabs">
+  <a role="tab" (click)="changeTab('overview')" [ngClass]="activeTab == 'overview' ? 'tab-active' : ''" class="tab">Overview</a>
+  <a role="tab" (click)="changeTab('definition')" [ngClass]="activeTab == 'definition' ? 'tab-active' : ''" class="tab ">Definition</a>
+</div>
+
+<div *ngIf="activeTab == 'overview'">
+
+  <div class="join">
+    <div>
+      <div>
+        <input [(ngModel)]="searchText" class="input input-bordered join-item" placeholder="Search" />
+        <select [(ngModel)]="searchType" class="select select-bordered join-item">
+          <option disabled selected>Filter</option>
+          <option>Facility</option>
+          <option>FacilityType</option>
+          <option>Address</option>
+          <option>Country</option>
+          <option>City</option>
+        </select>
+        <div class="indicator">
+          <button (click)="getFacilities(searchType,searchText)" class="btn join-item">Search</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="table">
+      <!-- head -->
+      <thead>
+      <tr>
+        <th>Facility name</th>
+        <th>Facility type</th>
+        <th>Address</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr *ngFor="let x of facilities; let i = index" class="bg-base-200">
+        <th>{{ x.name }}</th>
+        <td>{{ x.facilityType }}</td>
+        <td>{{ x.location }}</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div *ngIf="activeTab == 'definition'">
+
+  <label class="input input-bordered flex items-center gap-2">
+    Facility name
+    <input [(ngModel)]="facilityName" type="text" class="grow" placeholder="Facility Name" />
+  </label>
+  <label class="input input-bordered flex items-center gap-2">
+    Facility type
+    <select [(ngModel)]="facilityType" class="select select-bordered w-full max-w-xs">
+      <option *ngFor="let x of facilityTypes">{{x.name}}</option>
+    </select>
+  </label>
+  <label class="input input-bordered flex items-center gap-2">
+    Address
+    <input [(ngModel)]="address" type="text" class="grow" placeholder="Address" />
+  </label>
+  <label class="input input-bordered flex items-center gap-2">
+    Address Number
+    <input [(ngModel)]="addresNumber" type="text" class="grow" placeholder="Address Number" />
+  </label>
+  <label class="input input-bordered flex items-center gap-2">
+    Country
+  <select (change)="getCountry()" [(ngModel)]="selectedCountry" class="select select-bordered w-full max-w-xs">
+    <option *ngFor="let x of countries">{{x.name}}</option>
+  </select>
+  </label>
+  <label class="input input-bordered flex items-center gap-2">
+    City
+    <select [(ngModel)]="selectedCity" class="select select-bordered w-full max-w-xs">
+      <option *ngFor="let x of filteredCities">{{x.name}}</option>
+    </select>
+  </label>
+  <button (click)="addFacility()" class="btn">Add facility</button>
+</div>

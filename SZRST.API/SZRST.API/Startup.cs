@@ -16,6 +16,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using SZRST.API.Controllers;
 using SZRST.Application.Services.MailService;
 using WebApi.Error;
 
@@ -75,6 +76,9 @@ namespace SZRST.WebApi
             services.AddScoped<IAuthService, AuthService>();
             services.AddSingleton<ProblemDetailsFactory, UserManagmentProblemDetailsFactory>();
             services.AddTransient<IMailService, SendGridMailService>();
+
+            services.AddTransient<FacilityController>();
+            services.AddTransient<LocationController>();
 
             #endregion
         }

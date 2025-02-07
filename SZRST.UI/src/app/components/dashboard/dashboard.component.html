@@ -47,33 +47,16 @@
   </head>
 
   <body>
-    <div id="sidebar">
-      <div id="logo">
-        <img src="something.png" alt="Logo" width="150" />
-      </div>
-      <div id="menu">
-        <ul>
-          <li>Kontrolna ploča</li>
-          <li
-            (click)="toggleSubMenu('rezervacije')"
-            [ngClass]="{ active: activeSubMenu === 'rezervacije' }"
-          >
-            Rezervacije
-            <i class="fa-solid fa-chevron-down"></i>
-            <ul [ngClass]="{ expanded: activeSubMenu === 'rezervacije' }">
-              <li>Lokacije</li>
-              <li>Resursi</li>
-              <li>Kategorije</li>
-            </ul>
-          </li>
-          <li>Uposlenici</li>
-          <li>Vijesti</li>
-          <li>Izvještaji</li>
-        </ul>
-      </div>
-    </div>
     <div id="content">
       <h2>Pozdrav, dobrodošao/la natrag 👋</h2>
+
+      <button class="btn">Button</button>
+      <button class="btn btn-neutral">Neutral</button>
+      <button class="btn btn-primary">Primary</button>
+      <button class="btn btn-secondary">Secondary</button>
+      <button class="btn btn-accent">Accent</button>
+      <button class="btn btn-ghost">Ghost</button>
+      <button class="btn btn-link">Link</button>
     </div>
   </body>
 </html>

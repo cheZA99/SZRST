@@ -22,6 +22,351 @@ namespace SZRST.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder, 1L, 1);
 
+            modelBuilder.Entity("Domain.Entities.Appointment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<DateTime>("AppointmentDateTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("AppointmentTypeId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("DateCreated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DateModified")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("FacilityId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsClosed")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsFree")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AppointmentTypeId");
+
+                    b.HasIndex("FacilityId");
+
+                    b.ToTable("Appointment");
+                });
+
+            modelBuilder.Entity("Domain.Entities.AppointmentType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<int?>("CurrencyId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("DateCreated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DateModified")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Duration")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<float>("Price")
+                        .HasColumnType("real");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CurrencyId");
+
+                    b.ToTable("AppointmentType");
+                });
+
+            modelBuilder.Entity("Domain.Entities.City", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<int?>("CountryId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("DateCreated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DateModified")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CountryId");
+
+                    b.ToTable("City");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Country", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<int?>("CurrencyId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("DateCreated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DateModified")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ShortName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CurrencyId");
+
+                    b.ToTable("Country");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Currency", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<DateTime>("DateCreated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DateModified")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ShortName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Currency");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Facility", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<DateTime>("DateCreated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DateModified")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("FacilityTypeId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("LocationId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FacilityTypeId");
+
+                    b.HasIndex("LocationId");
+
+                    b.ToTable("Facility");
+                });
+
+            modelBuilder.Entity("Domain.Entities.FacilityType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<DateTime>("DateCreated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DateModified")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("FacilityType");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Location", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<string>("Address")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AddressNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("CityId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CountryId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("DateCreated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DateModified")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CityId");
+
+                    b.HasIndex("CountryId");
+
+                    b.ToTable("Location");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Reservation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<int?>("AppointmentId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("DateCreated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DateModified")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Message")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("ReservationDateTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AppointmentId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Reservation");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Review", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<DateTime>("DateCreated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DateModified")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("FacilityId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FacilityId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Review");
+                });
+
             modelBuilder.Entity("Domain.Entities.Role", b =>
                 {
                     b.Property<int>("Id")
@@ -37,7 +382,7 @@ namespace SZRST.Infrastructure.Migrations
                     b.Property<DateTime>("DateCreated")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime>("DateModified")
+                    b.Property<DateTime?>("DateModified")
                         .HasColumnType("datetime2");
 
                     b.Property<bool>("IsDeleted")
@@ -58,7 +403,7 @@ namespace SZRST.Infrastructure.Migrations
                         .HasDatabaseName("RoleNameIndex")
                         .HasFilter("[NormalizedName] IS NOT NULL");
 
-                    b.ToTable("AspNetRoles", (string)null);
+                    b.ToTable("Role", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Entities.RoleClaim", b =>
@@ -78,7 +423,7 @@ namespace SZRST.Infrastructure.Migrations
                     b.Property<DateTime>("DateCreated")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime>("DateModified")
+                    b.Property<DateTime?>("DateModified")
                         .HasColumnType("datetime2");
 
                     b.Property<bool>("IsDeleted")
@@ -115,7 +460,7 @@ namespace SZRST.Infrastructure.Migrations
                     b.Property<DateTime>("DateCreated")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime>("DateModified")
+                    b.Property<DateTime?>("DateModified")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Email")
@@ -171,7 +516,7 @@ namespace SZRST.Infrastructure.Migrations
                         .HasDatabaseName("UserNameIndex")
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
-                    b.ToTable("AspNetUsers", (string)null);
+                    b.ToTable("User", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Entities.UserClaim", b =>
@@ -191,7 +536,7 @@ namespace SZRST.Infrastructure.Migrations
                     b.Property<DateTime>("DateCreated")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime>("DateModified")
+                    b.Property<DateTime?>("DateModified")
                         .HasColumnType("datetime2");
 
                     b.Property<bool>("IsDeleted")
@@ -218,7 +563,7 @@ namespace SZRST.Infrastructure.Migrations
                     b.Property<DateTime>("DateCreated")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime>("DateModified")
+                    b.Property<DateTime?>("DateModified")
                         .HasColumnType("datetime2");
 
                     b.Property<int>("Id")
@@ -251,12 +596,12 @@ namespace SZRST.Infrastructure.Migrations
                     b.Property<DateTime>("DateCreated")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
-                        .HasDefaultValue(new DateTime(2023, 12, 10, 22, 47, 25, 585, DateTimeKind.Utc).AddTicks(2051));
+                        .HasDefaultValue(new DateTime(2025, 2, 7, 19, 12, 50, 379, DateTimeKind.Utc).AddTicks(4176));
 
                     b.Property<DateTime>("DateModified")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
-                        .HasDefaultValue(new DateTime(2023, 12, 10, 22, 47, 25, 585, DateTimeKind.Utc).AddTicks(2302));
+                        .HasDefaultValue(new DateTime(2025, 2, 7, 19, 12, 50, 379, DateTimeKind.Utc).AddTicks(4264));
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -282,7 +627,7 @@ namespace SZRST.Infrastructure.Migrations
                     b.Property<DateTime>("DateCreated")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime>("DateModified")
+                    b.Property<DateTime?>("DateModified")
                         .HasColumnType("datetime2");
 
                     b.Property<int>("Id")
@@ -297,6 +642,176 @@ namespace SZRST.Infrastructure.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("UserToken", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Entities.Worker", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<DateTime>("DateCreated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DateModified")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("DateOfEmployment")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("FacilityId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("WorkerTypeId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FacilityId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("WorkerTypeId");
+
+                    b.ToTable("Worker");
+                });
+
+            modelBuilder.Entity("Domain.Entities.WorkerType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<DateTime>("DateCreated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DateModified")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("WorkerType");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Appointment", b =>
+                {
+                    b.HasOne("Domain.Entities.AppointmentType", "AppointmentType")
+                        .WithMany()
+                        .HasForeignKey("AppointmentTypeId");
+
+                    b.HasOne("Domain.Entities.Facility", "Facility")
+                        .WithMany()
+                        .HasForeignKey("FacilityId");
+
+                    b.Navigation("AppointmentType");
+
+                    b.Navigation("Facility");
+                });
+
+            modelBuilder.Entity("Domain.Entities.AppointmentType", b =>
+                {
+                    b.HasOne("Domain.Entities.Currency", "Currency")
+                        .WithMany()
+                        .HasForeignKey("CurrencyId");
+
+                    b.Navigation("Currency");
+                });
+
+            modelBuilder.Entity("Domain.Entities.City", b =>
+                {
+                    b.HasOne("Domain.Entities.Country", "Country")
+                        .WithMany()
+                        .HasForeignKey("CountryId");
+
+                    b.Navigation("Country");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Country", b =>
+                {
+                    b.HasOne("Domain.Entities.Currency", "Currency")
+                        .WithMany()
+                        .HasForeignKey("CurrencyId");
+
+                    b.Navigation("Currency");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Facility", b =>
+                {
+                    b.HasOne("Domain.Entities.FacilityType", "FacilityType")
+                        .WithMany()
+                        .HasForeignKey("FacilityTypeId");
+
+                    b.HasOne("Domain.Entities.Location", "Location")
+                        .WithMany()
+                        .HasForeignKey("LocationId");
+
+                    b.Navigation("FacilityType");
+
+                    b.Navigation("Location");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Location", b =>
+                {
+                    b.HasOne("Domain.Entities.City", "City")
+                        .WithMany()
+                        .HasForeignKey("CityId");
+
+                    b.HasOne("Domain.Entities.Country", "Country")
+                        .WithMany()
+                        .HasForeignKey("CountryId");
+
+                    b.Navigation("City");
+
+                    b.Navigation("Country");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Reservation", b =>
+                {
+                    b.HasOne("Domain.Entities.Appointment", "Appointment")
+                        .WithMany()
+                        .HasForeignKey("AppointmentId");
+
+                    b.HasOne("Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("Appointment");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Review", b =>
+                {
+                    b.HasOne("Domain.Entities.Facility", "Facility")
+                        .WithMany()
+                        .HasForeignKey("FacilityId");
+
+                    b.HasOne("Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("Facility");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Domain.Entities.RoleClaim", b =>
@@ -360,6 +875,27 @@ namespace SZRST.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Worker", b =>
+                {
+                    b.HasOne("Domain.Entities.Facility", "Facility")
+                        .WithMany()
+                        .HasForeignKey("FacilityId");
+
+                    b.HasOne("Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.HasOne("Domain.Entities.WorkerType", "WorkerType")
+                        .WithMany()
+                        .HasForeignKey("WorkerTypeId");
+
+                    b.Navigation("Facility");
+
+                    b.Navigation("User");
+
+                    b.Navigation("WorkerType");
                 });
 
             modelBuilder.Entity("Domain.Entities.Role", b =>

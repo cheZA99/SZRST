@@ -5,16 +5,25 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using System;
 using SZRST.Infrastructure.Configurations;
+using Microsoft.EntityFrameworkCore.Migrations.Operations;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Infrastructure.Persistance
 {
     public partial class SZRSTContext : IdentityDbContext<User, Role, int, UserClaim, UserRole, UserLogin, RoleClaim, UserToken>, ISZRSTContext
-    { 
+    {
+
+        public SZRSTContext()
+        {
+        }
 
         public SZRSTContext(DbContextOptions options)
          : base(options)
         {
         }
+
+        
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -23,6 +32,7 @@ namespace Infrastructure.Persistance
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(UserTokenConfiguration).Assembly);
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(UserClaimConfiguration).Assembly);
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(UserLoginConfiguration).Assembly);
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(UserConfiguration).Assembly);
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(RoleClaimConfiguration).Assembly);
         }
 
@@ -50,15 +60,23 @@ namespace Infrastructure.Persistance
                 }
             }
         }
-        public override int SaveChanges()
-        {
-            ModifyTimestamps();
-            return base.SaveChanges();
-        }
 
         public override DbSet<TDb> Set<TDb>() where TDb : class
         {
             return base.Set<TDb>();
         }
+        public DbSet<Currency> Currency { get; set; }
+        public DbSet<Country> Country { get; set; }
+        public DbSet<City> City { get; set; }
+        public DbSet<Location> Location { get; set; }
+        public DbSet<Facility> Facility { get; set; }
+        public DbSet<FacilityType> FacilityType { get; set; }
+        public DbSet<Appointment> Appointment { get; set; }
+        public DbSet<AppointmentType> AppointmentType { get; set; }
+        public DbSet<Reservation> Reservation { get; set; }
+        public DbSet<Review> Review { get; set; }
+        public DbSet<Worker> Worker { get; set; }
+        public DbSet<WorkerType> WorkerType { get; set; }
+
     }
 }

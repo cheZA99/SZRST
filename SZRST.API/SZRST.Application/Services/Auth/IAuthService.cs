@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 using SZRST.Application.Services.MailService;
 using Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace Application.Services
 {
@@ -32,14 +33,20 @@ namespace Application.Services
     {
 
         private UserManager<User> _userManger;
+        private RoleManager<Role> _roleManger;
         private IConfiguration _configuration;
         private IMailService _mailService;
+        
 
-        public AuthService(UserManager<User> userManager, IConfiguration configuration, IMailService mailService)
+        public AuthService(UserManager<User> userManager, IConfiguration configuration, IMailService mailService,RoleManager<Role> roleManager)
         {
+            _roleManger = roleManager;
             _userManger = userManager;
             _configuration = configuration;
             _mailService = mailService;
+
+           
+            
         }
 
         public async Task<UserManagerResponse> RegisterUserAsync(RegisterViewModel model)
@@ -62,10 +69,10 @@ namespace Application.Services
             };
 
             var result = await _userManger.CreateAsync(user, model.Password);
-
+           
             if (result.Succeeded)
             {
-                await _userManger.AddToRoleAsync(user, "Customer");
+                //await _userManger.AddToRoleAsync(user, "Customer");
                 var confirmEmailToken = await _userManger.GenerateEmailConfirmationTokenAsync(user);
 
                 var encodedEmailToken = Encoding.UTF8.GetBytes(confirmEmailToken);

@@ -7,7 +7,7 @@ namespace Domain.Entities
     public class RoleClaim : IdentityRoleClaim<int>, IBaseEntity<int>
     {
         public DateTime DateCreated { get; set; } = DateTime.Now;
-        public DateTime DateModified { get; set; }
+        public DateTime? DateModified { get; set; }
         public bool IsDeleted { get; set; }
 
         public Role Role { get; set; }

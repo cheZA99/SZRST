@@ -7,7 +7,7 @@ namespace Domain.Entities
     public class User : IdentityUser<int>, IBaseEntity<int>
     {
         public DateTime DateCreated { get; set; }
-        public DateTime DateModified { get; set; }
+        public DateTime? DateModified { get; set; }
         public bool IsDeleted { get; set; }
         public bool Active { get; set; }
         public ICollection<UserClaim> Claims { get; set; }

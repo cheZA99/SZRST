@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    #sidebar {
+      width: 250px;
+      height: 100%;
+      background-color: #333;
+      color: white;
+      position: fixed;
+      top: 0;
+      left: 0;
+      padding-top: 50px;
+    }
+
+    #logo {
+      text-align: center;
+      padding: 15px 0;
+    }
+
+    #menu ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    #menu ul li {
+      padding: 10px;
+      border-bottom: 1px solid #555;
+    }
+
+    #menu ul li:hover {
+      background-color: #555;
+    }
+
+    #content {
+      margin-left: 250px;
+      padding: 20px;
+    }
+  </style>
+</head>
+
+<body>
+<div id="sidebar">
+  <div id="logo">
+    <img src="./assets/pictures/something.png" alt="Logo" width="150" />
+  </div>
+  <div id="menu">
+    <ul>
+      <li routerLink="../dashboard" >Kontrolna ploča</li>
+      <li
+        (click)="toggleSubMenu('rezervacije')"
+        [ngClass]="{ active: activeSubMenu === 'rezervacije' }"
+      >
+        Rezervacije
+        <i class="fa-solid fa-chevron-down"></i>
+        <ul [ngClass]="{ expanded: activeSubMenu === 'rezervacije' }">
+          <li routerLink="../lokacije" >Lokacije</li>
+          <li routerLink="../resursi" >Resursi</li>
+          <li routerLink="../kategorije" >Kategorije</li>
+        </ul>
+      </li>
+      <li routerLink="../uposlenici" >Uposlenici</li>
+      <li routerLink="../vijesti" >Vijesti</li>
+      <li routerLink="../izvjestaji" >Izvještaji</li>
+    </ul>
+  </div>
+</div>
+<div id="content">
+  <router-outlet></router-outlet>
+</div>
+</body>
+</html>
