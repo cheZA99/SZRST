@@ -152,6 +152,7 @@ namespace Application.Services
             return new UserManagerResponse
             {
                 Message = tokenAsString,
+                UserName= user.UserName,
                 IsSuccess = true,
                 ExpireDate = token.ValidTo
             };
