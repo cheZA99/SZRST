@@ -22,10 +22,12 @@
     <div class="flex align-middle ml-auto gap-3">
 
       <div class="dropdown dropdown-end">
-        <div tabindex="0" role="button" class="flex items-center text-white text-xl gap-3 cursor-pointer">
+        @if (true){
+          <div tabindex="0" role="button" class="flex items-center text-white text-xl gap-3 cursor-pointer">
           <img src="assets/pictures/user.png" alt="userAvatar" class="w-8 h-8 rounded-full">
           <span>{{user?.userName}}</span>
-        </div>
+          </div>
+        }
         <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-10 w-52 p-2 shadow-sm">
           <li><a>Edit Profile</a></li>
           <li><a>Logout</a></li>
