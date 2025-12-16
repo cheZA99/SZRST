@@ -104,6 +104,9 @@ namespace SZRST.WebApi
                 endpoints.MapControllers();
             });
             Console.WriteLine("Loaded CS = " + Configuration.GetConnectionString("SZRST"));
+
+            Console.WriteLine("ENV = " + env.EnvironmentName);
+            Console.WriteLine("CS = " + Configuration.GetConnectionString("SZRST"));
         }
     }
 }
