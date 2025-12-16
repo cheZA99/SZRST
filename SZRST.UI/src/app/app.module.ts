@@ -1,4 +1,4 @@
-import { HttpClientModule } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { BrowserModule } from '@angular/platform-browser';
@@ -17,31 +17,24 @@ import { LayoutComponent } from './components/layout/layout.component';
 import { UposleniciComponent } from './components/uposlenici/uposlenici.component';
 import { VijestiComponent } from './components/vijesti/vijesti.component';
 import { IzvjestajiComponent } from './components/izvjestaji/izvjestaji.component';
-@NgModule({
-  declarations: [
-    AppComponent,
-    LoginComponent,
-    SignupComponent,
-    DashboardComponent,
-    RezervacijeComponent,
-    LokacijeComponent,
-    ResursiComponent,
-    KategorijeComponent,
-    LayoutComponent,
-    UposleniciComponent,
-    VijestiComponent,
-    IzvjestajiComponent,
-  ],
-  imports: [
-    BrowserModule,
-    AppRoutingModule,
-    FormsModule,
-    ReactiveFormsModule,
-    HttpClientModule,
-    BrowserAnimationsModule,
-    ToastrModule.forRoot(),
-  ],
-  providers: [],
-  bootstrap: [AppComponent],
-})
+@NgModule({ declarations: [
+        AppComponent,
+        LoginComponent,
+        SignupComponent,
+        DashboardComponent,
+        RezervacijeComponent,
+        LokacijeComponent,
+        ResursiComponent,
+        KategorijeComponent,
+        LayoutComponent,
+        UposleniciComponent,
+        VijestiComponent,
+        IzvjestajiComponent,
+    ],
+    bootstrap: [AppComponent], imports: [BrowserModule,
+        AppRoutingModule,
+        FormsModule,
+        ReactiveFormsModule,
+        BrowserAnimationsModule,
+        ToastrModule.forRoot()], providers: [provideHttpClient(withInterceptorsFromDi())] })
 export class AppModule {}
