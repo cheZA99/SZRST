@@ -1,5 +1,5 @@
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
-import { NgModule } from '@angular/core';
+import { APP_INITIALIZER, NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { BrowserModule } from '@angular/platform-browser';
 import { ToastrModule } from 'ngx-toastr';
@@ -17,7 +17,10 @@ import { LayoutComponent } from './components/layout/layout.component';
 import { UposleniciComponent } from './components/uposlenici/uposlenici.component';
 import { VijestiComponent } from './components/vijesti/vijesti.component';
 import { IzvjestajiComponent } from './components/izvjestaji/izvjestaji.component';
-@NgModule({ declarations: [
+import { InitServiceService } from './services/init-service.service';
+
+@NgModule({
+    declarations: [
         AppComponent,
         LoginComponent,
         SignupComponent,
@@ -36,5 +39,32 @@ import { IzvjestajiComponent } from './components/izvjestaji/izvjestaji.componen
         FormsModule,
         ReactiveFormsModule,
         BrowserAnimationsModule,
-        ToastrModule.forRoot()], providers: [provideHttpClient(withInterceptorsFromDi())] })
-export class AppModule {}
+        ToastrModule.forRoot()],
+    providers: [
+        provideHttpClient(withInterceptorsFromDi()),
+        {
+            provide: APP_INITIALIZER,
+            useFactory: initFactory,
+            deps: [InitServiceService],
+            multi: true,
+        },
+    ]
+})
+export class AppModule { }
+
+export function initFactory(initService: InitServiceService) {
+  return () => initService.init();
+  /*return new Promise<void>((resolve) => {
+    setTimeout(async () => {
+        try {
+            initService.init();
+        } finally {
+            const splash = document.getElementById('initial-splash');
+            if(splash){
+                splash.remove();
+            }
+            resolve()
+        }
+    },500)
+  })*/
+}

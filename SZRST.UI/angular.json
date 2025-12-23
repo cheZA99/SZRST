@@ -5,7 +5,20 @@
   "projects": {
     "SZRST.UI": {
       "projectType": "application",
-      "schematics": {},
+      "schematics": {
+        "@schematics/angular:service": {
+          "skipTests": true,
+          "path": "src/app/services"
+        },
+        "@schematics/angular:guard": {
+          "skipTests": true,
+          "path": "src/app/guards"
+        },
+        "@schematics/angular:interceptor": {
+          "skipTests": false,
+          "path": "src/app/interceptors"
+        }
+      },
       "root": "",
       "sourceRoot": "src",
       "prefix": "app",
