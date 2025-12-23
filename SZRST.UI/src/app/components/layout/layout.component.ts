@@ -1,5 +1,5 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { Router } from "@angular/router";
+import { Router, RouterLinkActive } from "@angular/router";
 import { ToastrService } from "ngx-toastr";
 import { AuthService } from 'src/app/services/auth.service';
 
@@ -9,6 +9,7 @@ import { AuthService } from 'src/app/services/auth.service';
   styleUrls: ['./layout.component.css']
 })
 export class LayoutComponent implements OnInit {
+
   activeSubMenu: string = ''; // To track the active submenu
   protected authService = inject(AuthService);
   userName: string = 'userName';
@@ -18,14 +19,12 @@ export class LayoutComponent implements OnInit {
 
   }
   ngOnInit() {
-      this.setCurrentUser()
   }
 
-  setCurrentUser() {
-    const userString = localStorage.getItem('user');
-    if (!userString) return;
-     this.user = JSON.parse(userString);
-  }
+  logout() {
+    this.authService.logout();
+    this.router.navigate(['login']);
+}
 
   toggleSubMenu(subMenu: string) {
     if (this.activeSubMenu === subMenu) {

@@ -19,6 +19,7 @@ using System;
 using System.Text;
 using SZRST.API.Controllers;
 using SZRST.Application.Services.MailService;
+using SZRST.Shared.Middleware;
 using WebApi.Error;
 
 namespace SZRST.WebApi
@@ -95,6 +96,7 @@ namespace SZRST.WebApi
             app.UseSwagger();
             app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "SZRST.API v1"));
             app.UseHttpsRedirection();
+            app.UseMiddleware<ExceptionMiddleware>();
             app.UseCors("MyPolicy");
             app.UseRouting();
             app.UseAuthentication();

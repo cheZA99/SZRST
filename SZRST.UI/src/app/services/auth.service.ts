@@ -10,20 +10,29 @@ export class AuthService {
   private baseUrl: string = 'https://localhost:5001/api/Auth/';
   currentUser = signal<User | null>(null);
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   signUp(userObj: any) {
-    return this.http.post<any>(`${this.baseUrl}register`, userObj);
+    return this.http.post<any>(`${this.baseUrl}register`, userObj).pipe(
+      tap(user => {
+        if (user)
+          this.setCurrentUser(user);
+      })
+    );
   }
 
   login(loginObj: any) {
     return this.http.post<any>(`${this.baseUrl}login`, loginObj).pipe(
       tap(user => {
         if (user)
-          localStorage.setItem('user', JSON.stringify(user))
-          this.currentUser.set(user)
+          this.setCurrentUser(user);
       })
-    ) ;
+    );
+  }
+
+  setCurrentUser(user: User) {
+    localStorage.setItem('user', JSON.stringify(user))
+    this.currentUser.set(user)
   }
 
   logout() {
