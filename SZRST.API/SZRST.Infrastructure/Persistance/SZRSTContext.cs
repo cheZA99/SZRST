@@ -8,6 +8,8 @@ using SZRST.Infrastructure.Configurations;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
 using System.Collections.Generic;
 using System.Linq;
+using AutoMapper.Execution;
+using SZRST.Domain.Entities;
 
 namespace Infrastructure.Persistance
 {
@@ -77,6 +79,10 @@ namespace Infrastructure.Persistance
         public DbSet<Review> Review { get; set; }
         public DbSet<Worker> Worker { get; set; }
         public DbSet<WorkerType> WorkerType { get; set; }
+
+        public DbSet<AppMember> AppMember { get; set; }
+        public DbSet<Photo> Photos { get; set; }
+
 
     }
 }

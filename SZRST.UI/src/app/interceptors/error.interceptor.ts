@@ -18,7 +18,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
             toastr.error('Unauthorized');
             break;
           case 404:
-            toastr.error('Not found');
+            router.navigateByUrl('/not-found');
             break;
           case 500:
             toastr.error('Server error');
@@ -28,6 +28,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
             break;
         }
       }
+      throw error;
     })
   );
 };
