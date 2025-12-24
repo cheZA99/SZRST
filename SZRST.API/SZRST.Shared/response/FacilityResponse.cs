@@ -11,5 +11,6 @@ namespace SZRST.Shared.response
         public string Name { get; set; }
         public string FacilityType { get; set; }
         public string Location { get; set; }
+        public string ImageUrl { get; set; }
     }
 }

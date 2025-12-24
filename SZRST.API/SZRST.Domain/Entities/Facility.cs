@@ -14,5 +14,7 @@ namespace Domain.Entities
         public FacilityType FacilityType { get; set; }
         public Location Location { get; set; }
 
+        public string ImageUrl { get; set; }
+
     }
 }

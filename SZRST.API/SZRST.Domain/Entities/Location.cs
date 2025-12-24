@@ -11,7 +11,6 @@ namespace Domain.Entities
     {
         public string Address { get; set; }
         public string AddressNumber { get; set; }
-
         public Country Country { get; set; }
         public City City { get; set; }
 

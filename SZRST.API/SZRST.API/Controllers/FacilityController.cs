@@ -9,11 +9,13 @@ using System.Diagnostics.Metrics;
 using SZRST.Shared;
 using AutoMapper;
 using SZRST.Shared.response;
+using Microsoft.AspNetCore.Authorization;
 
 namespace SZRST.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    //[Authorize]
     public class FacilityController : ControllerBase
     {
         private readonly SZRSTContext _context;
@@ -111,7 +113,8 @@ namespace SZRST.API.Controllers
                 Name = facilityDto.Name,
                 FacilityType = facilityType,
                 Location = location,
-                IsDeleted = false
+                IsDeleted = false,
+                ImageUrl = facilityDto.ImageUrl
             };
 
             _context.Facility.Add(facility);
@@ -149,7 +152,8 @@ namespace SZRST.API.Controllers
             {
                 Name = facilityDto.Name,
                 FacilityType = facilityType,
-                Location = location
+                Location = location,
+                ImageUrl = facilityDto.ImageUrl
             };
 
             _context.Facility.Add(facility);
@@ -233,6 +237,7 @@ namespace SZRST.API.Controllers
         public string Name { get; set; }
         public int FacilityTypeId { get; set; }
         public int LocationId { get; set; }
+        public string ImageUrl { get; set; }
     }
 
     public class FacilityLocationCreateDto
@@ -243,6 +248,7 @@ namespace SZRST.API.Controllers
         public string AddressNumber { get; set; }
         public int CountryId { get; set; }
         public int CityId { get; set; }
+        public string ImageUrl { get; set; }
     }
 
 }
