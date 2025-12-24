@@ -12,6 +12,7 @@ import { UposleniciComponent } from "./components/uposlenici/uposlenici.componen
 import { VijestiComponent } from "./components/vijesti/vijesti.component";
 import { IzvjestajiComponent } from "./components/izvjestaji/izvjestaji.component";
 import { authGuard } from './guards/auth.guard';
+import { NotFoundComponent } from './components/not-found/not-found.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
@@ -29,6 +30,7 @@ const routes: Routes = [
       { path: 'vijesti', component: VijestiComponent },
       { path: 'izvjestaji', component: IzvjestajiComponent },]
   },
+  { path: '**', component: NotFoundComponent },
 ];
 
 
