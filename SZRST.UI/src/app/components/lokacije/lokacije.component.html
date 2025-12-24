@@ -61,6 +61,10 @@
       <option *ngFor="let x of facilityTypes">{{x.name}}</option>
     </select>
   </label>
+   <label class="input input-bordered flex items-center gap-2">
+    Image Url
+    <input [(ngModel)]="imageUrl" type="text" class="grow" placeholder="imageUrl" />
+  </label>
   <label class="input input-bordered flex items-center gap-2">
     Address
     <input [(ngModel)]="address" type="text" class="grow" placeholder="Address" />

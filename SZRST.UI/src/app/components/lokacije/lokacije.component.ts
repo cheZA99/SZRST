@@ -19,10 +19,12 @@ export class LokacijeComponent implements OnInit {
   public selectedCity: string='';
   public address: string='';
   public addresNumber: string = '';
+  public imageUrl: any = '';
   public facilityName: string = '';
   public facilityType: string = '';
   public searchType: string = '';
   public searchText: string = '';
+
   constructor(private http: HttpClient) {}
 
   changeTab(tab: string) {
@@ -90,7 +92,8 @@ export class LokacijeComponent implements OnInit {
       "address": this.address,
       "addressNumber": this.addresNumber,
       "countryId": countryId,
-      "cityId": cityId
+      "cityId": cityId,
+      "imageUrl": this.imageUrl
     }
     this.http.post<any>(this.baseUrl+'Facility/AddFacility/', location).subscribe(res => {
       this.getFacilities("","");
