@@ -4,6 +4,7 @@ using Infrastructure.Persistance;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace SZRST.Infrastructure.Migrations
 {
     [DbContext(typeof(SZRSTContext))]
-    partial class SZRSTContextModelSnapshot : ModelSnapshot
+    [Migration("20251224135738_AddRefreshTokens")]
+    partial class AddRefreshTokens
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -206,9 +209,6 @@ namespace SZRST.Infrastructure.Migrations
 
                     b.Property<int?>("FacilityTypeId")
                         .HasColumnType("int");
-
-                    b.Property<string>("ImageUrl")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -758,73 +758,6 @@ namespace SZRST.Infrastructure.Migrations
                     b.ToTable("WorkerType");
                 });
 
-            modelBuilder.Entity("SZRST.Domain.Entities.AppMember", b =>
-                {
-                    b.Property<int>("Id")
-                        .HasColumnType("int");
-
-                    b.Property<string>("City")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Country")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("DateCreated")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("DateModified")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateOnly>("DateOfBirth")
-                        .HasColumnType("date");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("DisplayName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Gender")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ImageUrl")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime>("LastActive")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("AppMember");
-                });
-
-            modelBuilder.Entity("SZRST.Domain.Entities.Photo", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("MemberId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("PublicId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Url")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("MemberId");
-
-                    b.ToTable("Photos");
-                });
-
             modelBuilder.Entity("Domain.Entities.Appointment", b =>
                 {
                     b.HasOne("Domain.Entities.AppointmentType", "AppointmentType")
@@ -1022,26 +955,6 @@ namespace SZRST.Infrastructure.Migrations
                     b.Navigation("WorkerType");
                 });
 
-            modelBuilder.Entity("SZRST.Domain.Entities.AppMember", b =>
-                {
-                    b.HasOne("Domain.Entities.User", "User")
-                        .WithOne("AppMember")
-                        .HasForeignKey("SZRST.Domain.Entities.AppMember", "Id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("SZRST.Domain.Entities.Photo", b =>
-                {
-                    b.HasOne("SZRST.Domain.Entities.AppMember", "Member")
-                        .WithMany()
-                        .HasForeignKey("MemberId");
-
-                    b.Navigation("Member");
-                });
-
             modelBuilder.Entity("Domain.Entities.Role", b =>
                 {
                     b.Navigation("RoleClaims");
@@ -1051,8 +964,6 @@ namespace SZRST.Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.User", b =>
                 {
-                    b.Navigation("AppMember");
-
                     b.Navigation("Claims");
 
                     b.Navigation("Logins");

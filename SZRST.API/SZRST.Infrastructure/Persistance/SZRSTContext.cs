@@ -36,6 +36,7 @@ namespace Infrastructure.Persistance
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(UserLoginConfiguration).Assembly);
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(UserConfiguration).Assembly);
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(RoleClaimConfiguration).Assembly);
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(RefreshTokenConfiguration).Assembly);
         }
 
         public Task<int> SaveChangesAsync()
@@ -47,18 +48,18 @@ namespace Infrastructure.Persistance
         private void ModifyTimestamps()
         {
             var entries = ChangeTracker.Entries();
-
             foreach (var entry in entries)
             {
-                var entity = ((IBaseEntity<int>)entry.Entity);
-
-                if (entry.State == EntityState.Added)
+                if (entry.Entity is IBaseEntity<int> entity)
                 {
-                    entity.DateCreated = DateTime.Now;
-                }
-                else if (entry.State == EntityState.Modified)
-                {
-                    entity.DateModified = DateTime.Now;
+                    if (entry.State == EntityState.Added)
+                    {
+                        entity.DateCreated = DateTime.Now;
+                    }
+                    else if (entry.State == EntityState.Modified)
+                    {
+                        entity.DateModified = DateTime.Now;
+                    }
                 }
             }
         }
@@ -84,5 +85,6 @@ namespace Infrastructure.Persistance
         public DbSet<Photo> Photos { get; set; }
 
 
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
     }
 }

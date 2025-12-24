@@ -1,17 +1,20 @@
-﻿using SZRST.Shared;
+﻿using Application.Common.Interfaces;
+using Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using SendGrid.Helpers.Mail;
 using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using SZRST.Application.Services.MailService;
-using Domain.Entities;
-using Microsoft.EntityFrameworkCore;
+using SZRST.Shared;
 
 namespace Application.Services
 {
@@ -20,13 +23,14 @@ namespace Application.Services
 
         Task<UserManagerResponse> RegisterUserAsync(RegisterViewModel model);
 
-        Task<UserManagerResponse> LoginUserAsync(LoginViewModel model);
 
         Task<UserManagerResponse> ConfirmEmailAsync(string userId, string token);
 
         Task<UserManagerResponse> ForgetPasswordAsync(string email);
 
         Task<UserManagerResponse> ResetPasswordAsync(ResetPasswordViewModel model);
+        Task<AuthResponseDto> LoginUserAsync(LoginViewModel model, string ipAddress);
+        Task<AuthResponseDto> RefreshTokenAsync(RefreshTokenRequest model, string ipAddress);
     }
 
     public class AuthService : IAuthService
@@ -36,17 +40,16 @@ namespace Application.Services
         private RoleManager<Role> _roleManger;
         private IConfiguration _configuration;
         private IMailService _mailService;
-        
+        private ISZRSTContext _context;
 
-        public AuthService(UserManager<User> userManager, IConfiguration configuration, IMailService mailService,RoleManager<Role> roleManager)
+
+        public AuthService(UserManager<User> userManager, IConfiguration configuration, IMailService mailService, RoleManager<Role> roleManager, ISZRSTContext context)
         {
             _roleManger = roleManager;
             _userManger = userManager;
             _configuration = configuration;
             _mailService = mailService;
-
-           
-            
+            _context = context;
         }
 
         public async Task<UserManagerResponse> RegisterUserAsync(RegisterViewModel model)
@@ -69,7 +72,7 @@ namespace Application.Services
             };
 
             var result = await _userManger.CreateAsync(user, model.Password);
-           
+
             if (result.Succeeded)
             {
                 //await _userManger.AddToRoleAsync(user, "Customer");
@@ -110,51 +113,76 @@ namespace Application.Services
 
         }
 
-        public async Task<UserManagerResponse> LoginUserAsync(LoginViewModel model)
+        private string GenerateJwtToken(User user)
         {
-            var user = await _userManger.FindByEmailAsync(model.Email);
-
-            if (user == null)
-            {
-                return new UserManagerResponse
-                {
-                    Message = "Ne postoji korisnik s tom email adresom.",
-                    IsSuccess = false,
-                };
-            }
-
-            var result = await _userManger.CheckPasswordAsync(user, model.Password);
-
-            if (!result)
-                return new UserManagerResponse
-                {
-                    Message = "Pogrešni podaci za prijavu. Molimo pokušajte ponovo.",
-                    IsSuccess = false,
-                };
-
             var claims = new[]
             {
-               new Claim("Email", model.Email),
-               new Claim("Name", user.UserName)
-            };
+        new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+        new Claim(JwtRegisteredClaimNames.Email, user.Email),
+        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+        new Claim(ClaimTypes.Name, user.UserName) 
+    };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["AuthSettings:Key"]));
+            var key = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(_configuration["AuthSettings:Key"])
+            );
 
             var token = new JwtSecurityToken(
                 issuer: _configuration["AuthSettings:Issuer"],
                 audience: _configuration["AuthSettings:Audience"],
                 claims: claims,
-                expires: DateTime.Now.AddDays(30),
-                signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
+                expires: DateTime.UtcNow.AddMinutes(
+                    int.Parse(_configuration["AuthSettings:AccessTokenMinutes"])
+                ),
+                signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256)
+            );
 
-            string tokenAsString = new JwtSecurityTokenHandler().WriteToken(token);
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
 
-            return new UserManagerResponse
+        private string GenerateRefreshToken()
+        {
+            return Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+        }
+
+
+        public async Task<AuthResponseDto> LoginUserAsync(LoginViewModel model, string ipAddress)
+        {
+            var user = await _userManger.FindByEmailAsync(model.Email);
+            if (user == null || !await _userManger.CheckPasswordAsync(user, model.Password))
             {
-                Message = tokenAsString,
-                UserName= user.UserName,
+                return new AuthResponseDto
+                {
+                    IsSuccess = false,
+                    Message = "Invalid email or password"
+                };
+            }
+
+            var accessToken = GenerateJwtToken(user);
+            var refreshToken = GenerateRefreshToken();
+            var refreshTokenEntity = new RefreshToken
+            {
+                Token = refreshToken,
+                UserId = user.Id,
+                Created = DateTime.UtcNow,
+                Expires = DateTime.UtcNow.AddDays(
+                    int.Parse(_configuration["AuthSettings:RefreshTokenDays"])
+                ),
+                CreatedByIp = ipAddress
+            };
+
+            _context.Set<RefreshToken>().Add(refreshTokenEntity);
+            await _context.SaveChangesAsync();
+
+            return new AuthResponseDto
+            {
                 IsSuccess = true,
-                ExpireDate = token.ValidTo
+                AccessToken = accessToken,
+                RefreshToken = refreshToken,
+                AccessTokenExpires = DateTime.UtcNow.AddMinutes(
+                    int.Parse(_configuration["AuthSettings:AccessTokenMinutes"])
+                )
             };
         }
 
@@ -250,5 +278,89 @@ namespace Application.Services
                 Errors = result.Errors.Select(e => e.Description),
             };
         }
+
+        private ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
+        {
+            var tokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateAudience = false,
+                ValidateIssuer = false,
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(_configuration["AuthSettings:Key"])
+                ),
+                ValidateLifetime = false
+            };
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            return tokenHandler.ValidateToken(token, tokenValidationParameters, out _);
+        }
+
+        public async Task<AuthResponseDto> RefreshTokenAsync(
+    RefreshTokenRequest model,
+    string ipAddress)
+        {
+            var principal = GetPrincipalFromExpiredToken(model.AccessToken);
+            var userIdString = principal.Claims
+                .First(x => x.Type == JwtRegisteredClaimNames.Sub)
+                .Value;
+
+            if (!int.TryParse(userIdString, out int userId))
+                return null;
+
+            var token = await _context.Set<RefreshToken>()
+                .FirstOrDefaultAsync(x => x.Token == model.RefreshToken);
+
+            if (token == null ||
+                token.IsRevoked ||
+                token.Expires <= DateTime.UtcNow ||
+                token.UserId != userId)
+                return null;
+
+            token.IsRevoked = true;
+
+            var user = await _userManger.FindByIdAsync(userIdString);
+            if (user == null)
+                return null;
+
+            var newRefreshToken = new RefreshToken
+            {
+                Token = GenerateRefreshToken(),
+                UserId = userId, // Ovde koristi int
+                Created = DateTime.UtcNow,
+                Expires = DateTime.UtcNow.AddDays(
+                    int.Parse(_configuration["AuthSettings:RefreshTokenDays"])
+                ),
+                CreatedByIp = ipAddress
+            };
+
+            _context.Set<RefreshToken>().Add(newRefreshToken);
+            var newAccessToken = GenerateJwtToken(user);
+            await _context.SaveChangesAsync();
+
+            return new AuthResponseDto
+            {
+                AccessToken = newAccessToken,
+                RefreshToken = newRefreshToken.Token
+            };
+        }
+
+
+    }
+
+    public class AuthResponseDto
+    {
+        public string AccessToken { get; set; }
+        public string Message { get; set; }
+        public bool IsSuccess { get; set; }
+
+        public string RefreshToken { get; set; }
+        public DateTime AccessTokenExpires { get; set; }
+    }
+
+    public class RefreshTokenRequest
+    {
+        public string AccessToken { get; set; }
+        public string RefreshToken { get; set; }
     }
 }

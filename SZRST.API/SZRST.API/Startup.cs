@@ -17,6 +17,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System;
 using System.Text;
+using System.Threading.Tasks;
 using SZRST.API.Controllers;
 using SZRST.Application.Services.MailService;
 using SZRST.Shared.Middleware;
@@ -40,9 +41,6 @@ namespace SZRST.WebApi
               option.AddPolicy("MyPolicy", builder =>
               builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
 
-            services.AddSwaggerGen(c =>
-            c.SwaggerDoc("v1", new OpenApiInfo { Title = "SZRST.API", Version = "v1" }));
-
             services.AddDbContext<SZRSTContext>(options => options.UseSqlServer(Configuration.GetConnectionString("SZRST")));
             services.AddIdentity<User, Role>(options =>
             {
@@ -51,31 +49,76 @@ namespace SZRST.WebApi
                 options.Password.RequiredLength = 5;
             }).AddEntityFrameworkStores<SZRSTContext>()
             .AddDefaultTokenProviders();
-
-            services.AddAuthentication(auth =>
+            services.AddScoped<IAuthService, AuthService>();
+            services.AddAuthentication(options =>
             {
-                auth.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                auth.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            }).AddJwtBearer(options =>
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
             {
-                options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+                options.Events = new JwtBearerEvents
                 {
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
+                    OnChallenge = context =>
+                    {
+                        context.HandleResponse();
+                        context.Response.StatusCode = 401;
+                        return Task.CompletedTask;
+                    }
+                };
+
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
                     ValidateLifetime = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["AuthSettings:Key"])),
-                    ValidateIssuerSigningKey = true
+                    ValidateIssuerSigningKey = true,
+
+                    ValidIssuer = Configuration["AuthSettings:Issuer"],
+                    ValidAudience = Configuration["AuthSettings:Audience"],
+                    IssuerSigningKey = new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(Configuration["AuthSettings:Key"])
+                    ),
+                    ClockSkew = TimeSpan.Zero
                 };
             });
 
             services.AddControllers();
             services.AddAutoMapper(typeof(MapperProfile));
-            services.AddSwaggerGen();
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "SZRST.API", Version = "v1" });
+
+                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    Name = "Authorization",
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "Bearer",
+                    BearerFormat = "JWT",
+                    In = ParameterLocation.Header,
+                    Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token in the text input below.\r\n\r\nExample: \"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\""
+                });
+
+                c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
+            });
             services.AddPersistence(Configuration);
+            services.AddAuthorization();
 
             #region Binding
 
-            services.AddScoped<IAuthService, AuthService>();
             services.AddSingleton<ProblemDetailsFactory, UserManagmentProblemDetailsFactory>();
             services.AddTransient<IMailService, SendGridMailService>();
 
@@ -92,7 +135,6 @@ namespace SZRST.WebApi
             {
                 app.UseDeveloperExceptionPage();
             }
-            app.UseExceptionHandler("/error");
             app.UseSwagger();
             app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "SZRST.API v1"));
             app.UseHttpsRedirection();
