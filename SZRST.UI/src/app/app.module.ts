@@ -1,4 +1,8 @@
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import {
+  HTTP_INTERCEPTORS,
+  provideHttpClient,
+  withInterceptorsFromDi,
+} from '@angular/common/http';
 import { APP_INITIALIZER, NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { BrowserModule } from '@angular/platform-browser';
@@ -18,53 +22,49 @@ import { UposleniciComponent } from './components/uposlenici/uposlenici.componen
 import { VijestiComponent } from './components/vijesti/vijesti.component';
 import { IzvjestajiComponent } from './components/izvjestaji/izvjestaji.component';
 import { InitServiceService } from './services/init-service.service';
+import { AuthInterceptor } from './interceptors/auth.interceptor';
 
 @NgModule({
-    declarations: [
-        AppComponent,
-        LoginComponent,
-        SignupComponent,
-        DashboardComponent,
-        RezervacijeComponent,
-        LokacijeComponent,
-        ResursiComponent,
-        KategorijeComponent,
-        LayoutComponent,
-        UposleniciComponent,
-        VijestiComponent,
-        IzvjestajiComponent,
-    ],
-    bootstrap: [AppComponent], imports: [BrowserModule,
-        AppRoutingModule,
-        FormsModule,
-        ReactiveFormsModule,
-        BrowserAnimationsModule,
-        ToastrModule.forRoot()],
-    providers: [
-        provideHttpClient(withInterceptorsFromDi()),
-        {
-            provide: APP_INITIALIZER,
-            useFactory: initFactory,
-            deps: [InitServiceService],
-            multi: true,
-        },
-    ]
+  declarations: [
+    AppComponent,
+    LoginComponent,
+    SignupComponent,
+    DashboardComponent,
+    RezervacijeComponent,
+    LokacijeComponent,
+    ResursiComponent,
+    KategorijeComponent,
+    LayoutComponent,
+    UposleniciComponent,
+    VijestiComponent,
+    IzvjestajiComponent,
+  ],
+  bootstrap: [AppComponent],
+  imports: [
+    BrowserModule,
+    AppRoutingModule,
+    FormsModule,
+    ReactiveFormsModule,
+    BrowserAnimationsModule,
+    ToastrModule.forRoot(),
+  ],
+  providers: [
+    provideHttpClient(withInterceptorsFromDi()),
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthInterceptor,
+      multi: true,
+    },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initFactory,
+      deps: [InitServiceService],
+      multi: true,
+    },
+  ],
 })
-export class AppModule { }
+export class AppModule {}
 
 export function initFactory(initService: InitServiceService) {
   return () => initService.init();
-  /*return new Promise<void>((resolve) => {
-    setTimeout(async () => {
-        try {
-            initService.init();
-        } finally {
-            const splash = document.getElementById('initial-splash');
-            if(splash){
-                splash.remove();
-            }
-            resolve()
-        }
-    },500)
-  })*/
 }
