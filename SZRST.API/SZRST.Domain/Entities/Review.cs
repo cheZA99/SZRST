@@ -1,18 +1,15 @@
-﻿using Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using SZRST.Domain.Entities;
 
 namespace Domain.Entities
 {
-    public class Review : BaseEntity<int>
-    {
-        public int Rating { get; set; }
-        public string Description { get; set; }
+	public class Review :BaseEntity<int>, ITenantEntity
+	{
+		public int Rating { get; set; }
+		public string Description { get; set; }
 
-        public User User { get; set; } 
-        public Facility Facility { get; set; }
-    }
+		public User User { get; set; }
+		public Facility Facility { get; set; }
+		public Tenant Tenant { get; set; }
+		public int TenantId { get; set; }
+	}
 }

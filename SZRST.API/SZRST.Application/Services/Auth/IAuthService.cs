@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
@@ -13,6 +14,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using SZRST.Application.Services.MailService;
+using SZRST.Domain.Entities;
 using SZRST.Shared;
 
 namespace Application.Services
@@ -34,7 +36,7 @@ namespace Application.Services
 
 	public class AuthService :IAuthService
 	{
-		private UserManager<User> _userManger;
+		private UserManager<User> _userManager;
 		private RoleManager<Role> _roleManger;
 		private IConfiguration _configuration;
 		private IMailService _mailService;
@@ -43,7 +45,7 @@ namespace Application.Services
 		public AuthService(UserManager<User> userManager, IConfiguration configuration, IMailService mailService, RoleManager<Role> roleManager, ISZRSTContext context)
 		{
 			_roleManger = roleManager;
-			_userManger = userManager;
+			_userManager = userManager;
 			_configuration = configuration;
 			_mailService = mailService;
 			_context = context;
@@ -60,20 +62,32 @@ namespace Application.Services
 					Message = "Lozinke se ne podudaraju.",
 					IsSuccess = false,
 				};
+
+			var tenantExists = await _context.Set<Tenant>()
+	   .AnyAsync(t => t.Id == model.TenantId);
+
+			if (!tenantExists)
+				return new UserManagerResponse
+				{
+					Message = "Odabrani tenant ne postoji.",
+					IsSuccess = false,
+				};
+
 			var user = new User
 			{
 				Email = model.Email,
 				UserName = model.Username,
 				DateCreated = DateTime.UtcNow,
 				DateModified = DateTime.UtcNow,
+				TenantId = model.TenantId
 			};
 
-			var result = await _userManger.CreateAsync(user, model.Password);
+			var result = await _userManager.CreateAsync(user, model.Password);
 
 			if (result.Succeeded)
 			{
 				//await _userManger.AddToRoleAsync(user, "Customer");
-				var confirmEmailToken = await _userManger.GenerateEmailConfirmationTokenAsync(user);
+				var confirmEmailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
 
 				var encodedEmailToken = Encoding.UTF8.GetBytes(confirmEmailToken);
 				var validEmailToken = WebEncoders.Base64UrlEncode(encodedEmailToken);
@@ -117,7 +131,8 @@ namespace Application.Services
 	   new Claim(JwtRegisteredClaimNames.Email, user.Email),
 	   new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
 	   new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-	   new Claim(ClaimTypes.Name, user.UserName)
+	   new Claim(ClaimTypes.Name, user.UserName),
+	   new Claim("tenantId", user.TenantId.ToString())
     };
 
 			var key = new SymmetricSecurityKey(
@@ -144,8 +159,8 @@ namespace Application.Services
 
 		public async Task<AuthResponseDto> LoginUserAsync(LoginViewModel model, string ipAddress)
 		{
-			var user = await _userManger.FindByEmailAsync(model.Email);
-			if (user == null || !await _userManger.CheckPasswordAsync(user, model.Password))
+			var user = await _userManager.FindByEmailAsync(model.Email);
+			if (user == null || !await _userManager.CheckPasswordAsync(user, model.Password))
 			{
 				return new AuthResponseDto
 				{
@@ -167,6 +182,19 @@ namespace Application.Services
 				CreatedByIp = ipAddress
 			};
 
+			var roles = await _userManager.GetRolesAsync(user);
+
+			var claims = new List<Claim>
+			{
+			    new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+			    new Claim(ClaimTypes.Name, user.UserName),
+			    new Claim("tenantId", user.TenantId.ToString())
+		};
+			foreach (var role in roles)
+			{
+				claims.Add(new Claim(ClaimTypes.Role, role));
+			}
+
 			_context.Set<RefreshToken>().Add(refreshTokenEntity);
 			await _context.SaveChangesAsync();
 
@@ -183,7 +211,7 @@ namespace Application.Services
 
 		public async Task<UserManagerResponse> ConfirmEmailAsync(string userId, string token)
 		{
-			var user = await _userManger.FindByIdAsync(userId);
+			var user = await _userManager.FindByIdAsync(userId);
 			if (user == null)
 				return new UserManagerResponse
 				{
@@ -194,7 +222,7 @@ namespace Application.Services
 			var decodedToken = WebEncoders.Base64UrlDecode(token);
 			string normalToken = Encoding.UTF8.GetString(decodedToken);
 
-			var result = await _userManger.ConfirmEmailAsync(user, normalToken);
+			var result = await _userManager.ConfirmEmailAsync(user, normalToken);
 
 			if (result.Succeeded)
 				return new UserManagerResponse
@@ -213,7 +241,7 @@ namespace Application.Services
 
 		public async Task<UserManagerResponse> ForgetPasswordAsync(string email)
 		{
-			var user = await _userManger.FindByEmailAsync(email);
+			var user = await _userManager.FindByEmailAsync(email);
 			if (user == null)
 				return new UserManagerResponse
 				{
@@ -221,7 +249,7 @@ namespace Application.Services
 					Message = "No user associated with email",
 				};
 
-			var token = await _userManger.GeneratePasswordResetTokenAsync(user);
+			var token = await _userManager.GeneratePasswordResetTokenAsync(user);
 			var encodedToken = Encoding.UTF8.GetBytes(token);
 			var validToken = WebEncoders.Base64UrlEncode(encodedToken);
 
@@ -239,7 +267,7 @@ namespace Application.Services
 
 		public async Task<UserManagerResponse> ResetPasswordAsync(ResetPasswordViewModel model)
 		{
-			var user = await _userManger.FindByEmailAsync(model.Email);
+			var user = await _userManager.FindByEmailAsync(model.Email);
 			if (user == null)
 				return new UserManagerResponse
 				{
@@ -257,7 +285,7 @@ namespace Application.Services
 			var decodedToken = WebEncoders.Base64UrlDecode(model.Token);
 			string normalToken = Encoding.UTF8.GetString(decodedToken);
 
-			var result = await _userManger.ResetPasswordAsync(user, normalToken, model.NewPassword);
+			var result = await _userManager.ResetPasswordAsync(user, normalToken, model.NewPassword);
 
 			if (result.Succeeded)
 				return new UserManagerResponse
@@ -314,7 +342,7 @@ namespace Application.Services
 
 			token.IsRevoked = true;
 
-			var user = await _userManger.FindByIdAsync(userIdString);
+			var user = await _userManager.FindByIdAsync(userIdString);
 			if (user == null)
 				return null;
 

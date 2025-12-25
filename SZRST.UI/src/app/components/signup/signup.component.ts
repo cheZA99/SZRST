@@ -3,7 +3,9 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import ValidateForm from 'src/app/helpers/ValidateForm';
 import { AuthService } from 'src/app/services/auth.service';
+import { TenantService, Tenant } from 'src/app/services/tenant.service';
 import { ToastrService } from 'ngx-toastr';
+
 @Component({
   selector: 'app-signup',
   templateUrl: './signup.component.html',
@@ -14,9 +16,13 @@ export class SignupComponent implements OnInit {
   isText: boolean = false;
   eyeIcon: string = 'fa-eye-slash';
   signUpForm!: FormGroup;
+  tenants: Tenant[] = [];
+  isLoadingTenants: boolean = false;
+
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
+    private tenantService: TenantService,
     private router: Router,
     private toastr: ToastrService
   ) {}
@@ -28,37 +34,45 @@ export class SignupComponent implements OnInit {
       username: ['', Validators.required],
       password: ['', Validators.required],
       confirmPassword: ['', Validators.required],
-      email: ['', Validators.required],
+      email: ['', [Validators.required, Validators.email]],
+      tenantId: ['', Validators.required], // Dodato
+    });
+
+    this.loadTenants();
+  }
+
+  loadTenants(): void {
+    this.isLoadingTenants = true;
+    this.tenantService.getAllTenants().subscribe({
+      next: (tenants) => {
+        this.tenants = tenants;
+        this.isLoadingTenants = false;
+      },
+      error: (err) => {
+        this.toastr.error('Greška pri učitavanju tenant-a');
+        this.isLoadingTenants = false;
+        console.error(err);
+      },
     });
   }
+
   onSignUp() {
-    console.log("Ovdje je")
+    console.log('Ovdje je');
     if (this.signUpForm.valid) {
-      debugger;
-      // Check if email follows a valid format
+      // Email validacija
       if (!/^\S+@\S+\.\S+$/.test(this.signUpForm.value.email)) {
         this.toastr.error(
           "Molimo unesite ispravnu e-poštu. Trebala bi slijediti format 'ime@primjer.com'."
         );
         return;
       }
-      // Check if the password length is less than 5 characters
-      /*if (
-        this.signUpForm.value.password.length < 5 ||
-        this.signUpForm.value.confirmPassword.length < 5
-      ) {
-        this.toastr.error(
-          'Vaša lozinka mora biti dugačka minimalno 5 karaktera.'
-        );
+
+      // Validacija da li je tenant odabran
+      if (!this.signUpForm.value.tenantId) {
+        this.toastr.error('Molimo odaberite organizaciju.');
         return;
-      }*/
-      // if (!/\W/.test(this.signUpForm.value.password)) {
-      //   // Password doesn't contain a non-alphanumeric character
-      //   this.toastr.error(
-      //     'Lozinke moraju sadržavati barem jedan znak koji nije slovo ili broj.'
-      //   );
-      //   return;
-      // }
+      }
+
       this.authService.signUp(this.signUpForm.value).subscribe({
         next: (res) => {
           this.toastr.success(res.message);
@@ -73,6 +87,7 @@ export class SignupComponent implements OnInit {
       ValidateForm.validateAllFormFields(this.signUpForm);
     }
   }
+
   hideShowPass() {
     this.isText = !this.isText;
     this.eyeIcon = this.isText ? 'fa-eye' : 'fa-eye-slash';

@@ -4,12 +4,17 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace SZRST.Infrastructure.Configurations;
 
-public class UserConfiguration : IEntityTypeConfiguration<User>
+public class UserConfiguration :IEntityTypeConfiguration<User>
 {
-    public void Configure(EntityTypeBuilder<User> builder)
-    {
-        builder.ToTable(nameof(User));
-        builder.HasKey(x => x.Id);
-        //builder.HasOne(x => x.User).WithMany(x => x.Claims).HasForeignKey(x => x.UserId).IsRequired();
-    }
+	public void Configure(EntityTypeBuilder<User> builder)
+	{
+		builder.ToTable(nameof(User));
+		builder.HasKey(x => x.Id);
+		//builder.HasOne(x => x.User).WithMany(x => x.Claims).HasForeignKey(x => x.UserId).IsRequired();
+
+		builder.HasOne(u => u.Tenant)
+			.WithMany(t => t.Users)
+			.HasForeignKey(u => u.TenantId)
+			.OnDelete(DeleteBehavior.NoAction);
+	}
 }
