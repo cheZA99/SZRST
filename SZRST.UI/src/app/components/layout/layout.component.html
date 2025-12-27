@@ -13,10 +13,10 @@
     </a>
 
     <nav class="flex gap-3 my-2 uppercase text-lg text-white">
-      <a routerLink="/rezervacije" routerLinkActive="text-accent">Rezervacije</a>
-      <a routerLink="/lokacije" routerLinkActive="text-accent">Lokacije</a>
-      <a routerLink="/resursi" routerLinkActive="text-accent">Resursi</a>
-      <a routerLink="/kategorije" routerLinkActive="text-accent">Kategorije</a>
+      <a *ngIf="authService.hasRole('SuperAdmin')" routerLink="/rezervacije" routerLinkActive="text-accent">Rezervacije</a>
+      <a *ngIf="authService.hasRole('SuperAdmin')" routerLink="/lokacije" routerLinkActive="text-accent">Lokacije</a>
+      <a *ngIf="authService.hasRole('SuperAdmin')" routerLink="/resursi" routerLinkActive="text-accent">Resursi</a>
+      <a *ngIf="authService.hasRole('SuperAdmin')" routerLink="/kategorije" routerLinkActive="text-accent">Kategorije</a>
     </nav>
 
     <div class="flex align-middle ml-auto gap-3">

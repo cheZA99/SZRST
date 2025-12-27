@@ -21,7 +21,8 @@ public static class IdentitySeed
 		{
 		  Roles.SuperAdmin,
 		  Roles.Admin,
-		  Roles.Uposlenik
+		  Roles.Uposlenik,
+		  Roles.Korisnik
 	   };
 
 		foreach (var role in roles)
@@ -62,6 +63,14 @@ public static class IdentitySeed
 		    email: "uposlenik@gmail.com",
 		    password: defaultPassword,
 		    role: Roles.Uposlenik,
+		    tenantId: 1
+		);
+
+		await CreateUserIfNotExists(
+		    userManager,
+		    email: "korisnik@gmail.com",
+		    password: defaultPassword,
+		    role: Roles.Korisnik,
 		    tenantId: 1
 		);
 	}

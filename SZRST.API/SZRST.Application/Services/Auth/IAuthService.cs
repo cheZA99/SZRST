@@ -123,17 +123,24 @@ namespace Application.Services
 			};
 		}
 
-		private string GenerateJwtToken(User user)
+		private async Task<string> GenerateJwtToken(User user)
 		{
-			var claims = new[]
-			{
+			var roles = await _userManager.GetRolesAsync(user);
+
+			var claims = new List<Claim>
+    {
 	   new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
 	   new Claim(JwtRegisteredClaimNames.Email, user.Email),
 	   new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
 	   new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
 	   new Claim(ClaimTypes.Name, user.UserName),
-	   new Claim("tenantId", user.TenantId.ToString())
+	   new Claim("tenantId", user.TenantId?.ToString() ?? "")
     };
+
+			foreach (var role in roles)
+			{
+				claims.Add(new Claim(ClaimTypes.Role, role));
+			}
 
 			var key = new SymmetricSecurityKey(
 			    Encoding.UTF8.GetBytes(_configuration["AuthSettings:Key"])
@@ -169,7 +176,7 @@ namespace Application.Services
 				};
 			}
 
-			var accessToken = GenerateJwtToken(user);
+			var accessToken = await GenerateJwtToken(user);
 			var refreshToken = GenerateRefreshToken();
 			var refreshTokenEntity = new RefreshToken
 			{
@@ -181,19 +188,6 @@ namespace Application.Services
 			    ),
 				CreatedByIp = ipAddress
 			};
-
-			var roles = await _userManager.GetRolesAsync(user);
-
-			var claims = new List<Claim>
-			{
-			    new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-			    new Claim(ClaimTypes.Name, user.UserName),
-			    new Claim("tenantId", user.TenantId.ToString())
-		};
-			foreach (var role in roles)
-			{
-				claims.Add(new Claim(ClaimTypes.Role, role));
-			}
 
 			_context.Set<RefreshToken>().Add(refreshTokenEntity);
 			await _context.SaveChangesAsync();
@@ -358,7 +352,7 @@ namespace Application.Services
 			};
 
 			_context.Set<RefreshToken>().Add(newRefreshToken);
-			var newAccessToken = GenerateJwtToken(user);
+			var newAccessToken = await GenerateJwtToken(user);
 			await _context.SaveChangesAsync();
 
 			return new AuthResponseDto

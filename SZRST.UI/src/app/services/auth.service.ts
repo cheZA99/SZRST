@@ -21,6 +21,13 @@ export class AuthService {
   }
 
   setCurrentUser(user: User) {
+    const decoded = JSON.parse(atob(user.accessToken.split('.')[1]));
+
+    const roles =
+      decoded['role'] ||
+      decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+
+    user.roles = Array.isArray(roles) ? roles : [roles];
     localStorage.setItem('user', JSON.stringify(user));
     this.currentUser.set(user);
   }
@@ -56,5 +63,31 @@ export class AuthService {
         if (user) this.setCurrentUser(user);
       })
     );
+  }
+
+  getDecodedToken(): any | null {
+    const token = this.getAccessToken();
+    if (!token) return null;
+
+    const payload = token.split('.')[1];
+    return JSON.parse(atob(payload));
+  }
+
+  getUserRoles(): string[] {
+    const decoded = this.getDecodedToken();
+    if (!decoded) return [];
+
+    const roles =
+      decoded['role'] ||
+      decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+
+    return Array.isArray(roles) ? roles : [roles];
+  }
+  hasRole(role: string): boolean {
+    return this.getUserRoles().includes(role);
+  }
+
+  hasAnyRole(roles: string[]): boolean {
+    return roles.some((r) => this.hasRole(r));
   }
 }
