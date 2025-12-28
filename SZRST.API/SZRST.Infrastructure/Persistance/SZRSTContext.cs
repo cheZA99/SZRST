@@ -48,7 +48,8 @@ namespace Infrastructure.Persistance
 					    entityType.ClrType == typeof(Country) ||
 					    entityType.ClrType == typeof(Currency) ||
 					    entityType.ClrType == typeof(RefreshToken) ||
-					    entityType.ClrType == typeof(RoleClaim))
+					    entityType.ClrType == typeof(RoleClaim) ||
+					    entityType.ClrType == typeof(Location))
 					{
 						continue;
 					}
@@ -69,7 +70,10 @@ namespace Infrastructure.Persistance
 			{
 				if (entry.State == EntityState.Added)
 				{
-					entry.Entity.TenantId = _tenantProvider.TenantId;
+					// Ako TenantProvider nema TenantId (npr. SuperAdmin), postavi na 1 (core tenant)
+					entry.Entity.TenantId = _tenantProvider.TenantId == 0 || _tenantProvider.TenantId == null
+					    ? 1
+					    : _tenantProvider.TenantId;
 				}
 			}
 			return base.SaveChangesAsync();

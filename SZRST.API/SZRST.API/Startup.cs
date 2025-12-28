@@ -42,6 +42,7 @@ namespace SZRST.WebApi
 			  builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
 
 			services.AddHttpContextAccessor();
+			services.AddScoped<ICurrentUserService, CurrentUserService>();
 			services.AddScoped<ITenantProvider, TenantProvider>();
 
 			services.AddIdentity<User, Role>(options =>

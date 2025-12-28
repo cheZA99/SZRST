@@ -2,7 +2,7 @@
 
 namespace Domain.Entities
 {
-	public class Location :BaseEntity<int>, ITenantEntity
+	public class Location :BaseEntity<int>
 	{
 		public string Address { get; set; }
 		public string AddressNumber { get; set; }
@@ -13,8 +13,5 @@ namespace Domain.Entities
 		{
 			return $"{Address} {AddressNumber}, {City}, {Country}";
 		}
-
-		public Tenant Tenant { get; set; }
-		public int TenantId { get; set; }
 	}
 }
