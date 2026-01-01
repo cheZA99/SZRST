@@ -3,7 +3,8 @@ using System.Security.Claims;
 
 public interface ICurrentUserService
 {
-	int? UserId { get; }
+	int UserId { get; }
+	string Role { get; }
 	int? TenantId { get; }
 	string Username { get; }
 	bool IsAuthenticated { get; }
@@ -18,13 +19,13 @@ public class CurrentUserService :ICurrentUserService
 		_httpContextAccessor = httpContextAccessor;
 	}
 
-	public int? UserId
+	public int UserId
 	{
 		get
 		{
 			var userIdClaim = _httpContextAccessor.HttpContext?.User?
 			    .FindFirst(ClaimTypes.NameIdentifier)?.Value;
-			return int.TryParse(userIdClaim, out var userId) ? userId : null;
+			return int.TryParse(userIdClaim, out int userId) ? userId : userId;
 		}
 	}
 
@@ -35,6 +36,15 @@ public class CurrentUserService :ICurrentUserService
 			var tenantIdClaim = _httpContextAccessor.HttpContext?.User?
 			    .FindFirst("tenantId")?.Value;
 			return int.TryParse(tenantIdClaim, out var tenantId) ? tenantId : null;
+		}
+	}
+
+	public string Role
+	{
+		get
+		{
+			return _httpContextAccessor.HttpContext?.User?
+			    .FindFirst(ClaimTypes.Role)?.Value;
 		}
 	}
 

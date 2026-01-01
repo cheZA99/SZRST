@@ -73,6 +73,17 @@ public static class IdentitySeed
 		    role: Roles.Korisnik,
 		    tenantId: 1
 		);
+
+		// =====================
+		// ADMIN (example tenant)
+		// =====================
+		await CreateUserIfNotExists(
+		    userManager,
+		    email: "admin2@gmail.com",
+		    password: defaultPassword,
+		    role: Roles.Admin,
+		    tenantId: 2
+		);
 	}
 
 	private static async Task CreateUserIfNotExists(

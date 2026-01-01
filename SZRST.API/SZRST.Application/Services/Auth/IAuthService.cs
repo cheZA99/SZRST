@@ -14,7 +14,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using SZRST.Application.Services.MailService;
-using SZRST.Domain.Entities;
+using SZRST.Domain.Constants;
 using SZRST.Shared;
 
 namespace Application.Services
@@ -63,15 +63,15 @@ namespace Application.Services
 					IsSuccess = false,
 				};
 
-			var tenantExists = await _context.Set<Tenant>()
-	   .AnyAsync(t => t.Id == model.TenantId);
+			//var tenantExists = await _context.Set<Tenant>()
+			// .AnyAsync(t => t.Id == model.TenantId);
 
-			if (!tenantExists)
-				return new UserManagerResponse
-				{
-					Message = "Odabrani tenant ne postoji.",
-					IsSuccess = false,
-				};
+			//if (!tenantExists)
+			//	return new UserManagerResponse
+			//	{
+			//		Message = "Odabrani tenant ne postoji.",
+			//		IsSuccess = false,
+			//	};
 
 			var user = new User
 			{
@@ -79,13 +79,13 @@ namespace Application.Services
 				UserName = model.Username,
 				DateCreated = DateTime.UtcNow,
 				DateModified = DateTime.UtcNow,
-				TenantId = model.TenantId
 			};
 
 			var result = await _userManager.CreateAsync(user, model.Password);
 
 			if (result.Succeeded)
 			{
+				await _userManager.AddToRoleAsync(user, Roles.Korisnik);
 				//await _userManger.AddToRoleAsync(user, "Customer");
 				var confirmEmailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
 
@@ -186,7 +186,7 @@ namespace Application.Services
 				Expires = DateTime.UtcNow.AddDays(
 				   int.Parse(_configuration["AuthSettings:RefreshTokenDays"])
 			    ),
-				CreatedByIp = ipAddress
+				CreatedByIp = ipAddress,
 			};
 
 			_context.Set<RefreshToken>().Add(refreshTokenEntity);

@@ -22,8 +22,5 @@ namespace SZRST.Shared
 		[Required]
 		[StringLength(50, MinimumLength = 5)]
 		public string ConfirmPassword { get; set; }
-
-		[Required]
-		public int TenantId { get; set; }
 	}
 }

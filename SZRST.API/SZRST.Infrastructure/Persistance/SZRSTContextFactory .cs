@@ -19,4 +19,6 @@ public class SZRSTContextFactory :IDesignTimeDbContextFactory<SZRSTContext>
 public class DummyTenantProvider :ITenantProvider
 {
 	public int TenantId => 1;
+
+	public bool IsSuperAdminOrUser => false;
 }

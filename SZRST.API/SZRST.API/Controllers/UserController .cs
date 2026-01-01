@@ -1,0 +1,191 @@
+﻿using Domain.Entities;
+using Infrastructure.Persistance;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using SZRST.Domain.Constants;
+
+namespace SZRST.API.Controllers
+{
+	[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}, {Roles.Uposlenik}")]
+	[Route("api/[controller]")]
+	[ApiController]
+	public class UserController :ControllerBase
+	{
+		private readonly UserManager<User> _userManager;
+		private readonly SZRSTContext _context;
+		private readonly ICurrentUserService _currentUserService;
+
+		public UserController(
+			UserManager<User> userManager,
+			SZRSTContext context,
+			ICurrentUserService currentUserService)
+		{
+			_userManager = userManager;
+			_context = context;
+			_currentUserService = currentUserService;
+		}
+
+		// GET: api/User
+		[HttpGet]
+		public async Task<ActionResult<IEnumerable<UserListDto>>> GetUsers()
+		{
+			return await _userManager.Users
+				.Select(u => new UserListDto
+				{
+					Id = u.Id,
+					UserName = u.UserName,
+					Email = u.Email,
+					Active = u.Active,
+					IsDeleted = u.IsDeleted,
+					TenantId = u.TenantId
+				})
+				.Where(x => x.TenantId == _currentUserService.TenantId)
+				.ToListAsync();
+		}
+
+		// GET: api/User/{id}
+		[HttpGet("{id}")]
+		public async Task<ActionResult<UserListDto>> GetUser(int id)
+		{
+			var user = await _userManager.Users
+				.Where(u => u.Id == id)
+				.Select(u => new UserListDto
+				{
+					Id = u.Id,
+					UserName = u.UserName,
+					Email = u.Email,
+					Active = u.Active,
+					IsDeleted = u.IsDeleted,
+					TenantId = u.TenantId
+				})
+				.FirstOrDefaultAsync();
+
+			if (user == null)
+				return NotFound();
+
+			return user;
+		}
+
+		// POST: api/User
+		[HttpPost]
+		public async Task<IActionResult> CreateUser([FromBody] UserCreateDto dto)
+		{
+			var user = new User
+			{
+				UserName = dto.UserName,
+				Email = dto.Email,
+				Active = dto.Active,
+				TenantId = dto.TenantId,
+				DateCreated = DateTime.UtcNow
+			};
+
+			var result = await _userManager.CreateAsync(user, dto.Password);
+
+			if (!result.Succeeded)
+				return BadRequest(result.Errors);
+
+			return Ok(new
+			{
+				user.Id,
+				user.UserName,
+				user.Email
+			});
+		}
+
+		// PUT: api/User/{id}
+		[HttpPut("{id}")]
+		public async Task<IActionResult> UpdateUser(int id, [FromBody] UserUpdateDto dto)
+		{
+			var user = await _userManager.FindByIdAsync(id.ToString());
+			if (user == null)
+				return NotFound();
+
+			user.UserName = dto.UserName;
+			user.Email = dto.Email;
+			user.Active = dto.Active;
+			user.IsDeleted = dto.IsDeleted;
+			user.TenantId = dto.TenantId;
+			user.DateModified = DateTime.UtcNow;
+
+			var result = await _userManager.UpdateAsync(user);
+			if (!result.Succeeded)
+				return BadRequest(result.Errors);
+
+			return NoContent();
+		}
+
+		// DELETE: api/User/{id}  (soft delete)
+		[HttpDelete("{id}")]
+		public async Task<IActionResult> DeleteUser(int id)
+		{
+			var user = await _userManager.FindByIdAsync(id.ToString());
+			if (user == null)
+				return NotFound();
+
+			user.IsDeleted = true;
+			user.Active = false;
+			user.DateModified = DateTime.UtcNow;
+
+			await _userManager.UpdateAsync(user);
+			return NoContent();
+		}
+
+		[HttpGet("for-appointments")]
+		public async Task<ActionResult<IEnumerable<UserListDto>>> GetUsersForAppointments()
+		{
+			var tenantId = _currentUserService.TenantId;
+
+			var users = await _userManager.Users
+			    .Where(u =>
+				   u.TenantId == tenantId ||
+				   u.TenantId == null
+			    )
+			    .Select(u => new UserListDto
+			    {
+				    Id = u.Id,
+				    UserName = u.UserName,
+				    Email = u.Email,
+				    TenantId = u.TenantId,
+				    Active = u.Active,
+				    IsDeleted = u.IsDeleted
+			    })
+			    .ToListAsync();
+
+			return users;
+		}
+	}
+
+	public class UserListDto
+	{
+		public int Id { get; set; }
+		public string UserName { get; set; }
+		public string Email { get; set; }
+		public bool Active { get; set; }
+		public bool IsDeleted { get; set; }
+		public int? TenantId { get; set; }
+	}
+
+	public class UserCreateDto
+	{
+		public string UserName { get; set; }
+		public string Email { get; set; }
+		public string Password { get; set; }
+		public bool Active { get; set; }
+		public int? TenantId { get; set; }
+	}
+
+	public class UserUpdateDto
+	{
+		public string UserName { get; set; }
+		public string Email { get; set; }
+		public bool Active { get; set; }
+		public bool IsDeleted { get; set; }
+		public int? TenantId { get; set; }
+	}
+}

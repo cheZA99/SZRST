@@ -37,6 +37,7 @@ namespace Infrastructure.Persistance
 			{
 				if (typeof(ITenantEntity).IsAssignableFrom(entityType.ClrType))
 				{
+					// Entiteti koji nikad nemaju tenant filter
 					if (entityType.ClrType == typeof(User) ||
 					    entityType.ClrType == typeof(Role) ||
 					    entityType.ClrType == typeof(UserRole) ||
@@ -48,16 +49,29 @@ namespace Infrastructure.Persistance
 					    entityType.ClrType == typeof(Country) ||
 					    entityType.ClrType == typeof(Currency) ||
 					    entityType.ClrType == typeof(RefreshToken) ||
-					    entityType.ClrType == typeof(RoleClaim) ||
-					    entityType.ClrType == typeof(Location))
+					    entityType.ClrType == typeof(RoleClaim))
 					{
 						continue;
 					}
 
-					var method = typeof(SZRSTContext)
-					    .GetMethod(nameof(SetTenantFilter), BindingFlags.NonPublic | BindingFlags.Instance)
-					    .MakeGenericMethod(entityType.ClrType);
-					method.Invoke(this, new object[] { modelBuilder });
+					// Entiteti koji preskačaju filter za SuperAdmin
+					if (entityType.ClrType == typeof(Reservation) ||
+					    entityType.ClrType == typeof(Facility) ||
+					    entityType.ClrType == typeof(Location))
+					{
+						var method = typeof(SZRSTContext)
+						    .GetMethod(nameof(SetConditionalTenantFilter), BindingFlags.NonPublic | BindingFlags.Instance)
+						    .MakeGenericMethod(entityType.ClrType);
+						method.Invoke(this, new object[] { modelBuilder });
+					}
+					else
+					{
+						// Svi ostali entiteti - standardni tenant filter
+						var method = typeof(SZRSTContext)
+						    .GetMethod(nameof(SetTenantFilter), BindingFlags.NonPublic | BindingFlags.Instance)
+						    .MakeGenericMethod(entityType.ClrType);
+						method.Invoke(this, new object[] { modelBuilder });
+					}
 				}
 			}
 		}
@@ -68,13 +82,13 @@ namespace Infrastructure.Persistance
 
 			foreach (var entry in ChangeTracker.Entries<ITenantEntity>())
 			{
-				if (entry.State == EntityState.Added)
-				{
-					// Ako TenantProvider nema TenantId (npr. SuperAdmin), postavi na 1 (core tenant)
-					entry.Entity.TenantId = _tenantProvider.TenantId == 0 || _tenantProvider.TenantId == null
-					    ? 1
-					    : _tenantProvider.TenantId;
-				}
+				//if (entry.State == EntityState.Added)
+				//{
+				//	// Ako TenantProvider nema TenantId (npr. SuperAdmin), postavi na 1 (core tenant)
+				//	entry.Entity.TenantId = _tenantProvider.TenantId == 0 || _tenantProvider.TenantId == null
+				//	    ? 1
+				//	    : _tenantProvider.TenantId;
+				//}
 			}
 			return base.SaveChangesAsync();
 		}
@@ -99,10 +113,21 @@ namespace Infrastructure.Persistance
 		}
 
 		private void SetTenantFilter<TEntity>(ModelBuilder builder)
-				where TEntity : class, ITenantEntity
+    where TEntity : class, ITenantEntity
 		{
 			builder.Entity<TEntity>()
 			    .HasQueryFilter(e => _tenantProvider.TenantId == 0 || e.TenantId == _tenantProvider.TenantId);
+		}
+
+		// Nova metoda - filter koji respektuje SuperAdmin
+		private void SetConditionalTenantFilter<TEntity>(ModelBuilder builder)
+		    where TEntity : class, ITenantEntity
+		{
+			builder.Entity<TEntity>()
+			    .HasQueryFilter(e =>
+				   _tenantProvider.IsSuperAdminOrUser ||  // SuperAdmin vidi sve
+				   _tenantProvider.TenantId == 0 || // Fallback ako nema tenant ID
+				   e.TenantId == _tenantProvider.TenantId); // Obični korisnici vide samo svoj tenant
 		}
 
 		public override DbSet<TDb> Set<TDb>() where TDb : class

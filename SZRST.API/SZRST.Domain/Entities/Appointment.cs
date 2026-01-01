@@ -12,5 +12,7 @@ namespace Domain.Entities
 		public AppointmentType AppointmentType { get; set; }
 		public int TenantId { get; set; }
 		public Tenant Tenant { get; set; }
+		public int UserId { get; set; }
+		public User User { get; set; }
 	}
 }
