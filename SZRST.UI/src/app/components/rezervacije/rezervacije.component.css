@@ -1,0 +1,161 @@
+.calendar-container {
+  padding: 20px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Filter Section */
+.filter-section {
+  background: white;
+  padding: 16px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filter-group label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.filter-select {
+  padding: 8px 32px 8px 12px;
+  font-size: 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+  color: #1a1a1a;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 200px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.filter-select:hover {
+  border-color: #9ca3af;
+}
+
+/* Calendar Wrapper */
+full-calendar {
+  flex: 1;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+/* Calendar customization */
+::ng-deep .fc {
+  font-family: inherit;
+}
+
+::ng-deep .fc-theme-standard td,
+::ng-deep .fc-theme-standard th {
+  border-color: #e5e7eb;
+}
+
+::ng-deep .fc-col-header-cell {
+  background: #f9fafb;
+  font-weight: 600;
+  color: #374151;
+  padding: 12px 0;
+}
+
+::ng-deep .fc-timegrid-slot {
+  height: 3em;
+}
+
+::ng-deep .fc-event {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 13px;
+}
+
+::ng-deep .fc-event:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Not editable events for Korisnik */
+::ng-deep .fc-event.not-editable {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+::ng-deep .fc-event.not-editable:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+::ng-deep .fc-toolbar-title {
+  font-size: 1.5em;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+::ng-deep .fc-button {
+  background: #3b82f6;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+::ng-deep .fc-button:hover {
+  background: #2563eb;
+}
+
+::ng-deep .fc-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+::ng-deep .fc-button-active {
+  background: #1d4ed8 !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .calendar-container {
+    padding: 12px;
+  }
+
+  .filter-section {
+    padding: 12px;
+  }
+
+  .filter-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .facility-select {
+    width: 100%;
+  }
+}

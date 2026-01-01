@@ -1,3 +1,71 @@
-<p>rezervacije works!</p>
+<div class="calendar-container">
+  <!-- Filter Section -->
+  <div class="filter-section">
+    <!-- Tenant Filter - Only for SuperAdmin and Korisnik -->
+    <div class="filter-group" *ngIf="showTenantFilter">
+      <label for="tenantFilter">Organization:</label>
+      <select
+        id="tenantFilter"
+        class="filter-select"
+        [value]="selectedTenantId ?? ''"
+        (change)="onTenantFilterChange($event)"
+      >
+        <option value="" disabled>Select organization</option>
 
-<router-outlet></router-outlet>
+        <option *ngFor="let tenant of tenants" [value]="tenant.id">
+          {{ tenant.name }}
+        </option>
+      </select>
+    </div>
+
+    <!-- Facility Filter -->
+   <div
+  class="filter-group"
+  *ngIf="!showTenantFilter || selectedTenantId"
+>
+  <label for="facilityFilter">Facility:</label>
+  <select
+    id="facilityFilter"
+    class="filter-select"
+    [value]="selectedFacilityId ?? ''"
+    (change)="onFacilityFilterChange($event)"
+  >
+    <option value="" disabled>Select facility</option>
+
+    <option
+      *ngFor="let facility of filteredFacilities"
+      [value]="facility.id"
+    >
+      {{ facility.name }}
+    </option>
+  </select>
+</div>
+
+  </div>
+
+  <!-- Calendar -->
+  <div
+    class="calendar-placeholder"
+    *ngIf="!canShowCalendar"
+  >
+    <p>
+      Please select <strong>Organization</strong> and
+      <strong>Facility</strong> to view the calendar.
+    </p>
+  </div>
+
+  <div
+    class="calendar-placeholder"
+    *ngIf="canShowCalendar"
+  >
+    <p>
+      Please select <strong>Facility</strong> to view the calendar.
+    </p>
+  </div>
+
+  <full-calendar
+    *ngIf="canShowCalendar "
+    #calendar
+    [options]="calendarOptions"
+  ></full-calendar>
+</div>

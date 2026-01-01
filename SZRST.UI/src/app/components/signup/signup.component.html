@@ -103,34 +103,6 @@
                     placeholder="Korisničko Ime"
                   />
                 </div>
-              <div class="form-group pt-3">
-                <small
-                  *ngIf="
-                    signUpForm.controls['tenantId'].dirty &&
-                    signUpForm.hasError('required', 'tenantId')
-                  "
-                  class="text-danger"
-                  >*Organizacija je obavezna</small
-                >
-                <div
-                  class="input-field"
-                  [class.error]="
-                    signUpForm.controls['tenantId'].dirty &&
-                    signUpForm.hasError('required', 'tenantId')
-                  "
-                >
-                  <span class="fa fa-building p-2"></span>
-                  <select formControlName="tenantId" class="form-control">
-                    <option value="" disabled selected>Odaberite organizaciju</option>
-                    <option *ngFor="let tenant of tenants" [value]="tenant.id">
-                      {{ tenant.name }}
-                    </option>
-                  </select>
-                </div>
-                <small *ngIf="isLoadingTenants" class="text-muted">
-                  Učitavanje organizacija...
-                </small>
-              </div>
               </div>
               <div class="form-group pt-3">
                 <small

@@ -23,6 +23,15 @@ import { VijestiComponent } from './components/vijesti/vijesti.component';
 import { IzvjestajiComponent } from './components/izvjestaji/izvjestaji.component';
 import { InitServiceService } from './services/init-service.service';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
+import { FullCalendarModule } from '@fullcalendar/angular';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialogModule } from '@angular/material/dialog';
+import { AppointmentDialogComponent } from './components/rezervacije-dialog/rezervacije-dialog.component';
+import { OverlayModule } from '@angular/cdk/overlay';
+import { A11yModule } from '@angular/cdk/a11y';
 
 @NgModule({
   declarations: [
@@ -38,6 +47,7 @@ import { AuthInterceptor } from './interceptors/auth.interceptor';
     UposleniciComponent,
     VijestiComponent,
     IzvjestajiComponent,
+    AppointmentDialogComponent,
   ],
   bootstrap: [AppComponent],
   imports: [
@@ -47,6 +57,14 @@ import { AuthInterceptor } from './interceptors/auth.interceptor';
     ReactiveFormsModule,
     BrowserAnimationsModule,
     ToastrModule.forRoot(),
+    FullCalendarModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatCheckboxModule,
+    MatButtonModule,
+    A11yModule,
+    OverlayModule,
   ],
   providers: [
     provideHttpClient(withInterceptorsFromDi()),

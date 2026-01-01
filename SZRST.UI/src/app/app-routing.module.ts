@@ -31,19 +31,19 @@ const routes: Routes = [
         path: 'rezervacije',
         component: RezervacijeComponent,
         canActivate: [roleGuard],
-        data: { roles: ['SuperAdmin'] },
+        data: { roles: ['SuperAdmin', 'Admin', 'Uposlenik', 'Korisnik'] },
       },
       {
         path: 'lokacije',
         component: LokacijeComponent,
         canActivate: [roleGuard],
-        data: { roles: ['SuperAdmin'] },
+        data: { roles: ['SuperAdmin', 'Admin'] },
       },
       {
         path: 'resursi',
         component: ResursiComponent,
         canActivate: [roleGuard],
-        data: { roles: ['SuperAdmin'] },
+        data: { roles: ['SuperAdmin', 'Admin'] },
       },
       {
         path: 'kategorije',

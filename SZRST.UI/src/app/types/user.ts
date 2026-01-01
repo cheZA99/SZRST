@@ -5,4 +5,5 @@ export type User = {
   refreshToken: string;
   accessTokenExpires: string;
   roles: string[];
+  tenantId?: number;
 };
