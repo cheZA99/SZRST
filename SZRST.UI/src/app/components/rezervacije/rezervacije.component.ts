@@ -17,6 +17,7 @@ import { TenantService, Tenant } from 'src/app/services/tenant.service';
 import { UserService, User } from 'src/app/services/user.service';
 import { AuthService } from 'src/app/services/auth.service';
 import { ToastrService } from 'ngx-toastr';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-rezervacije',
@@ -157,18 +158,40 @@ export class RezervacijeComponent implements OnInit {
     private userService: UserService,
     private authService: AuthService,
     private dialog: MatDialog,
-    private toastr: ToastrService
+    private toastr: ToastrService,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit() {
-    this.initializeUserData();
-
-    if (this.showTenantFilter) {
-      this.loadTenants();
+  this.initializeUserData();
+  
+  this.route.queryParams.subscribe(params => {
+    if (params['tenantId']) {
+      const tenantId = +params['tenantId'];
+      this.selectedTenantId = tenantId;
+      
+      if (params['tenantName']) {
+      }
+      
+      this.loadFacilitiesForTenant(tenantId);
     }
-
-    this.loadFacilities();
+    
+    if (params['facilityId']) {
+      const facilityId = +params['facilityId'];
+      this.selectedFacilityId = facilityId;
+      
+      if (!this.selectedTenantId) {
+        this.findTenantForFacility(facilityId);
+      }
+    }
+  });
+  
+  if (this.showTenantFilter) {
+    this.loadTenants();
   }
+
+  this.loadFacilities();
+}
 
   initializeUserData() {
     const decoded = this.authService.getDecodedToken();
@@ -191,18 +214,64 @@ export class RezervacijeComponent implements OnInit {
       }
     }
   }
+loadFacilitiesForTenant(tenantId: number): void {
+  this.facilityService.getAll().subscribe({
+    next: (data) => {
+      this.facilities = data;
+      this.applyFacilityFilter();
+      
+      if (this.filteredFacilities.length > 0) {
+        this.selectedFacilityId = this.filteredFacilities[0].id;
+        setTimeout(() => this.refreshCalendar(), 100);
+      }
+    },
+    error: (err) => {
+      this.toastr.error('Failed to load facilities', 'Error');
+    },
+  });
+}
 
-  loadFacilities() {
-    this.facilityService.getAll().subscribe({
-      next: (data) => {
-        this.facilities = data;
+findTenantForFacility(facilityId: number): void {
+  this.facilityService.getAll().subscribe({
+    next: (data) => {
+      const facility = data.find(f => f.id === facilityId);
+      if (facility && facility.tenantId) {
+        this.selectedTenantId = facility.tenantId;
         this.applyFacilityFilter();
-      },
-      error: (err) => {
-        this.toastr.error('Failed to load facilities', 'Error');
-      },
-    });
-  }
+        setTimeout(() => this.refreshCalendar(), 100);
+      }
+    },
+    error: (err) => {
+      this.toastr.error('Failed to load facility details', 'Error');
+    },
+  });
+}
+  loadFacilities() {
+  this.facilityService.getAll().subscribe({
+    next: (data) => {
+      this.facilities = data;
+      
+      if (this.selectedTenantId) {
+        this.applyFacilityFilter();
+        
+        this.route.queryParams.subscribe(params => {
+          if (params['facilityId'] && !this.selectedFacilityId) {
+            this.selectedFacilityId = +params['facilityId'];
+          }
+        });
+        
+        if (this.selectedTenantId && this.selectedFacilityId) {
+          setTimeout(() => this.refreshCalendar(), 100);
+        }
+      } else {
+        this.applyFacilityFilter();
+      }
+    },
+    error: (err) => {
+      this.toastr.error('Failed to load facilities', 'Error');
+    },
+  });
+}
 
   loadTenants() {
     this.tenantService.getAllTenants().subscribe({

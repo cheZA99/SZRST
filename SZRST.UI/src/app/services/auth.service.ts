@@ -32,7 +32,6 @@ export class AuthService {
                     decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/tenantid'];
     
     user.roles = Array.isArray(roles) ? roles : [roles];
-    
     localStorage.setItem('user', JSON.stringify(user));
     this.currentUser.set(user);
   }

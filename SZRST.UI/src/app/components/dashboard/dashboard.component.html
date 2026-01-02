@@ -1,62 +1,432 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 0;
-      }
+<div class="max-w-7xl mx-auto px-4 py-6">
+  <!-- Welcome Section -->
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold mb-2">{{ getWelcomeMessage() }}</h1>
+    <p class="text-gray-600">
+      Pregledajte i upravljajte rezervacijama sistema.
+    </p>
+  </div>
 
-      #sidebar {
-        width: 250px;
-        height: 100%;
-        background-color: #333;
-        color: white;
-        position: fixed;
-        top: 0;
-        left: 0;
-        padding-top: 50px;
-      }
-
-      #logo {
-        text-align: center;
-        padding: 15px 0;
-      }
-
-      #menu ul {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-      }
-
-      #menu ul li {
-        padding: 10px;
-        border-bottom: 1px solid #555;
-      }
-
-      #menu ul li:hover {
-        background-color: #555;
-      }
-
-      #content {
-        margin-left: 250px;
-        padding: 20px;
-      }
-    </style>
-  </head>
-
-  <body>
-    <div class="max-w-7xl mx-auto px-4">
-      <h2>Pozdrav, dobrodošao/la natrag 👋</h2>
-
-      <button class="btn">Button</button>
-      <button class="btn btn-neutral">Neutral</button>
-      <button class="btn btn-primary">Primary</button>
-      <button class="btn btn-secondary">Secondary</button>
-      <button class="btn btn-accent">Accent</button>
-      <button class="btn btn-ghost">Ghost</button>
-      <button class="btn btn-link">Link</button>
+  <!-- Statistics Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <!-- Total Users Card -->
+    <div class="card bg-base-100 shadow-sm">
+      <div class="card-body p-4">
+        <div class="flex items-center">
+          <div class="bg-primary/10 p-3 rounded-lg mr-4">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6 text-primary"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13 0a6 6 0 01-9 5.197"
+              />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold">Ukupno korisnika</h3>
+            <p class="text-2xl font-bold" *ngIf="!loadingStats">
+              {{ stats.totalUsers }}
+            </p>
+            <div *ngIf="loadingStats" class="skeleton h-8 w-16"></div>
+          </div>
+        </div>
+      </div>
     </div>
-  </body>
-</html>
+
+    <!-- Today's Appointments Card -->
+    <div class="card bg-base-100 shadow-sm">
+      <div class="card-body p-4">
+        <div class="flex items-center">
+          <div class="bg-secondary/10 p-3 rounded-lg mr-4">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6 text-secondary"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold">Današnje rezervacije</h3>
+            <p class="text-2xl font-bold" *ngIf="!loadingStats">
+              {{ stats.totalAppointmentsToday }}
+            </p>
+            <div *ngIf="loadingStats" class="skeleton h-8 w-16"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Organizations Card -->
+    <div class="card bg-base-100 shadow-sm">
+      <div class="card-body p-4">
+        <div class="flex items-center">
+          <div class="bg-accent/10 p-3 rounded-lg mr-4">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6 text-accent"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+              />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold">Organizacije</h3>
+            <p class="text-2xl font-bold" *ngIf="!loadingStats">
+              {{ stats.totalTenants }}
+            </p>
+            <div *ngIf="loadingStats" class="skeleton h-8 w-16"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Appointments Card -->
+    <div class="card bg-base-100 shadow-sm">
+      <div class="card-body p-4">
+        <div class="flex items-center">
+          <div class="bg-info/10 p-3 rounded-lg mr-4">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6 text-info"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold">Aktivne rezervacije</h3>
+            <p class="text-2xl font-bold" *ngIf="!loadingStats">
+              {{ stats.activeAppointments }}
+            </p>
+            <div *ngIf="loadingStats" class="skeleton h-8 w-16"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="flex justify-center items-center h-64">
+    <span class="loading loading-spinner loading-lg"></span>
+  </div>
+
+  <!-- Organizations Section (for SuperAdmin and Korisnik) -->
+  <div *ngIf="!loading && showOrganizations()" class="mb-8">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-2xl font-bold">Organizacije</h2>
+      <div class="text-sm text-gray-500">
+        Kliknite na organizaciju za pregled kalendara
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div
+        *ngFor="let tenant of tenants"
+        class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+        (click)="openOrganizationCalendar(tenant.id, tenant.name)"
+      >
+        <div class="card-body">
+          <div class="flex justify-between items-start">
+            <div>
+              <h3 class="card-title text-lg">{{ tenant.name }}</h3>
+              <p class="text-sm text-gray-500 mt-1"></p>
+            </div>
+            <div class="badge badge-primary">
+              {{ getTenantFacilityCount(tenant.id) }}
+              {{
+                getTenantFacilityCount(tenant.id) > 1 ? "lokacije" : "lokacija"
+              }}
+            </div>
+          </div>
+          <div class="card-actions justify-end mt-4">
+            <button class="btn btn-sm btn-primary">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4 mr-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+              Otvori kalendar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      *ngIf="tenants.length === 0"
+      class="text-center py-8 border-2 border-dashed rounded-lg"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-12 w-12 mx-auto text-gray-400"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+        />
+      </svg>
+      <h3 class="mt-2 text-lg font-medium text-gray-900">Nema organizacija</h3>
+      <p class="mt-1 text-sm text-gray-500">
+        Trenutno nema dostupnih organizacija za prikaz.
+      </p>
+    </div>
+  </div>
+
+  <!-- Facilities Section (for Admin and Uposlenik) -->
+  <div *ngIf="!loading && showFacilities()" class="mb-8">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-2xl font-bold">Vaši Facility-i</h2>
+      <div class="text-sm text-gray-500">
+        Kliknite na facility za pregled kalendara
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div
+        *ngFor="let facility of filteredFacilities"
+        class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+        (click)="
+          openFacilityCalendar(facility.id, facility.name, facility.tenantId)
+        "
+      >
+        <div class="card-body">
+          <div class="flex justify-between items-start">
+            <div>
+              <h3 class="card-title text-lg">{{ facility.name }}</h3>
+              <p class="text-sm text-gray-500 mt-1">
+                {{ facility.description || "Nema opisa" }}
+              </p>
+              <div class="mt-2">
+                <span class="badge badge-outline badge-sm">
+                  ID: {{ facility.id }}
+                </span>
+              </div>
+            </div>
+            <div class="badge badge-secondary">Facility</div>
+          </div>
+
+          <!-- Facility Info -->
+          <div class="mt-4 space-y-2">
+            <div class="flex items-center text-sm text-gray-600">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4 mr-2"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+              <span>{{ facility.location || "Lokacija nije definirana" }}</span>
+            </div>
+
+            <div class="flex items-center text-sm text-gray-600">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4 mr-2"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                />
+              </svg>
+              <span>{{
+                facility.contactPhone || "Kontakt telefon nije definiran"
+              }}</span>
+            </div>
+          </div>
+
+          <div class="card-actions justify-end mt-4">
+            <button class="btn btn-sm btn-primary">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4 mr-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+              Otvori kalendar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      *ngIf="filteredFacilities.length === 0"
+      class="text-center py-8 border-2 border-dashed rounded-lg"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-12 w-12 mx-auto text-gray-400"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+        />
+      </svg>
+      <h3 class="mt-2 text-lg font-medium text-gray-900">Nema facility-a</h3>
+      <p class="mt-1 text-sm text-gray-500">
+        Trenutno nema dostupnih facility-a za prikaz.
+      </p>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="mt-8">
+    <h2 class="text-2xl font-bold mb-4">Brze akcije</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <!-- Nova rezervacija -->
+      <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+          <h3 class="card-title">Nova rezervacija</h3>
+          <p class="text-sm text-gray-500">Kreirajte novu rezervaciju</p>
+          <div class="card-actions justify-end">
+            <button class="btn btn-primary" [routerLink]="['/rezervacije']">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 mr-2"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              Kreiraj
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Uposlenici (za Admin i SuperAdmin) -->
+      <div *ngIf="isAdmin || isSuperAdmin" class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+          <h3 class="card-title">Uposlenici</h3>
+          <p class="text-sm text-gray-500">Upravljajte uposlenicima</p>
+          <div class="card-actions justify-end">
+            <button class="btn btn-secondary" [routerLink]="['/uposlenici']">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 mr-2"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13 0a6 6 0 01-9 5.197"
+                />
+              </svg>
+              Pregledaj
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Organizacije (za SuperAdmin) -->
+      <div *ngIf="isSuperAdmin" class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+          <h3 class="card-title">Organizacije</h3>
+          <p class="text-sm text-gray-500">Upravljajte organizacijama</p>
+          <div class="card-actions justify-end">
+            <button class="btn btn-accent" [routerLink]="['/organizacije']">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 mr-2"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                />
+              </svg>
+              Upravljaj
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

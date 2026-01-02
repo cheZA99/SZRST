@@ -46,6 +46,9 @@ export class AppointmentService {
   delete(id: number) {
     return this.http.delete(`${this.apiUrl}/${id}`);
   }
+getDashboardStats(): Observable<any> {
+  return this.http.get<any>(`${this.apiUrl}/dashboard-stats`);
+}
 }
 
 export interface AppointmentPayload {

@@ -26,6 +26,7 @@ export interface FacilityResponse {
   };
   imageUrl: string;
   isDeleted: boolean;
+  tenantId?: number;
 }
 
 export interface FacilityCreateDto {
