@@ -37,8 +37,18 @@
         routerLinkActive="text-accent"
         >Rezervacije</a
       >
+
       <a
-        *ngIf="authService.hasRole('SuperAdmin') || authService.hasRole('Admin')"  
+        *ngIf="authService.hasRole('SuperAdmin')"
+        routerLink="/organizacije"
+        routerLinkActive="text-accent"
+        >Organizacije</a
+      >
+
+      <a
+        *ngIf="
+          authService.hasRole('SuperAdmin') || authService.hasRole('Admin')
+        "
         routerLink="/lokacije"
         routerLinkActive="text-accent"
         >Lokacije</a

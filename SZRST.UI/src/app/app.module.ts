@@ -32,6 +32,7 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { AppointmentDialogComponent } from './components/rezervacije-dialog/rezervacije-dialog.component';
 import { OverlayModule } from '@angular/cdk/overlay';
 import { A11yModule } from '@angular/cdk/a11y';
+import { OrganizacijeComponent } from './components/organizacije/organizacije.component';
 
 @NgModule({
   declarations: [
@@ -48,6 +49,7 @@ import { A11yModule } from '@angular/cdk/a11y';
     VijestiComponent,
     IzvjestajiComponent,
     AppointmentDialogComponent,
+    OrganizacijeComponent,
   ],
   bootstrap: [AppComponent],
   imports: [

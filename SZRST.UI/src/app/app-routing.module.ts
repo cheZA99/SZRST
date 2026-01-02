@@ -14,6 +14,7 @@ import { IzvjestajiComponent } from './components/izvjestaji/izvjestaji.componen
 import { authGuard } from './guards/auth.guard';
 import { NotFoundComponent } from './components/not-found/not-found.component';
 import { roleGuard } from './guards/role.guard';
+import { OrganizacijeComponent } from './components/organizacije/organizacije.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
@@ -32,6 +33,12 @@ const routes: Routes = [
         component: RezervacijeComponent,
         canActivate: [roleGuard],
         data: { roles: ['SuperAdmin', 'Admin', 'Uposlenik', 'Korisnik'] },
+      },
+      {
+        path: 'organizacije',
+        component: OrganizacijeComponent,
+        canActivate: [roleGuard],
+        data: { roles: ['SuperAdmin'] },
       },
       {
         path: 'lokacije',

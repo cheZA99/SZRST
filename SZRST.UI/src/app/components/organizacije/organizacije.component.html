@@ -1,0 +1,372 @@
+<div class="container mx-auto p-6">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold">Organizacije</h1>
+    <button (click)="openCreateModal()" class="btn btn-primary">
+      + Nova Organizacija
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="flex justify-center items-center h-64">
+    <span class="loading loading-spinner loading-lg"></span>
+  </div>
+
+  <div *ngIf="!loading" class="overflow-x-auto">
+    <table class="table w-full">
+      <thead>
+        <tr>
+          <th hidden>ID</th>
+          <th>Naziv</th>
+          <th>Broj korisnika</th>
+          <th>Akcije</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let org of organizacije">
+          <td hidden>{{ org.id }}</td>
+          <td>{{ org.name }}</td>
+          <td>
+            <span class="badge badge-info">{{ org.userCount }}</span>
+          </td>
+          <td>
+            <div class="flex gap-2">
+              <button
+                (click)="openEditModal(org)"
+                class="btn btn-sm btn-warning"
+              >
+                Edit
+              </button>
+              <!-- <button (click)="openDeleteModal(org)" class="btn btn-sm btn-error">
+                Delete
+              </button> -->
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="organizacije.length === 0" class="text-center py-8">
+      <p class="text-gray-500">Nema organizacija.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Create/Edit Modal -->
+<div *ngIf="showModal" class="modal modal-open">
+  <div class="modal-box max-w-2xl">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="font-bold text-lg">
+        {{ isEditMode ? "Uredi Organizaciju" : "Nova Organizacija " }}
+      </h3>
+      <button (click)="closeModal()" class="btn btn-sm btn-circle">✕</button>
+    </div>
+
+    <form [formGroup]="organizacijaForm" (ngSubmit)="onSubmit()">
+      <!-- Edit Mode - Samo naziv organizacije -->
+      <div *ngIf="isEditMode">
+        <div class="form-control w-full mb-4">
+          <label class="label">
+            <span class="label-text">Naziv Organizacije</span>
+          </label>
+          <input
+            type="text"
+            formControlName="name"
+            placeholder="Unesite naziv organizacije"
+            class="input input-bordered w-full"
+            [class.input-error]="
+              organizacijaForm.get('name')?.invalid &&
+              organizacijaForm.get('name')?.touched
+            "
+          />
+          <label
+            class="label"
+            *ngIf="
+              organizacijaForm.get('name')?.invalid &&
+              organizacijaForm.get('name')?.touched
+            "
+          >
+            <span class="label-text-alt text-error">
+              Naziv je obavezan i mora imati najmanje 2 karaktera
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <div *ngIf="!isEditMode">
+        <div class="mb-6">
+          <h4 class="font-semibold text-md mb-3 text-primary">
+            Informacije o Organizaciji
+          </h4>
+          <div class="form-control w-full mb-4">
+            <label class="label">
+              <span class="label-text">Naziv Organizacije *</span>
+            </label>
+            <input
+              type="text"
+              formControlName="tenantName"
+              placeholder="Unesite naziv organizacije"
+              class="input input-bordered w-full"
+              [class.input-error]="
+                organizacijaForm.get('tenantName')?.invalid &&
+                organizacijaForm.get('tenantName')?.touched
+              "
+            />
+            <label
+              class="label"
+              *ngIf="
+                organizacijaForm.get('tenantName')?.invalid &&
+                organizacijaForm.get('tenantName')?.touched
+              "
+            >
+              <span class="label-text-alt text-error">
+                Naziv je obavezan i mora imati najmanje 2 karaktera
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div>
+          <h4 class="font-semibold text-md mb-3 text-primary">
+            Admin Korisnik
+          </h4>
+          <p class="text-sm text-gray-500 mb-4">
+            Kreirat će se admin korisnik za ovu organizaciju s administratorskim
+            privilegijama.
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">Email *</span>
+              </label>
+              <input
+                type="email"
+                formControlName="adminEmail"
+                placeholder="admin@example.com"
+                class="input input-bordered w-full"
+                [class.input-error]="
+                  organizacijaForm.get('adminEmail')?.invalid &&
+                  organizacijaForm.get('adminEmail')?.touched
+                "
+              />
+              <label
+                class="label"
+                *ngIf="
+                  organizacijaForm.get('adminEmail')?.invalid &&
+                  organizacijaForm.get('adminEmail')?.touched
+                "
+              >
+                <span class="label-text-alt text-error">
+                  Unesite validan email
+                </span>
+              </label>
+            </div>
+
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">Korisničko Ime *</span>
+              </label>
+              <input
+                type="text"
+                formControlName="adminUsername"
+                placeholder="Unesite korisničko ime"
+                class="input input-bordered w-full"
+                [class.input-error]="
+                  organizacijaForm.get('adminUsername')?.invalid &&
+                  organizacijaForm.get('adminUsername')?.touched
+                "
+              />
+              <label
+                class="label"
+                *ngIf="
+                  organizacijaForm.get('adminUsername')?.invalid &&
+                  organizacijaForm.get('adminUsername')?.touched
+                "
+              >
+                <span class="label-text-alt text-error">
+                  Korisničko ime mora imati najmanje 3 karaktera
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">Lozinka *</span>
+              </label>
+              <div class="relative">
+                <input
+                  [type]="showPassword ? 'text' : 'password'"
+                  formControlName="adminPassword"
+                  placeholder="••••••••"
+                  class="input input-bordered w-full pr-10"
+                  [class.input-error]="
+                    organizacijaForm.get('adminPassword')?.invalid &&
+                    organizacijaForm.get('adminPassword')?.touched
+                  "
+                />
+                <button
+                  type="button"
+                  (click)="togglePasswordVisibility()"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  <svg
+                    *ngIf="!showPassword"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="1.5"
+                    stroke="currentColor"
+                    class="w-5 h-5"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
+                    />
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                  <svg
+                    *ngIf="showPassword"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="1.5"
+                    stroke="currentColor"
+                    class="w-5 h-5"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <label
+                class="label"
+                *ngIf="
+                  organizacijaForm.get('adminPassword')?.invalid &&
+                  organizacijaForm.get('adminPassword')?.touched
+                "
+              >
+                <span class="label-text-alt text-error">
+                  Lozinka mora imati najmanje 6 karaktera
+                </span>
+              </label>
+            </div>
+
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">Potvrdi Lozinku *</span>
+              </label>
+              <div class="relative">
+                <input
+                  [type]="showConfirmPassword ? 'text' : 'password'"
+                  formControlName="adminConfirmPassword"
+                  placeholder="••••••••"
+                  class="input input-bordered w-full pr-10"
+                  [class.input-error]="
+                    (organizacijaForm.get('adminConfirmPassword')?.invalid &&
+                    organizacijaForm.get('adminConfirmPassword')?.touched) ||
+                    (organizacijaForm.errors?.['mismatch'] &&
+                    organizacijaForm.get('adminConfirmPassword')?.touched)
+                  "
+                />
+                <button
+                  type="button"
+                  (click)="toggleConfirmPasswordVisibility()"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  <svg
+                    *ngIf="!showConfirmPassword"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="1.5"
+                    stroke="currentColor"
+                    class="w-5 h-5"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
+                    />
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                  <svg
+                    *ngIf="showConfirmPassword"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="1.5"
+                    stroke="currentColor"
+                    class="w-5 h-5"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <label
+                class="label"
+                *ngIf="organizacijaForm.errors?.['mismatch'] && organizacijaForm.get('adminConfirmPassword')?.touched"
+              >
+                <span class="label-text-alt text-error">
+                  Lozinke se ne podudaraju
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-action">
+        <button type="button" (click)="closeModal()" class="btn btn-ghost">
+          Odustani
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="organizacijaForm.invalid"
+        >
+          {{ isEditMode ? "Sačuvaj" : "Kreiraj" }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal
+<div *ngIf="showDeleteModal" class="modal modal-open">
+  <div class="modal-box">
+    <h3 class="font-bold text-lg">Potvrda brisanja</h3>
+    <p class="py-4">
+      Da li ste sigurni da želite obrisati organizaciju "<strong>{{ selectedOrganizacija?.name }}</strong>"?
+    </p>
+    <p class="text-sm text-warning mb-4">
+      Ova akcija nije povratna. Brisanje će uspjeti samo ako organizacija nema korisnike.
+    </p>
+    <div class="modal-action">
+      <button type="button" (click)="closeDeleteModal()" class="btn btn-ghost">
+        Odustani
+      </button>
+      <button type="button" (click)="confirmDelete()" class="btn btn-error">
+        Obriši
+      </button>
+    </div>
+  </div>
+</div> -->
