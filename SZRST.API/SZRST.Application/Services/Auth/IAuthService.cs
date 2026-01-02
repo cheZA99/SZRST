@@ -63,16 +63,6 @@ namespace Application.Services
 					IsSuccess = false,
 				};
 
-			//var tenantExists = await _context.Set<Tenant>()
-			// .AnyAsync(t => t.Id == model.TenantId);
-
-			//if (!tenantExists)
-			//	return new UserManagerResponse
-			//	{
-			//		Message = "Odabrani tenant ne postoji.",
-			//		IsSuccess = false,
-			//	};
-
 			var user = new User
 			{
 				Email = model.Email,
@@ -86,16 +76,12 @@ namespace Application.Services
 			if (result.Succeeded)
 			{
 				await _userManager.AddToRoleAsync(user, Roles.Korisnik);
-				//await _userManger.AddToRoleAsync(user, "Customer");
 				var confirmEmailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
 
 				var encodedEmailToken = Encoding.UTF8.GetBytes(confirmEmailToken);
 				var validEmailToken = WebEncoders.Base64UrlEncode(encodedEmailToken);
 
 				string url = $"{_configuration["AppUrl"]}/api/auth/confirmemail?userid={user.Id}&token={validEmailToken}";
-
-				//await _mailService.SendEmailAsync(user.Email, "Confirm your email", $"<h1>Welcome to Auth Demo</h1>" +
-				//    $"<p>Please confirm your email by <a href='{url}'>Clicking here</a></p>");
 
 				return new UserManagerResponse
 				{
