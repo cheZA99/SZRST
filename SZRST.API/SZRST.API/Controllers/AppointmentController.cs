@@ -1,6 +1,7 @@
 ﻿using Domain.Entities;
 using Infrastructure.Persistance;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -8,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using SZRST.Domain.Constants;
+using SZRST.Domain.Entities;
 
 namespace SZRST.API.Controllers
 {
@@ -18,12 +20,15 @@ namespace SZRST.API.Controllers
 	public class AppointmentController :ControllerBase
 	{
 		private readonly SZRSTContext _context;
+		private readonly UserManager<User> _userManager;
+
 		private readonly ICurrentUserService _currentUserService;
 
-		public AppointmentController(SZRSTContext context, ICurrentUserService currentUserService)
+		public AppointmentController(SZRSTContext context, ICurrentUserService currentUserService, UserManager<User> userManager)
 		{
 			_context = context;
 			_currentUserService = currentUserService;
+			_userManager = userManager;
 		}
 
 		// GET: api/Appointment
@@ -232,6 +237,37 @@ namespace SZRST.API.Controllers
 
 			return Ok(result);
 		}
+
+		[HttpGet("dashboard-stats")]
+		public async Task<ActionResult<DashboardStatsDto>> GetDashboardStats()
+		{
+			var today = DateTime.Today;
+			var tomorrow = today.AddDays(1);
+
+			var stats = new DashboardStatsDto
+			{
+				TotalUsers = await _userManager.Users.CountAsync(),
+				TotalAppointmentsToday = await _context.Appointment
+				   .Where(a => a.AppointmentDateTime.Date == today.Date && !a.IsDeleted)
+				   .CountAsync(),
+				TotalTenants = await _context.Set<Tenant>().CountAsync(),
+				TotalFacilities = await _context.Facility.CountAsync(),
+				ActiveAppointments = await _context.Appointment
+				   .Where(a => a.AppointmentDateTime >= DateTime.Now && !a.IsDeleted)
+				   .CountAsync()
+			};
+
+			return Ok(stats);
+		}
+	}
+
+	public class DashboardStatsDto
+	{
+		public int TotalUsers { get; set; }
+		public int TotalAppointmentsToday { get; set; }
+		public int TotalTenants { get; set; }
+		public int TotalFacilities { get; set; }
+		public int ActiveAppointments { get; set; }
 	}
 
 	public class AppointmentCreateDto
