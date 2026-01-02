@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using SZRST.Domain.Constants;
+using SZRST.Domain.Entities;
 
 namespace SZRST.API.Controllers
 {
@@ -321,6 +322,164 @@ namespace SZRST.API.Controllers
 
 			return NoContent();
 		}
+
+		// GET: api/User/profile
+		[HttpGet("profile")]
+		public async Task<ActionResult<UserProfileDto>> GetCurrentUserProfile()
+		{
+			var userId = _currentUserService.UserId;
+			var user = await _userManager.Users
+			    .Include(u => u.AppMember)
+				   .ThenInclude(am => am.City)
+			    .Include(u => u.AppMember)
+				   .ThenInclude(am => am.Country)
+			    .FirstOrDefaultAsync(u => u.Id == userId);
+
+			if (user == null)
+				return NotFound();
+
+			return new UserProfileDto
+			{
+				Id = user.Id,
+				UserName = user.UserName,
+				Email = user.Email,
+				ImageUrl = user.AppMember?.ImageUrl,
+				DisplayName = user.AppMember?.DisplayName,
+				DateOfBirth = user.AppMember?.DateOfBirth,
+				Gender = user.AppMember?.Gender,
+				Description = user.AppMember?.Description,
+				CityId = user.AppMember?.CityId,
+				CityName = user.AppMember?.City?.Name,
+				CountryId = user.AppMember?.CountryId,
+				CountryName = user.AppMember?.Country?.Name
+			};
+		}
+
+		// PUT: api/User/profile
+		[HttpPut("profile")]
+		public async Task<IActionResult> UpdateCurrentUserProfile([FromBody] UserProfileUpdateDto dto)
+		{
+			var userId = _currentUserService.UserId;
+			var user = await _userManager.Users
+			    .Include(u => u.AppMember)
+			    .FirstOrDefaultAsync(u => u.Id == userId);
+
+			if (user == null)
+				return NotFound();
+
+			// Update User basic info
+			user.UserName = dto.UserName;
+			user.Email = dto.Email;
+			user.DateModified = DateTime.UtcNow;
+
+			var result = await _userManager.UpdateAsync(user);
+			if (!result.Succeeded)
+				return BadRequest(new
+				{
+					message = "Greška pri ažuriranju korisnika",
+					errors = result.Errors.Select(e => e.Description)
+				});
+
+			// Update or Create AppMember
+			if (user.AppMember == null)
+			{
+				user.AppMember = new AppMember
+				{
+					Id = user.Id,
+					DisplayName = dto.DisplayName ?? user.UserName,
+					DateOfBirth = dto.DateOfBirth ?? DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-18)),
+					Gender = dto.Gender ?? "Other",
+					DateCreated = DateTime.UtcNow
+				};
+				_context.AppMembers.Add(user.AppMember);
+			}
+			else
+			{
+				user.AppMember.DisplayName = dto.DisplayName ?? user.AppMember.DisplayName;
+				user.AppMember.DateOfBirth = dto.DateOfBirth ?? user.AppMember.DateOfBirth;
+				user.AppMember.Gender = dto.Gender ?? user.AppMember.Gender;
+				user.AppMember.Description = dto.Description;
+				user.AppMember.ImageUrl = dto.ImageUrl;
+				user.AppMember.CityId = dto.CityId ?? user.AppMember.CityId;
+				user.AppMember.CountryId = dto.CountryId ?? user.AppMember.CountryId;
+				user.AppMember.DateModified = DateTime.UtcNow;
+			}
+
+			// Handle password change if provided
+			if (!string.IsNullOrEmpty(dto.NewPassword))
+			{
+				if (string.IsNullOrEmpty(dto.CurrentPassword))
+				{
+					return BadRequest(new { message = "Trenutna lozinka je obavezna za promjenu lozinke." });
+				}
+
+				var passwordCheck = await _userManager.CheckPasswordAsync(user, dto.CurrentPassword);
+				if (!passwordCheck)
+				{
+					return BadRequest(new { message = "Trenutna lozinka nije ispravna." });
+				}
+
+				if (dto.NewPassword != dto.ConfirmPassword)
+				{
+					return BadRequest(new { message = "Nove lozinke se ne podudaraju." });
+				}
+
+				var passwordResult = await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
+				if (!passwordResult.Succeeded)
+				{
+					return BadRequest(new
+					{
+						message = "Greška pri promjeni lozinke",
+						errors = passwordResult.Errors.Select(e => e.Description)
+					});
+				}
+			}
+
+			await _context.SaveChangesAsync();
+
+			return NoContent();
+		}
+
+		// POST: api/User/profile/upload-image
+		[HttpPost("profile/upload-image")]
+		public async Task<IActionResult> UploadProfileImage([FromBody] ImageUploadDto dto)
+		{
+			var userId = _currentUserService.UserId;
+			var user = await _userManager.Users
+			    .Include(u => u.AppMember)
+			    .FirstOrDefaultAsync(u => u.Id == userId);
+
+			if (user == null)
+				return NotFound();
+
+			// Store base64 directly in database
+			var imageData = dto.Base64Image;
+
+			// Create AppMember if it doesn't exist
+			if (user.AppMember == null)
+			{
+				user.AppMember = new AppMember
+				{
+					Id = user.Id,
+					DisplayName = user.UserName,
+					DateOfBirth = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-18)),
+					Gender = "Other",
+					ImageUrl = imageData,
+					DateCreated = DateTime.UtcNow,
+					DateModified = DateTime.UtcNow,
+				};
+				_context.AppMembers.Add(user.AppMember);
+			}
+			else
+			{
+				user.AppMember.ImageUrl = imageData;
+				user.AppMember.DateModified = DateTime.UtcNow;
+			}
+
+			await _context.SaveChangesAsync();
+
+			return Ok(new { imageUrl = imageData });
+		}
 	}
 
 	public class UserListDto
@@ -372,5 +531,42 @@ namespace SZRST.API.Controllers
 		public int? TenantId { get; set; }
 		public string NewPassword { get; set; }
 		public string ConfirmPassword { get; set; }
+	}
+
+	public class UserProfileDto
+	{
+		public int Id { get; set; }
+		public string UserName { get; set; }
+		public string Email { get; set; }
+		public string ImageUrl { get; set; }
+		public string DisplayName { get; set; }
+		public DateOnly? DateOfBirth { get; set; }
+		public string Gender { get; set; }
+		public string Description { get; set; }
+		public int? CityId { get; set; }
+		public string CityName { get; set; }
+		public int? CountryId { get; set; }
+		public string CountryName { get; set; }
+	}
+
+	public class UserProfileUpdateDto
+	{
+		public string UserName { get; set; }
+		public string Email { get; set; }
+		public string DisplayName { get; set; }
+		public DateOnly? DateOfBirth { get; set; }
+		public string Gender { get; set; }
+		public string Description { get; set; }
+		public string ImageUrl { get; set; }
+		public int? CityId { get; set; }
+		public int? CountryId { get; set; }
+		public string CurrentPassword { get; set; }
+		public string NewPassword { get; set; }
+		public string ConfirmPassword { get; set; }
+	}
+
+	public class ImageUploadDto
+	{
+		public string Base64Image { get; set; }
 	}
 }

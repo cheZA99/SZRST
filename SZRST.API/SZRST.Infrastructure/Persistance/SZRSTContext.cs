@@ -148,7 +148,7 @@ namespace Infrastructure.Persistance
 		public DbSet<Worker> Worker { get; set; }
 		public DbSet<WorkerType> WorkerType { get; set; }
 
-		public DbSet<AppMember> AppMember { get; set; }
+		public DbSet<AppMember> AppMembers { get; set; }
 		public DbSet<Photo> Photos { get; set; }
 
 		public DbSet<RefreshToken> RefreshTokens { get; set; }

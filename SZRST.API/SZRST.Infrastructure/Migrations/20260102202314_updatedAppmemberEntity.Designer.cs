@@ -4,6 +4,7 @@ using Infrastructure.Persistance;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace SZRST.Infrastructure.Migrations
 {
     [DbContext(typeof(SZRSTContext))]
-    partial class SZRSTContextModelSnapshot : ModelSnapshot
+    [Migration("20260102202314_updatedAppmemberEntity")]
+    partial class updatedAppmemberEntity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -808,10 +811,10 @@ namespace SZRST.Infrastructure.Migrations
                     b.Property<int>("Id")
                         .HasColumnType("int");
 
-                    b.Property<int?>("CityId")
+                    b.Property<int>("CityId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("CountryId")
+                    b.Property<int>("CountryId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("DateCreated")
@@ -841,11 +844,16 @@ namespace SZRST.Infrastructure.Migrations
                     b.Property<DateTime>("LastActive")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CityId");
 
                     b.HasIndex("CountryId");
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("AppMembers");
                 });
@@ -1177,11 +1185,15 @@ namespace SZRST.Infrastructure.Migrations
                 {
                     b.HasOne("Domain.Entities.City", "City")
                         .WithMany()
-                        .HasForeignKey("CityId");
+                        .HasForeignKey("CityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("Domain.Entities.Country", "Country")
                         .WithMany()
-                        .HasForeignKey("CountryId");
+                        .HasForeignKey("CountryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("Domain.Entities.User", "User")
                         .WithOne("AppMember")
@@ -1189,9 +1201,17 @@ namespace SZRST.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("SZRST.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("City");
 
                     b.Navigation("Country");
+
+                    b.Navigation("Tenant");
 
                     b.Navigation("User");
                 });
