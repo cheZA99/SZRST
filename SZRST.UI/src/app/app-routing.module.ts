@@ -62,7 +62,7 @@ const routes: Routes = [
         path: 'uposlenici',
         component: UposleniciComponent,
         canActivate: [roleGuard],
-        data: { roles: ['SuperAdmin'] },
+        data: { roles: ['SuperAdmin', 'Admin'] },
       },
       {
         path: 'vijesti',

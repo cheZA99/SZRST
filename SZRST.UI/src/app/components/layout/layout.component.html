@@ -49,6 +49,15 @@
         *ngIf="
           authService.hasRole('SuperAdmin') || authService.hasRole('Admin')
         "
+        routerLink="/uposlenici"
+        routerLinkActive="text-accent"
+        >Uposlenici</a
+      >
+
+      <a
+        *ngIf="
+          authService.hasRole('SuperAdmin') || authService.hasRole('Admin')
+        "
         routerLink="/lokacije"
         routerLinkActive="text-accent"
         >Lokacije</a

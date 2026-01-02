@@ -1,1 +1,524 @@
-<p>uposlenici works!</p>
+<div class="container mx-auto p-6">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold">Uposlenici</h1>
+    <button
+      (click)="openCreateModal()"
+      class="btn btn-primary"
+      *ngIf="isAdmin || isSuperAdmin"
+    >
+      + Novi Uposlenik
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="flex justify-center items-center h-64">
+    <span class="loading loading-spinner loading-lg"></span>
+  </div>
+
+  <div *ngIf="!loading" class="overflow-x-auto">
+    <table class="table w-full">
+      <thead>
+        <tr>
+          <th>Korisničko ime</th>
+          <th>Email</th>
+          <th *ngIf="isSuperAdmin">Organizacija</th>
+          <th>Akcije</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let emp of employees" [class.line-through]="emp.isDeleted">
+          <td>{{ emp.userName }}</td>
+          <td>{{ emp.email }}</td>
+          <td *ngIf="isSuperAdmin">
+            <span
+              *ngIf="emp.tenantId && emp.tenantName"
+              class="badge badge-info"
+            >
+              {{ emp.tenantName }}
+            </span>
+            <span
+              *ngIf="emp.tenantId && !emp.tenantName"
+              class="badge badge-info"
+            >
+              ID: {{ emp.tenantId }}
+            </span>
+            <span *ngIf="!emp.tenantId" class="badge badge-ghost">
+              Bez organizacije
+            </span>
+          </td>
+
+          <td *ngIf="!isSuperAdmin" class="hidden"></td>
+
+          <td>
+            <div class="flex gap-2">
+              <button
+                (click)="openEditModal(emp)"
+                class="btn btn-sm btn-warning"
+                *ngIf="isSuperAdmin || isAdmin"
+              >
+                Edit
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="employees.length === 0" class="text-center py-8">
+      <p class="text-gray-500">Nema uposlenika.</p>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="showModal" class="modal modal-open">
+  <div class="modal-box max-w-2xl">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="font-bold text-lg">
+        {{ isEditMode ? "Uredi Uposlenika" : "Novi Uposlenik" }}
+      </h3>
+      <button (click)="closeModal()" class="btn btn-sm btn-circle">✕</button>
+    </div>
+
+    <form [formGroup]="employeeForm" (ngSubmit)="onSubmit()">
+      <div class="mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="form-control w-full">
+            <label class="label">
+              <span class="label-text">Korisničko Ime *</span>
+            </label>
+            <input
+              type="text"
+              formControlName="userName"
+              placeholder="Unesite korisničko ime"
+              class="input input-bordered w-full"
+              [class.input-error]="
+                employeeForm.get('userName')?.invalid &&
+                employeeForm.get('userName')?.touched
+              "
+            />
+            <label
+              class="label"
+              *ngIf="
+                employeeForm.get('userName')?.invalid &&
+                employeeForm.get('userName')?.touched
+              "
+            >
+              <span class="label-text-alt text-error">
+                Korisničko ime mora imati najmanje 3 karaktera
+              </span>
+            </label>
+          </div>
+
+          <div class="form-control w-full">
+            <label class="label">
+              <span class="label-text">Email *</span>
+            </label>
+            <input
+              type="email"
+              formControlName="email"
+              placeholder="uposlenik@example.com"
+              class="input input-bordered w-full"
+              [class.input-error]="
+                employeeForm.get('email')?.invalid &&
+                employeeForm.get('email')?.touched
+              "
+            />
+            <label
+              class="label"
+              *ngIf="
+                employeeForm.get('email')?.invalid &&
+                employeeForm.get('email')?.touched
+              "
+            >
+              <span class="label-text-alt text-error">
+                Unesite validan email
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div
+          *ngIf="isSuperAdmin && !isEditMode"
+          class="form-control w-full mt-4"
+        >
+          <label class="label">
+            <span class="label-text">Organizacija *</span>
+          </label>
+          <select
+            formControlName="tenantId"
+            class="select select-bordered w-full"
+            [class.select-error]="
+              employeeForm.get('tenantId')?.invalid &&
+              employeeForm.get('tenantId')?.touched
+            "
+          >
+            <option [value]="null" disabled selected>
+              Odaberite organizaciju
+            </option>
+            <option *ngFor="let tenant of tenants" [value]="tenant.id">
+              {{ tenant.name }}
+            </option>
+          </select>
+          <label
+            class="label"
+            *ngIf="
+              employeeForm.get('tenantId')?.invalid &&
+              employeeForm.get('tenantId')?.touched
+            "
+          >
+            <span class="label-text-alt text-error">
+              Morate odabrati organizaciju
+            </span>
+          </label>
+        </div>
+
+        <div
+          *ngIf="isSuperAdmin && isEditMode && selectedEmployee"
+          class="form-control w-full mt-4"
+        >
+          <label class="label">
+            <span class="label-text">Organizacija *</span>
+          </label>
+          <select
+            formControlName="tenantId"
+            class="select select-bordered w-full"
+            [class.select-error]="
+              employeeForm.get('tenantId')?.invalid &&
+              employeeForm.get('tenantId')?.touched
+            "
+          >
+            <option [value]="null" disabled>Odaberite organizaciju</option>
+            <option *ngFor="let tenant of tenants" [value]="tenant.id">
+              {{ tenant.name }}
+            </option>
+          </select>
+          <label
+            class="label"
+            *ngIf="
+              employeeForm.get('tenantId')?.invalid &&
+              employeeForm.get('tenantId')?.touched
+            "
+          >
+            <span class="label-text-alt text-error">
+              Morate odabrati organizaciju
+            </span>
+          </label>
+        </div>
+
+        <!-- <div
+          *ngIf="isAdmin && isEditMode && selectedEmployee"
+          class="form-control w-full mt-4"
+        >
+          <label class="label">
+            <span class="label-text">Organizacija</span>
+          </label>
+          <div class="alert alert-info">
+            <span>
+              Organizacija: <strong>ID {{ selectedEmployee.tenantId }}</strong>
+              (ne može se mijenjati)
+            </span>
+          </div>
+        </div> -->
+
+        <!-- <div *ngIf="isEditMode" class="form-control mt-4">
+          <label class="label cursor-pointer justify-start gap-3">
+            <input
+              type="checkbox"
+              formControlName="active"
+              class="checkbox checkbox-primary"
+            />
+            <span class="label-text">Aktivan</span>
+          </label>
+        </div> -->
+      </div>
+
+      <div *ngIf="!isEditMode" class="mb-6">
+        <div class="divider"></div>
+        <h4 class="font-semibold text-md mb-3 text-primary">Lozinka</h4>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="form-control w-full">
+            <label class="label">
+              <span class="label-text">Lozinka *</span>
+            </label>
+            <div class="relative">
+              <input
+                [type]="showPassword ? 'text' : 'password'"
+                formControlName="password"
+                placeholder="••••••••"
+                class="input input-bordered w-full pr-10"
+                [class.input-error]="
+                  employeeForm.get('password')?.invalid &&
+                  employeeForm.get('password')?.touched
+                "
+              />
+              <button
+                type="button"
+                (click)="togglePasswordVisibility('password')"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                <svg
+                  *ngIf="!showPassword"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="1.5"
+                  stroke="currentColor"
+                  class="w-5 h-5"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
+                  />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
+                <svg
+                  *ngIf="showPassword"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="1.5"
+                  stroke="currentColor"
+                  class="w-5 h-5"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"
+                  />
+                </svg>
+              </button>
+            </div>
+            <label
+              class="label"
+              *ngIf="
+                employeeForm.get('password')?.invalid &&
+                employeeForm.get('password')?.touched
+              "
+            >
+              <span class="label-text-alt text-error">
+                Lozinka mora imati najmanje 6 karaktera
+              </span>
+            </label>
+          </div>
+
+          <div class="form-control w-full">
+            <label class="label">
+              <span class="label-text">Potvrdi Lozinku *</span>
+            </label>
+            <div class="relative">
+              <input
+                [type]="showConfirmPassword ? 'text' : 'password'"
+                formControlName="confirmPassword"
+                placeholder="••••••••"
+                class="input input-bordered w-full pr-10"
+                [class.input-error]="
+                  employeeForm.errors?.['passwordMismatch'] &&
+                  employeeForm.get('confirmPassword')?.touched
+                "
+              />
+              <button
+                type="button"
+                (click)="togglePasswordVisibility('confirm')"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                <svg
+                  *ngIf="!showConfirmPassword"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="1.5"
+                  stroke="currentColor"
+                  class="w-5 h-5"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
+                  />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
+                <svg
+                  *ngIf="showConfirmPassword"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="1.5"
+                  stroke="currentColor"
+                  class="w-5 h-5"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"
+                  />
+                </svg>
+              </button>
+            </div>
+            <label
+              class="label"
+              *ngIf="employeeForm.errors?.['passwordMismatch'] && employeeForm.get('confirmPassword')?.touched"
+            >
+              <span class="label-text-alt text-error">
+                Lozinke se ne podudaraju
+              </span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="isEditMode" class="mb-6">
+        <div class="divider"></div>
+
+        <p class="text-sm text-gray-500 mb-4">
+          Ostavite prazno ako ne želite mijenjati lozinku.
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="form-control w-full">
+            <label class="label">
+              <span class="label-text">Nova Lozinka</span>
+            </label>
+            <div class="relative">
+              <input
+                [type]="showNewPassword ? 'text' : 'password'"
+                formControlName="newPassword"
+                placeholder="••••••••"
+                class="input input-bordered w-full pr-10"
+              />
+              <button
+                type="button"
+                (click)="togglePasswordVisibility('newPassword')"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                <svg
+                  *ngIf="!showNewPassword"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="1.5"
+                  stroke="currentColor"
+                  class="w-5 h-5"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
+                  />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
+                <svg
+                  *ngIf="showNewPassword"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="1.5"
+                  stroke="currentColor"
+                  class="w-5 h-5"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-control w-full">
+            <label class="label">
+              <span class="label-text">Potvrdi Novu Lozinku</span>
+            </label>
+            <div class="relative">
+              <input
+                [type]="showNewConfirmPassword ? 'text' : 'password'"
+                formControlName="newConfirmPassword"
+                placeholder="••••••••"
+                class="input input-bordered w-full pr-10"
+                [class.input-error]="
+                  employeeForm.errors?.['newPasswordMismatch'] &&
+                  employeeForm.get('newConfirmPassword')?.touched
+                "
+              />
+              <button
+                type="button"
+                (click)="togglePasswordVisibility('newConfirm')"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                <svg
+                  *ngIf="!showNewConfirmPassword"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="1.5"
+                  stroke="currentColor"
+                  class="w-5 h-5"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
+                  />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
+                <svg
+                  *ngIf="showNewConfirmPassword"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="1.5"
+                  stroke="currentColor"
+                  class="w-5 h-5"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"
+                  />
+                </svg>
+              </button>
+            </div>
+            <label
+              class="label"
+              *ngIf="employeeForm.errors?.['newPasswordMismatch'] && employeeForm.get('newConfirmPassword')?.touched"
+            >
+              <span class="label-text-alt text-error">
+                Lozinke se ne podudaraju
+              </span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-action">
+        <button type="button" (click)="closeModal()" class="btn btn-ghost">
+          Odustani
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="employeeForm.invalid"
+        >
+          {{ isEditMode ? "Sačuvaj" : "Kreiraj" }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

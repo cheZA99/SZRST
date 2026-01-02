@@ -26,8 +26,13 @@ export class AuthService {
     const roles =
       decoded['role'] ||
       decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
-
+    
+    // Dodaj tenantId iz tokena
+    user.tenantId = decoded['tenantId'] || 
+                    decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/tenantid'];
+    
     user.roles = Array.isArray(roles) ? roles : [roles];
+    
     localStorage.setItem('user', JSON.stringify(user));
     this.currentUser.set(user);
   }
@@ -83,11 +88,17 @@ export class AuthService {
 
     return Array.isArray(roles) ? roles : [roles];
   }
+
   hasRole(role: string): boolean {
     return this.getUserRoles().includes(role);
   }
 
   hasAnyRole(roles: string[]): boolean {
     return roles.some((r) => this.hasRole(r));
+  }
+
+  getTenantId(): number | null {
+    const user = this.currentUser();
+    return user?.tenantId || null;
   }
 }
