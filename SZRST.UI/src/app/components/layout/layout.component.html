@@ -1,111 +1,42 @@
-<header
-  class="p-3 w-full fixed top-0 z-50 bg-gradient-to-r from-primary to-black"
->
+<header class="p-3 w-full fixed top-0 z-50 bg-gradient-to-r from-primary to-black">
   <div class="flex align-middle items-center px-10 mx-auto gap-6">
-    <a
-      routerLink="/dashboard"
-      class="flex items-center gap-3 max-h-16 text-white border-r-white border-r-2 pr-6"
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-        class="size-6"
-      >
-        <path
-          fill-rule="evenodd"
-          d="M8.25 6.75a3.75 3.75 0 1 1 7.5 0 3.75 3.75 0 0 1-7.5 0ZM15.75 9.75a3 3 0 1 1 6 0 3 3 0 0 1-6 0ZM2.25 9.75a3 3 0 1 1 6 0 3 3 0 0 1-6 0ZM6.31 15.117A6.745 6.745 0 0 1 12 12a6.745 6.745 0 0 1 6.709 7.498.75.75 0 0 1-.372.568A12.696 12.696 0 0 1 12 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 0 1-.372-.568 6.787 6.787 0 0 1 1.019-4.38Z"
-          clip-rule="evenodd"
-        />
-        <path
-          d="M5.082 14.254a8.287 8.287 0 0 0-1.308 5.135 9.687 9.687 0 0 1-1.764-.44l-.115-.04a.563.563 0 0 1-.373-.487l-.01-.121a3.75 3.75 0 0 1 3.57-4.047ZM20.226 19.389a8.287 8.287 0 0 0-1.308-5.135 3.75 3.75 0 0 1 3.57 4.047l-.01.121a.563.563 0 0 1-.373.486l-.115.04c-.567.2-1.156.349-1.764.441Z"
-        />
+    <a routerLink="/dashboard" class="flex items-center gap-3 max-h-16 text-white border-r-white border-r-2 pr-6">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
+        <path fill-rule="evenodd" d="M8.25 6.75a3.75 3.75 0 1 1 7.5 0 3.75 3.75 0 0 1-7.5 0ZM15.75 9.75a3 3 0 1 1 6 0 3 3 0 0 1-6 0ZM2.25 9.75a3 3 0 1 1 6 0 3 3 0 0 1-6 0ZM6.31 15.117A6.745 6.745 0 0 1 12 12a6.745 6.745 0 0 1 6.709 7.498.75.75 0 0 1-.372.568A12.696 12.696 0 0 1 12 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 0 1-.372-.568 6.787 6.787 0 0 1 1.019-4.38Z" clip-rule="evenodd" />
+        <path d="M5.082 14.254a8.287 8.287 0 0 0-1.308 5.135 9.687 9.687 0 0 1-1.764-.44l-.115-.04a.563.563 0 0 1-.373-.487l-.01-.121a3.75 3.75 0 0 1 3.57-4.047ZM20.226 19.389a8.287 8.287 0 0 0-1.308-5.135 3.75 3.75 0 0 1 3.57 4.047l-.01.121a.563.563 0 0 1-.373.486l-.115.04c-.567.2-1.156.349-1.764.441Z" />
       </svg>
-
       <h3 class="text-2xl font-semibold text-white uppercase">SZRST</h3>
     </a>
 
     <nav class="flex gap-3 my-2 uppercase text-lg text-white">
-      <a
-        *ngIf="
-          authService.hasRole('SuperAdmin') ||
-          authService.hasRole('Admin') ||
-          authService.hasRole('Uposlenik') ||
-          authService.hasRole('Korisnik')
-        "
-        routerLink="/rezervacije"
-        routerLinkActive="text-accent"
-        >Rezervacije</a
-      >
+      <a *ngIf="authService.hasRole('SuperAdmin') || authService.hasRole('Admin') || authService.hasRole('Uposlenik') || authService.hasRole('Korisnik')" routerLink="/rezervacije" routerLinkActive="text-accent">Rezervacije</a>
 
-      <a
-        *ngIf="authService.hasRole('SuperAdmin')"
-        routerLink="/organizacije"
-        routerLinkActive="text-accent"
-        >Organizacije</a
-      >
+      <a *ngIf="authService.hasRole('SuperAdmin')" routerLink="/organizacije" routerLinkActive="text-accent">Organizacije</a>
 
-      <a
-        *ngIf="
-          authService.hasRole('SuperAdmin') || authService.hasRole('Admin')
-        "
-        routerLink="/uposlenici"
-        routerLinkActive="text-accent"
-        >Uposlenici</a
-      >
+      <a *ngIf="authService.hasRole('SuperAdmin') || authService.hasRole('Admin')" routerLink="/uposlenici" routerLinkActive="text-accent">Uposlenici</a>
 
-      <a
-        *ngIf="
-          authService.hasRole('SuperAdmin') || authService.hasRole('Admin')
-        "
-        routerLink="/lokacije"
-        routerLinkActive="text-accent"
-        >Lokacije</a
-      >
-      <a
-        *ngIf="authService.hasRole('SuperAdmin')"
-        routerLink="/resursi"
-        routerLinkActive="text-accent"
-        >Resursi</a
-      >
-      <a
-        *ngIf="authService.hasRole('SuperAdmin')"
-        routerLink="/kategorije"
-        routerLinkActive="text-accent"
-        >Kategorije</a
-      >
+      <a *ngIf="authService.hasRole('SuperAdmin') || authService.hasRole('Admin')" routerLink="/lokacije" routerLinkActive="text-accent">Lokacije</a>
+
+      <a *ngIf="authService.hasRole('SuperAdmin')" routerLink="/resursi" routerLinkActive="text-accent">Resursi</a>
+
+      <a *ngIf="authService.hasRole('SuperAdmin')" routerLink="/kategorije" routerLinkActive="text-accent">Kategorije</a>
     </nav>
 
     <div class="flex align-middle ml-auto gap-3">
       <div class="dropdown dropdown-end">
         @if (authService.currentUser()){
-        <div
-          tabindex="0"
-          role="button"
-          class="flex items-center text-white text-xl gap-3 cursor-pointer"
-        >
-          <img
-            src="assets/pictures/user.png"
-            alt="userAvatar"
-            class="w-8 h-8 rounded-full"
-          />
+        <div tabindex="0" role="button" class="flex items-center text-white text-xl gap-3 cursor-pointer">
+          <img [src]="userProfileImage || 'assets/pictures/user.png'" alt="userAvatar" class="w-8 h-8 rounded-full object-cover" />
           <span>{{ authService.currentUser()?.userName }}</span>
         </div>
         } @else {
-        <div
-          tabindex="0"
-          role="button"
-          class="flex items-center text-white text-xl gap-3 cursor-pointer"
-        >
+        <div tabindex="0" role="button" class="flex items-center text-white text-xl gap-3 cursor-pointer">
           <span>LOGIN</span>
         </div>
         }
-        <ul
-          tabindex="0"
-          class="dropdown-content menu bg-base-100 rounded-box z-10 w-52 p-2 shadow-sm"
-        >
-          <li><a>Edit Profile</a></li>
-          <li><a (click)="logout()">Logout</a></li>
+        <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-10 w-52 p-2 shadow-sm">
+          <li><a (click)="editProfile()">Uredi Profil</a></li>
+          <li><a (click)="logout()">Odjavi se</a></li>
         </ul>
       </div>
     </div>

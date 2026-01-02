@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 export interface User {
@@ -28,13 +29,49 @@ export interface UserUpdateDto {
   tenantId?: number;
 }
 
+export interface UserProfile {
+  id: number;
+  userName: string;
+  email: string;
+  imageUrl?: string;
+  displayName?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  description?: string;
+  cityId?: number;
+  cityName?: string;
+  countryId?: number;
+  countryName?: string;
+}
+
+export interface UserProfileUpdate {
+  userName: string;
+  email: string;
+  displayName?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  description?: string;
+  imageUrl?: string;
+  cityId?: number;
+  countryId?: number;
+  currentPassword?: string;
+  newPassword?: string;
+  confirmPassword?: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
 export class UserService {
   private readonly apiUrl = `${environment.apiUrl}/api/user`;
 
+  private profileUpdated$ = new Subject<void>();
+
   constructor(private http: HttpClient) {}
+
+  get profileUpdated() {
+    return this.profileUpdated$.asObservable();
+  }
 
   getAll(): Observable<User[]> {
     return this.http.get<User[]>(this.apiUrl);
@@ -43,10 +80,10 @@ export class UserService {
   getById(id: number): Observable<User> {
     return this.http.get<User>(`${this.apiUrl}/${id}`);
   }
-  getUsersForAppointments() {
-  return this.http.get<User[]>(`${this.apiUrl}/for-appointments`);
-}
 
+  getUsersForAppointments() {
+    return this.http.get<User[]>(`${this.apiUrl}/for-appointments`);
+  }
 
   create(data: UserCreateDto): Observable<any> {
     return this.http.post(this.apiUrl, data);
@@ -62,5 +99,24 @@ export class UserService {
 
   getActiveUsers(): Observable<User[]> {
     return this.http.get<User[]>(this.apiUrl);
+  }
+
+  getCurrentUserProfile(): Observable<UserProfile> {
+    return this.http.get<UserProfile>(`${this.apiUrl}/profile`);
+  }
+
+  updateCurrentUserProfile(profile: UserProfileUpdate): Observable<void> {
+    return this.http.put<void>(`${this.apiUrl}/profile`, profile).pipe(
+      tap(() => this.profileUpdated$.next())
+    );
+  }
+
+  uploadProfileImage(base64Image: string): Observable<{ imageUrl: string }> {
+    return this.http.post<{ imageUrl: string }>(
+      `${this.apiUrl}/profile/upload-image`,
+      { base64Image }
+    ).pipe(
+      tap(() => this.profileUpdated$.next())
+    );
   }
 }

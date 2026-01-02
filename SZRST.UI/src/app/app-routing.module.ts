@@ -15,6 +15,7 @@ import { authGuard } from './guards/auth.guard';
 import { NotFoundComponent } from './components/not-found/not-found.component';
 import { roleGuard } from './guards/role.guard';
 import { OrganizacijeComponent } from './components/organizacije/organizacije.component';
+import { EditProfileComponent } from './components/edit-profile/edit-profile.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
@@ -63,6 +64,12 @@ const routes: Routes = [
         component: UposleniciComponent,
         canActivate: [roleGuard],
         data: { roles: ['SuperAdmin', 'Admin'] },
+      },
+      {
+        path: 'uredi-profil',
+        component: EditProfileComponent,
+        canActivate: [roleGuard],
+        data: { roles: ['SuperAdmin', 'Admin', 'Uposlenik', 'Korisnik'] },
       },
       {
         path: 'vijesti',
