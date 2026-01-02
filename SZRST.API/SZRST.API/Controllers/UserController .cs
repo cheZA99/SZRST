@@ -159,6 +159,168 @@ namespace SZRST.API.Controllers
 
 			return users;
 		}
+
+		// GET: api/User/employees
+		[HttpGet("employees")]
+		public async Task<ActionResult<IEnumerable<UserListDto>>> GetEmployees()
+		{
+			var currentUser = await _userManager.FindByIdAsync(_currentUserService.UserId.ToString());
+			var currentUserRoles = await _userManager.GetRolesAsync(currentUser);
+
+			IQueryable<User> query = _userManager.Users.Include(x => x.Tenant).OrderBy(x => x.TenantId);
+
+			if (currentUserRoles.Contains(Roles.SuperAdmin))
+			{
+				query = query.Where(u => u.TenantId != null);
+			}
+			else if (currentUserRoles.Contains(Roles.Admin))
+			{
+				query = query.Where(u => u.TenantId == _currentUserService.TenantId);
+			}
+
+			var employees = await query.ToListAsync();
+			var employeeDtos = new List<UserListDto>();
+
+			foreach (var employee in employees)
+			{
+				var roles = await _userManager.GetRolesAsync(employee);
+				if (roles.Contains(Roles.Uposlenik) && !roles.Contains(Roles.SuperAdmin))
+				{
+					employeeDtos.Add(new UserListDto
+					{
+						Id = employee.Id,
+						UserName = employee.UserName,
+						Email = employee.Email,
+						Active = employee.Active,
+						IsDeleted = employee.IsDeleted,
+						TenantId = employee.TenantId,
+						Roles = roles.ToList(),
+						TenantName = employee.Tenant.Name
+					});
+				}
+			}
+
+			return employeeDtos;
+		}
+
+		// POST: api/User/create-employee
+		[HttpPost("create-employee")]
+		public async Task<IActionResult> CreateEmployee([FromBody] EmployeeCreateDto dto)
+		{
+			var currentUser = await _userManager.FindByIdAsync(_currentUserService.UserId.ToString());
+			var currentUserRoles = await _userManager.GetRolesAsync(currentUser);
+
+			if (currentUserRoles.Contains(Roles.Admin) && dto.TenantId != _currentUserService.TenantId)
+			{
+				return Forbid("Admin može dodavati uposlenike samo u svoju organizaciju");
+			}
+
+			var existingUserByEmail = await _userManager.FindByEmailAsync(dto.Email);
+			if (existingUserByEmail != null)
+			{
+				return BadRequest(new { message = "Korisnik sa tim emailom već postoji." });
+			}
+
+			var existingUserByUsername = await _userManager.FindByNameAsync(dto.UserName);
+			if (existingUserByUsername != null)
+			{
+				return BadRequest(new { message = "Korisnik sa tim korisničkim imenom već postoji." });
+			}
+
+			var user = new User
+			{
+				UserName = dto.UserName,
+				Email = dto.Email,
+				Active = true,
+				TenantId = dto.TenantId,
+				DateCreated = DateTime.UtcNow,
+				DateModified = DateTime.UtcNow
+			};
+
+			var result = await _userManager.CreateAsync(user, dto.Password);
+
+			if (!result.Succeeded)
+				return BadRequest(new
+				{
+					message = "Greška pri kreiranju korisnika",
+					errors = result.Errors.Select(e => e.Description)
+				});
+
+			await _userManager.AddToRoleAsync(user, Roles.Uposlenik);
+
+			return Ok(new
+			{
+				user.Id,
+				user.UserName,
+				user.Email,
+				user.TenantId,
+				Role = Roles.Uposlenik
+			});
+		}
+
+		// PUT: api/User/update-employee/{id}
+		[HttpPut("update-employee/{id}")]
+		public async Task<IActionResult> UpdateEmployee(int id, [FromBody] EmployeeUpdateDto dto)
+		{
+			var user = await _userManager.FindByIdAsync(id.ToString());
+			if (user == null)
+				return NotFound();
+
+			var currentUser = await _userManager.FindByIdAsync(_currentUserService.UserId.ToString());
+			var currentUserRoles = await _userManager.GetRolesAsync(currentUser);
+
+			if (currentUserRoles.Contains(Roles.Admin) && user.TenantId != _currentUserService.TenantId)
+			{
+				return Forbid("Admin može ažurirati samo uposlenike iz svoje organizacije");
+			}
+
+			var existingUserByEmail = await _userManager.FindByEmailAsync(dto.Email);
+			if (existingUserByEmail != null && existingUserByEmail.Id != id)
+			{
+				return BadRequest(new { message = "Korisnik sa tim emailom već postoji." });
+			}
+
+			user.UserName = dto.UserName;
+			user.Email = dto.Email;
+			user.Active = dto.Active;
+			user.DateModified = DateTime.UtcNow;
+
+			if (currentUserRoles.Contains(Roles.SuperAdmin))
+			{
+				user.TenantId = dto.TenantId;
+			}
+
+			var result = await _userManager.UpdateAsync(user);
+
+			if (!result.Succeeded)
+				return BadRequest(new
+				{
+					message = "Greška pri ažuriranju korisnika",
+					errors = result.Errors.Select(e => e.Description)
+				});
+
+			if (!string.IsNullOrEmpty(dto.NewPassword))
+			{
+				if (dto.NewPassword != dto.ConfirmPassword)
+				{
+					return BadRequest(new { message = "Lozinke se ne podudaraju." });
+				}
+
+				var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+				var passwordResult = await _userManager.ResetPasswordAsync(user, token, dto.NewPassword);
+
+				if (!passwordResult.Succeeded)
+				{
+					return BadRequest(new
+					{
+						message = "Greška pri promjeni lozinke",
+						errors = passwordResult.Errors.Select(e => e.Description)
+					});
+				}
+			}
+
+			return NoContent();
+		}
 	}
 
 	public class UserListDto
@@ -169,6 +331,8 @@ namespace SZRST.API.Controllers
 		public bool Active { get; set; }
 		public bool IsDeleted { get; set; }
 		public int? TenantId { get; set; }
+		public string TenantName { get; set; }
+		public List<string> Roles { get; set; } = new List<string>();
 	}
 
 	public class UserCreateDto
@@ -178,6 +342,7 @@ namespace SZRST.API.Controllers
 		public string Password { get; set; }
 		public bool Active { get; set; }
 		public int? TenantId { get; set; }
+		public string Role { get; set; }
 	}
 
 	public class UserUpdateDto
@@ -187,5 +352,25 @@ namespace SZRST.API.Controllers
 		public bool Active { get; set; }
 		public bool IsDeleted { get; set; }
 		public int? TenantId { get; set; }
+		public string Role { get; set; }
+	}
+
+	public class EmployeeCreateDto
+	{
+		public string UserName { get; set; }
+		public string Email { get; set; }
+		public string Password { get; set; }
+		public string ConfirmPassword { get; set; }
+		public int? TenantId { get; set; }
+	}
+
+	public class EmployeeUpdateDto
+	{
+		public string UserName { get; set; }
+		public string Email { get; set; }
+		public bool Active { get; set; }
+		public int? TenantId { get; set; }
+		public string NewPassword { get; set; }
+		public string ConfirmPassword { get; set; }
 	}
 }

@@ -28,12 +28,9 @@ export class UposleniciComponent implements OnInit {
   showConfirmPassword = false;
   showNewPassword = false;
   showNewConfirmPassword = false;
-
-  // Permisije
   isSuperAdmin = false;
   isAdmin = false;
 
-  // Current user tenant ID - OVO JE KLJUČNO!
   currentUserTenantId: number | null = null;
 
   constructor(
@@ -47,20 +44,18 @@ export class UposleniciComponent implements OnInit {
   }
 
   private createForm(): FormGroup {
-    // OVO JE VAŽNO: Dohvati tenantId na osnovu trenutnog korisnika
     const currentUser = this.authService.currentUser();
     this.currentUserTenantId = currentUser?.tenantId || null;
 
 
     if (this.authService.hasRole('SuperAdmin')) {
-      // SuperAdmin mora odabrati organizaciju (obavezno)
       return this.fb.group(
         {
           userName: ['', [Validators.required, Validators.minLength(3)]],
           email: ['', [Validators.required, Validators.email]],
           password: ['', [Validators.required, Validators.minLength(6)]],
           confirmPassword: ['', [Validators.required]],
-          tenantId: [null, Validators.required], // OBAVEZNO za SuperAdmina
+          tenantId: [null, Validators.required],
           active: [true],
           newPassword: [''],
           newConfirmPassword: [''],
@@ -70,14 +65,12 @@ export class UposleniciComponent implements OnInit {
         }
       );
     } else {
-      // Admin automatski koristi svoju organizaciju - NEMA tenantId polja u formi
       return this.fb.group(
         {
           userName: ['', [Validators.required, Validators.minLength(3)]],
           email: ['', [Validators.required, Validators.email]],
           password: ['', [Validators.required, Validators.minLength(6)]],
           confirmPassword: ['', [Validators.required]],
-          // NEMA tenantId polja za Admina!
           active: [true],
           newPassword: [''],
           newConfirmPassword: [''],
@@ -116,12 +109,10 @@ export class UposleniciComponent implements OnInit {
     this.checkPermissions();
     this.loadEmployees();
 
-    // OVO JE VAŽNO: Inicijalizuj current user tenant ID PRIJE svega
     const currentUser = this.authService.currentUser();
     this.currentUserTenantId = currentUser?.tenantId || null;
 
 
-    // Ako je superadmin, učitaj organizacije
     if (this.isSuperAdmin) {
       this.loadTenants();
     }
@@ -168,16 +159,13 @@ export class UposleniciComponent implements OnInit {
     this.selectedEmployee = null;
 
     if (this.isSuperAdmin) {
-      // SuperAdmin mora odabrati organizaciju
       this.employeeForm.reset({
         active: true,
-        tenantId: null, // Prazno, mora se odabrati
+        tenantId: null, 
       });
     } else if (this.isAdmin) {
-      // Admin automatski koristi svoju organizaciju
       this.employeeForm.reset({
         active: true,
-        // NEMA tenantId polja!
       });
     }
 
@@ -278,7 +266,6 @@ export class UposleniciComponent implements OnInit {
 
   const formData = this.employeeForm.value;
 
-  // Ako je Admin, dodaj tenantId automatski
   if (this.isAdmin && !this.isSuperAdmin) {
     formData.tenantId = this.currentUserTenantId;
   }
@@ -291,13 +278,11 @@ export class UposleniciComponent implements OnInit {
 }
 
 createEmployee(data: any): void {
-  // Provjeri da li je tenantId postavljen za SuperAdmina
   if (this.isSuperAdmin && !data.tenantId) {
     this.toastr.error('Morate odabrati organizaciju');
     return;
   }
 
-  // Ako je admin, postavi tenantId na svoju organizaciju
   if (this.isAdmin && !this.isSuperAdmin) {
     data.tenantId = this.currentUserTenantId;
   }
@@ -326,22 +311,16 @@ createEmployee(data: any): void {
 }
 
 updateEmployee(id: number, data: any): void {
-  // Ako je admin, ne dozvoli promjenu tenantId
   if (this.isAdmin && !this.isSuperAdmin) {
     data.tenantId = this.selectedEmployee?.tenantId;
   }
   
-  // U edit modu, ukloni confirmPassword jer ga nema u formi
-  // ili je prazan, a backend ga očekuje
   delete data.confirmPassword;
   
-  // Ako nije unesena nova lozinka, ukloni i password polja
   if (!data.newPassword) {
     delete data.newPassword;
     delete data.newConfirmPassword;
   } else {
-    // Ako je unesena nova lozinka, postavi confirmPassword = newPassword
-    // jer backend očekuje da se podudaraju
     data.confirmPassword = data.newPassword;
   }
 
