@@ -7,17 +7,17 @@ import { AppointmentService } from '../../services/appointment.service';
 import { AppointmentCalendar } from 'src/app/types/appointment-calendar-model';
 import { ViewChild } from '@angular/core';
 import { FullCalendarComponent } from '@fullcalendar/angular';
-import enGbLocale from '@fullcalendar/core/locales/en-gb';
+import locale from '@fullcalendar/core/locales/hr';
 import { MatDialog } from '@angular/material/dialog';
 import { AppointmentDialogComponent } from '../rezervacije-dialog/rezervacije-dialog.component';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
 import { FacilityService } from 'src/app/services/facility.service';
 import { AppointmentTypeService } from 'src/app/services/appointment-type.service';
 import { TenantService, Tenant } from 'src/app/services/tenant.service';
 import { UserService, User } from 'src/app/services/user.service';
 import { AuthService } from 'src/app/services/auth.service';
 import { ToastrService } from 'ngx-toastr';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
   selector: 'app-rezervacije',
@@ -30,6 +30,7 @@ export class RezervacijeComponent implements OnInit {
 
   selectedFacilityId: number | null = null;
   selectedTenantId: number | null = null;
+  selectedTenantName: string = '';
   tenantIdFromToken: number | null = null;
   facilities: any[] = [];
   filteredFacilities: any[] = [];
@@ -46,8 +47,11 @@ export class RezervacijeComponent implements OnInit {
   showTenantFilter = false;
   canSelectUserInModal = false;
 
+  fromDashboard = false;
+  initialLoadComplete = false;
+
   calendarOptions: CalendarOptions = {
-    locale: enGbLocale,
+    locale: locale,
     initialView: 'timeGridWeek',
     plugins: [timeGridPlugin, dayGridPlugin, interactionPlugin],
     selectable: true,
@@ -159,39 +163,161 @@ export class RezervacijeComponent implements OnInit {
     private authService: AuthService,
     private dialog: MatDialog,
     private toastr: ToastrService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private router: Router
   ) {}
 
-  ngOnInit() {
+ngOnInit() {
   this.initializeUserData();
   
-  this.route.queryParams.subscribe(params => {
-    if (params['tenantId']) {
-      const tenantId = +params['tenantId'];
+  const params = this.route.snapshot.queryParams;
+  console.log('Initial query params:', params);
+  
+  this.fromDashboard = params['fromDashboard'] === 'true';
+  
+  if (params['tenantId']) {
+    const tenantId = +params['tenantId'];
+    if (tenantId && !isNaN(tenantId)) {
       this.selectedTenantId = tenantId;
       
       if (params['tenantName']) {
+        this.selectedTenantName = decodeURIComponent(params['tenantName']);
       }
-      
-      this.loadFacilitiesForTenant(tenantId);
     }
-    
-    if (params['facilityId']) {
-      const facilityId = +params['facilityId'];
+  }
+  
+  if (params['facilityId']) {
+    const facilityId = +params['facilityId'];
+    if (facilityId && !isNaN(facilityId)) {
       this.selectedFacilityId = facilityId;
+    }
+  }
+  
+  if (!this.selectedTenantId && (this.isAdmin || this.isUposlenik)) {
+    this.selectedTenantId = this.tenantIdFromToken;
+    if (this.selectedTenantId) {
+      this.loadTenantName(this.selectedTenantId);
+    }
+  }
+  
+  this.loadAllData();
+}
+
+
+loadAllData(): void {
+  forkJoin({
+    tenants: this.showTenantFilter ? this.tenantService.getAllTenants() : of([]),
+    facilities: this.facilityService.getAll()
+  }).subscribe({
+    next: (data) => {
+      this.tenants = data.tenants;
+      this.facilities = data.facilities;
       
-      if (!this.selectedTenantId) {
-        this.findTenantForFacility(facilityId);
+      console.log('Data loaded:', {
+        tenants: this.tenants.length,
+        facilities: this.facilities.length,
+        selectedTenantId: this.selectedTenantId,
+        selectedFacilityId: this.selectedFacilityId
+      });
+      
+      this.applyFacilityFilter();
+      
+      if (!this.selectedTenantId && this.showTenantFilter && this.tenants.length > 0) {
+        this.selectedTenantId = this.tenants[0].id;
+        this.selectedTenantName = this.tenants[0].name;
+        this.applyFacilityFilter();
       }
+      
+      if (!this.selectedTenantId && (this.isAdmin || this.isUposlenik) && this.tenantIdFromToken) {
+        this.selectedTenantId = this.tenantIdFromToken;
+        this.loadTenantName(this.selectedTenantId);
+        this.applyFacilityFilter();
+      }
+      
+      if (this.selectedFacilityId && this.filteredFacilities.length > 0) {
+        const facilityExists = this.filteredFacilities.some(f => f.id === this.selectedFacilityId);
+        if (!facilityExists) {
+          const facilityFromAll = this.facilities.find(f => f.id === this.selectedFacilityId);
+          if (facilityFromAll) {
+            this.selectedTenantId = facilityFromAll.tenantId;
+            const tenant = this.tenants.find(t => t.id === this.selectedTenantId);
+            if (tenant) {
+              this.selectedTenantName = tenant.name;
+            }
+            this.applyFacilityFilter();
+          }
+        }
+      }
+      
+      if (!this.selectedFacilityId && this.filteredFacilities.length > 0) {
+        this.selectedFacilityId = this.filteredFacilities[0].id;
+        console.log('Setting facility to first:', this.selectedFacilityId);
+      }
+      
+      if (this.selectedFacilityId) {
+        console.log('Ready to show calendar. Tenant:', this.selectedTenantId, 'Facility:', this.selectedFacilityId);
+        setTimeout(() => this.refreshCalendar(), 300);
+      }
+      
+      this.initialLoadComplete = true;
+    },
+    error: (err) => {
+      console.error('Failed to load data:', err);
+      this.toastr.error('Failed to load data', 'Error');
     }
   });
-  
-  if (this.showTenantFilter) {
-    this.loadTenants();
-  }
-
-  this.loadFacilities();
 }
+
+applyQueryParams(): void {
+  const params = this.route.snapshot.queryParams;
+  
+  if (params['tenantId']) {
+    const tenantId = +params['tenantId'];
+    this.selectedTenantId = tenantId;
+    
+    if (params['tenantName']) {
+      this.selectedTenantName = decodeURIComponent(params['tenantName']);
+    } else if (tenantId) {
+      const tenant = this.tenants.find(t => t.id === tenantId);
+      this.selectedTenantName = tenant ? tenant.name : '';
+    }
+  } else if (this.showTenantFilter && this.tenants.length > 0) {
+    this.selectedTenantId = this.tenants[0].id;
+    this.selectedTenantName = this.tenants[0].name;
+  }
+  
+  this.applyFacilityFilter();
+  
+  if (params['facilityId']) {
+    const facilityId = +params['facilityId'];
+    
+    const facilityExists = this.filteredFacilities.some(f => f.id === facilityId);
+    if (facilityExists) {
+      this.selectedFacilityId = facilityId;
+    } else if (this.filteredFacilities.length > 0) {
+      this.selectedFacilityId = this.filteredFacilities[0].id;
+    }
+  } else if (this.filteredFacilities.length > 0) {
+    this.selectedFacilityId = this.filteredFacilities[0].id;
+  }
+  
+  if (this.selectedFacilityId) {
+    setTimeout(() => this.refreshCalendar(), 300);
+  }
+  
+  this.initialLoadComplete = true;
+}
+
+  loadTenantName(tenantId: number): void {
+    this.tenantService.getTenantById(tenantId).subscribe({
+      next: (tenant) => {
+        this.selectedTenantName = tenant.name;
+      },
+      error: (err) => {
+        console.error('Error loading tenant name:', err);
+      }
+    });
+  }
 
   initializeUserData() {
     const decoded = this.authService.getDecodedToken();
@@ -205,107 +331,95 @@ export class RezervacijeComponent implements OnInit {
       this.isUposlenik = this.authService.hasRole('Uposlenik');
 
       this.showTenantFilter = this.isKorisnik || this.isSuperAdmin;
-
       this.canSelectUserInModal = this.isAdmin || this.isUposlenik;
 
       if ((this.isAdmin || this.isUposlenik) && decoded.tenantId) {
         this.tenantIdFromToken = +decoded.tenantId;
-        this.selectedTenantId = this.tenantIdFromToken;
+        if (!this.selectedTenantId) {
+          this.selectedTenantId = this.tenantIdFromToken;
+          this.loadTenantName(this.tenantIdFromToken);
+        }
       }
     }
   }
-loadFacilitiesForTenant(tenantId: number): void {
-  this.facilityService.getAll().subscribe({
-    next: (data) => {
-      this.facilities = data;
-      this.applyFacilityFilter();
-      
-      if (this.filteredFacilities.length > 0) {
-        this.selectedFacilityId = this.filteredFacilities[0].id;
-        setTimeout(() => this.refreshCalendar(), 100);
-      }
-    },
-    error: (err) => {
-      this.toastr.error('Failed to load facilities', 'Error');
-    },
-  });
-}
 
-findTenantForFacility(facilityId: number): void {
-  this.facilityService.getAll().subscribe({
-    next: (data) => {
-      const facility = data.find(f => f.id === facilityId);
-      if (facility && facility.tenantId) {
-        this.selectedTenantId = facility.tenantId;
-        this.applyFacilityFilter();
-        setTimeout(() => this.refreshCalendar(), 100);
-      }
-    },
-    error: (err) => {
-      this.toastr.error('Failed to load facility details', 'Error');
-    },
-  });
-}
   loadFacilities() {
-  this.facilityService.getAll().subscribe({
-    next: (data) => {
-      this.facilities = data;
-      
-      if (this.selectedTenantId) {
+    this.facilityService.getAll().subscribe({
+      next: (data) => {
+        this.facilities = data;
         this.applyFacilityFilter();
         
-        this.route.queryParams.subscribe(params => {
-          if (params['facilityId'] && !this.selectedFacilityId) {
-            this.selectedFacilityId = +params['facilityId'];
+        if (this.selectedFacilityId) {
+          const facilityExists = this.filteredFacilities.some(f => f.id === this.selectedFacilityId);
+          if (!facilityExists && this.filteredFacilities.length > 0) {
+            this.selectedFacilityId = this.filteredFacilities[0].id;
           }
-        });
+        }
+        
+        if (!this.selectedFacilityId && this.filteredFacilities.length > 0) {
+          this.selectedFacilityId = this.filteredFacilities[0].id;
+        }
         
         if (this.selectedTenantId && this.selectedFacilityId) {
-          setTimeout(() => this.refreshCalendar(), 100);
+          setTimeout(() => this.refreshCalendar(), 300);
         }
-      } else {
-        this.applyFacilityFilter();
-      }
-    },
-    error: (err) => {
-      this.toastr.error('Failed to load facilities', 'Error');
-    },
-  });
-}
+      },
+      error: (err) => {
+        console.error('Failed to load facilities:', err);
+        this.toastr.error('Failed to load facilities', 'Error');
+      },
+    });
+  }
 
   loadTenants() {
     this.tenantService.getAllTenants().subscribe({
       next: (data) => {
         this.tenants = data;
+        
+        if (this.selectedTenantId) {
+          const tenantExists = data.some(t => t.id === this.selectedTenantId);
+          if (!tenantExists && data.length > 0) {
+            this.selectedTenantId = data[0].id;
+            this.selectedTenantName = data[0].name;
+            this.applyFacilityFilter();
+          }
+        } else if (data.length > 0 && this.showTenantFilter) {
+          this.selectedTenantId = data[0].id;
+          this.selectedTenantName = data[0].name;
+          this.applyFacilityFilter();
+        }
       },
       error: (err) => {
+        console.error('Failed to load organizations:', err);
         this.toastr.error('Failed to load organizations', 'Error');
       },
     });
   }
-  applyFacilityFilter() {
-    if (this.selectedTenantId) {
-      this.filteredFacilities = this.facilities.filter(
-        (f) => f.tenantId === this.selectedTenantId
-      );
-    } else {
-      this.filteredFacilities = [];
-    }
 
-    if (
-      this.selectedFacilityId &&
-      !this.filteredFacilities.some((f) => f.id === this.selectedFacilityId)
-    ) {
-      this.selectedFacilityId = null;
-    }
+applyFacilityFilter() {
+  console.log('Applying facility filter for tenant:', this.selectedTenantId);
+  
+  if (this.selectedTenantId) {
+    this.filteredFacilities = this.facilities.filter(
+      (f) => f.tenantId === this.selectedTenantId
+    );
+    console.log('Filtered facilities for tenant', this.selectedTenantId, ':', this.filteredFacilities.length);
+  } else {
+    this.filteredFacilities = [];
+    console.log('No tenant selected, filtered facilities cleared');
   }
-
+}
   loadAppointments(
     startStr: string,
     endStr: string,
     successCallback: any,
     failureCallback: any
   ) {
+    if (!this.selectedFacilityId) {
+      successCallback([]);
+      return;
+    }
+
     const params: any = {
       from: startStr,
       to: endStr,
@@ -331,45 +445,97 @@ findTenantForFacility(facilityId: number): void {
           successCallback(events);
         },
         error: (err) => {
+          console.error('Failed to load appointments:', err);
           this.toastr.error('Failed to load appointments', 'Error');
           failureCallback(err);
         },
       });
   }
 
-  onFacilityFilterChange(event: Event) {
-    const select = event.target as HTMLSelectElement;
-    const value = select.value;
-    this.selectedFacilityId = value ? parseInt(value, 10) : null;
-    this.refreshCalendar();
+   get canShowCalendar(): boolean {
+    return !!this.selectedFacilityId;
   }
 
-  get canShowCalendar(): boolean {
-    if (!this.showTenantFilter) {
-      return !!this.selectedFacilityId;
+onFacilityFilterChange(event: Event) {
+  const select = event.target as HTMLSelectElement;
+  const value = select.value;
+  this.selectedFacilityId = value ? parseInt(value, 10) : null;
+  console.log('Facility changed to:', this.selectedFacilityId);
+  
+  this.updateUrlWithSelectedFilters();
+  
+  this.refreshCalendar();
+}
+
+
+onTenantFilterChange(event: Event) {
+  const select = event.target as HTMLSelectElement;
+  const value = select.value;
+  this.selectedTenantId = value ? parseInt(value, 10) : null;
+  
+  console.log('Tenant changed to:', this.selectedTenantId);
+  
+  if (this.selectedTenantId) {
+    const selectedTenant = this.tenants.find(t => t.id === this.selectedTenantId);
+    this.selectedTenantName = selectedTenant ? selectedTenant.name : '';
+  } else {
+    this.selectedTenantName = '';
+  }
+
+  this.applyFacilityFilter();
+  
+  this.selectedFacilityId = null;
+  
+  this.updateUrlWithSelectedFilters();
+  
+  this.refreshCalendar();
+}
+
+
+updateUrlWithSelectedFilters(): void {
+  const queryParams: any = {
+    fromDashboard: 'false',
+    autoSelect: 'true'
+  };
+
+  if (this.selectedTenantId) {
+    queryParams.tenantId = this.selectedTenantId;
+    
+    const tenant = this.tenants.find(t => t.id === this.selectedTenantId);
+    if (tenant) {
+      queryParams.tenantName = encodeURIComponent(tenant.name);
+    } else {
+      queryParams.tenantName = encodeURIComponent(this.selectedTenantName);
     }
-
-    return !!this.selectedTenantId && !!this.selectedFacilityId;
   }
 
-  onTenantFilterChange(event: Event) {
-    const select = event.target as HTMLSelectElement;
-    const value = select.value;
-    this.selectedTenantId = value ? parseInt(value, 10) : null;
-
-    this.applyFacilityFilter();
-    this.refreshCalendar();
+  if (this.selectedFacilityId) {
+    queryParams.facilityId = this.selectedFacilityId;
+    
+    const facility = this.filteredFacilities.find(f => f.id === this.selectedFacilityId) || 
+                     this.facilities.find(f => f.id === this.selectedFacilityId);
+    if (facility) {
+      queryParams.facilityName = encodeURIComponent(facility.name);
+    }
   }
+
+  console.log('Updating URL with params:', queryParams);
+  
+  this.router.navigate([], {
+    relativeTo: this.route,
+    queryParams: queryParams,
+    queryParamsHandling: 'merge',
+    replaceUrl: true
+  });
+}
 
   canEditAppointment(
     appointmentUserId: string | number | null | undefined
   ): boolean {
     if (this.isKorisnik) {
       if (!appointmentUserId || !this.currentUserId) return false;
-
       return appointmentUserId.toString() === this.currentUserId.toString();
     }
-
     return true;
   }
 
@@ -489,6 +655,15 @@ findTenantForFacility(facilityId: number): void {
     });
   }
 
+  getSelectedFacilityName(): string {
+  if (!this.selectedFacilityId || !this.filteredFacilities.length) {
+    return '...';
+  }
+  
+  const facility = this.filteredFacilities.find(f => f.id === this.selectedFacilityId);
+  return facility ? facility.name : '...';
+}
+
   openEditModal(info: any) {
     const appointmentData = info.event.extendedProps;
 
@@ -515,7 +690,6 @@ findTenantForFacility(facilityId: number): void {
             appointment: {
               id: info.event.id,
               appointmentDateTime: info.event.start,
-
               facilityId: appointmentData['facilityId'],
               appointmentTypeId: appointmentData['appointmentTypeId'],
               userId: appointmentData['userId'],
@@ -601,7 +775,6 @@ findTenantForFacility(facilityId: number): void {
     }
 
     const appointmentData = event.extendedProps;
-
     const oldStart = event.start!;
     const oldEnd = event.end!;
 
@@ -629,8 +802,9 @@ findTenantForFacility(facilityId: number): void {
   }
 
   refreshCalendar() {
-    if (!this.calendarComponent) return;
-
+    if (!this.calendarComponent) {
+      return;
+    }
     const calendarApi = this.calendarComponent.getApi();
     calendarApi.refetchEvents();
   }

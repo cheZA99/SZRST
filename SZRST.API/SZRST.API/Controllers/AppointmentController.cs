@@ -239,22 +239,35 @@ namespace SZRST.API.Controllers
 		}
 
 		[HttpGet("dashboard-stats")]
-		public async Task<ActionResult<DashboardStatsDto>> GetDashboardStats()
+		public async Task<ActionResult<DashboardStatsDto>> GetDashboardStats([FromQuery] int? tenantId = null)
 		{
 			var today = DateTime.Today;
 			var tomorrow = today.AddDays(1);
 
+			var query = _userManager.Users.AsQueryable();
+
+			if (tenantId.HasValue)
+			{
+				query = query.Where(u => u.TenantId == tenantId.Value);
+			}
+
 			var stats = new DashboardStatsDto
 			{
-				TotalUsers = await _userManager.Users.CountAsync(),
+				TotalUsers = await query.CountAsync(),
 				TotalAppointmentsToday = await _context.Appointment
-				   .Where(a => a.AppointmentDateTime.Date == today.Date && !a.IsDeleted)
-				   .CountAsync(),
-				TotalTenants = await _context.Set<Tenant>().CountAsync(),
-				TotalFacilities = await _context.Facility.CountAsync(),
+				  .Where(a => a.AppointmentDateTime.Date == today.Date &&
+						   !a.IsDeleted &&
+						   (!tenantId.HasValue || a.TenantId == tenantId.Value))
+				  .CountAsync(),
+				TotalTenants = tenantId.HasValue ? 0 : await _context.Set<Tenant>().CountAsync(),
+				TotalFacilities = await _context.Facility
+				  .Where(f => !tenantId.HasValue || f.TenantId == tenantId.Value)
+				  .CountAsync(),
 				ActiveAppointments = await _context.Appointment
-				   .Where(a => a.AppointmentDateTime >= DateTime.Now && !a.IsDeleted)
-				   .CountAsync()
+				  .Where(a => a.AppointmentDateTime >= DateTime.Now &&
+						   !a.IsDeleted &&
+						   (!tenantId.HasValue || a.TenantId == tenantId.Value))
+				  .CountAsync()
 			};
 
 			return Ok(stats);

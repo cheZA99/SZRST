@@ -1,5 +1,4 @@
 <div class="max-w-7xl mx-auto px-4 py-6">
-  <!-- Welcome Section -->
   <div class="mb-8">
     <h1 class="text-3xl font-bold mb-2">{{ getWelcomeMessage() }}</h1>
     <p class="text-gray-600">
@@ -7,10 +6,8 @@
     </p>
   </div>
 
-  <!-- Statistics Cards -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-    <!-- Total Users Card -->
-    <div class="card bg-base-100 shadow-sm">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+    <div class="card bg-base-100 shadow-sm" *ngIf="stats.totalUsers > 0">
       <div class="card-body p-4">
         <div class="flex items-center">
           <div class="bg-primary/10 p-3 rounded-lg mr-4">
@@ -40,7 +37,6 @@
       </div>
     </div>
 
-    <!-- Today's Appointments Card -->
     <div class="card bg-base-100 shadow-sm">
       <div class="card-body p-4">
         <div class="flex items-center">
@@ -71,8 +67,10 @@
       </div>
     </div>
 
-    <!-- Total Organizations Card -->
-    <div class="card bg-base-100 shadow-sm">
+    <div
+      class="card bg-base-100 shadow-sm"
+      *ngIf="showOrganizations() && stats.totalTenants > 0"
+    >
       <div class="card-body p-4">
         <div class="flex items-center">
           <div class="bg-accent/10 p-3 rounded-lg mr-4">
@@ -102,7 +100,6 @@
       </div>
     </div>
 
-    <!-- Active Appointments Card -->
     <div class="card bg-base-100 shadow-sm">
       <div class="card-body p-4">
         <div class="flex items-center">
@@ -110,6 +107,38 @@
             <svg
               xmlns="http://www.w3.org/2000/svg"
               class="h-6 w-6 text-info"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+              />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold">
+              {{ showFacilities() ? "Vaše lokacije" : "Ukupno lokacija" }}
+            </h3>
+            <p class="text-2xl font-bold" *ngIf="!loadingStats">
+              {{ stats.totalFacilities }}
+            </p>
+            <div *ngIf="loadingStats" class="skeleton h-8 w-16"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+      <div class="card-body p-4">
+        <div class="flex items-center">
+          <div class="bg-success/10 p-3 rounded-lg mr-4">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6 text-success"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -134,64 +163,115 @@
     </div>
   </div>
 
-  <!-- Loading State -->
   <div *ngIf="loading" class="flex justify-center items-center h-64">
     <span class="loading loading-spinner loading-lg"></span>
   </div>
 
-  <!-- Organizations Section (for SuperAdmin and Korisnik) -->
   <div *ngIf="!loading && showOrganizations()" class="mb-8">
     <div class="flex justify-between items-center mb-4">
       <h2 class="text-2xl font-bold">Organizacije</h2>
       <div class="text-sm text-gray-500">
-        Kliknite na organizaciju za pregled kalendara
+        Kliknite na organizaciju za pregled lokacija
       </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
       <div
         *ngFor="let tenant of tenants"
         class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-        (click)="openOrganizationCalendar(tenant.id, tenant.name)"
+        [class.border-2]="selectedTenantId === tenant.id"
+        [class.border-primary]="selectedTenantId === tenant.id"
+        (click)="selectTenant(tenant)"
       >
         <div class="card-body">
           <div class="flex justify-between items-start">
             <div>
               <h3 class="card-title text-lg">{{ tenant.name }}</h3>
-              <p class="text-sm text-gray-500 mt-1"></p>
+              <p class="text-sm text-gray-500 mt-1">
+                {{ getTenantFacilityCount(tenant.id) }}
+                {{
+                  getTenantFacilityCount(tenant.id) === 1
+                    ? "lokacija"
+                    : "lokacije"
+                }}
+              </p>
             </div>
             <div class="badge badge-primary">
-              {{ getTenantFacilityCount(tenant.id) }}
-              {{
-                getTenantFacilityCount(tenant.id) > 1 ? "lokacije" : "lokacija"
-              }}
+             Organizacija
             </div>
-          </div>
-          <div class="card-actions justify-end mt-4">
-            <button class="btn btn-sm btn-primary">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-4 w-4 mr-1"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
-              Otvori kalendar
-            </button>
           </div>
         </div>
       </div>
     </div>
 
     <div
-      *ngIf="tenants.length === 0"
+      *ngIf="selectedTenantId && selectedTenantFacilities.length > 0"
+      class="mt-8"
+    >
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-bold">
+          Lokacije za "{{ selectedTenantName }}"
+        </h3>
+        <div class="text-sm text-gray-500">
+          Kliknite na lokaciju za pregled kalendara
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div
+          *ngFor="let facility of selectedTenantFacilities"
+          class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+          (click)="openFacilityCalendar(facility)"
+        >
+          <div class="card-body">
+            <div class="flex justify-between items-start">
+              <div>
+                <h4 class="font-bold text-lg">{{ facility.name }}</h4>
+                <p class="text-sm text-gray-500 mt-1">
+                  {{ facility.description || "Nema opisa" }}
+                </p>
+              </div>
+              <div class="badge badge-secondary">Lokacija</div>
+            </div>
+
+            <div class="mt-4 space-y-2">
+              <div class="flex items-center text-sm text-gray-600">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                  />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
+                <span>{{
+                  facility.location || "Lokacija nije definirana"
+                }}</span>
+              </div>
+            </div>
+
+            <div class="card-actions justify-end mt-4">
+              <button class="btn btn-sm btn-primary">Otvori kalendar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      *ngIf="selectedTenantId && selectedTenantFacilities.length === 0"
       class="text-center py-8 border-2 border-dashed rounded-lg"
     >
       <svg
@@ -208,29 +288,29 @@
           d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
         />
       </svg>
-      <h3 class="mt-2 text-lg font-medium text-gray-900">Nema organizacija</h3>
+      <h3 class="mt-2 text-lg font-medium text-gray-900">Nema lokacija</h3>
       <p class="mt-1 text-sm text-gray-500">
-        Trenutno nema dostupnih organizacija za prikaz.
+        Ova organizacija nema dostupnih lokacija.
       </p>
     </div>
   </div>
 
-  <!-- Facilities Section (for Admin and Uposlenik) -->
   <div *ngIf="!loading && showFacilities()" class="mb-8">
     <div class="flex justify-between items-center mb-4">
-      <h2 class="text-2xl font-bold">Vaši Facility-i</h2>
+      <h2 class="text-2xl font-bold">Vaše lokacije</h2>
       <div class="text-sm text-gray-500">
-        Kliknite na facility za pregled kalendara
+        Kliknite na lokaciju za pregled kalendara
       </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div
+      *ngIf="filteredFacilities.length > 0"
+      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+    >
       <div
         *ngFor="let facility of filteredFacilities"
         class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-        (click)="
-          openFacilityCalendar(facility.id, facility.name, facility.tenantId)
-        "
+        (click)="openFacilityCalendar(facility)"
       >
         <div class="card-body">
           <div class="flex justify-between items-start">
@@ -239,16 +319,10 @@
               <p class="text-sm text-gray-500 mt-1">
                 {{ facility.description || "Nema opisa" }}
               </p>
-              <div class="mt-2">
-                <span class="badge badge-outline badge-sm">
-                  ID: {{ facility.id }}
-                </span>
-              </div>
             </div>
-            <div class="badge badge-secondary">Facility</div>
+            <div class="badge badge-secondary">Lokacija</div>
           </div>
 
-          <!-- Facility Info -->
           <div class="mt-4 space-y-2">
             <div class="flex items-center text-sm text-gray-600">
               <svg
@@ -296,23 +370,7 @@
           </div>
 
           <div class="card-actions justify-end mt-4">
-            <button class="btn btn-sm btn-primary">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-4 w-4 mr-1"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
-              Otvori kalendar
-            </button>
+            <button class="btn btn-sm btn-primary">Otvori kalendar</button>
           </div>
         </div>
       </div>
@@ -336,92 +394,46 @@
           d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
         />
       </svg>
-      <h3 class="mt-2 text-lg font-medium text-gray-900">Nema facility-a</h3>
+      <h3 class="mt-2 text-lg font-medium text-gray-900">Nema lokacija</h3>
       <p class="mt-1 text-sm text-gray-500">
-        Trenutno nema dostupnih facility-a za prikaz.
+        Trenutno nema dostupnih lokacija za prikaz za ovu organizaciju.
       </p>
     </div>
   </div>
 
-  <!-- Quick Actions -->
-  <div class="mt-8">
+  <div class="mt-8" *ngIf="!loading">
     <h2 class="text-2xl font-bold mb-4">Brze akcije</h2>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <!-- Nova rezervacija -->
       <div class="card bg-base-100 shadow-sm">
         <div class="card-body">
           <h3 class="card-title">Nova rezervacija</h3>
           <p class="text-sm text-gray-500">Kreirajte novu rezervaciju</p>
           <div class="card-actions justify-end">
             <button class="btn btn-primary" [routerLink]="['/rezervacije']">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
               Kreiraj
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Uposlenici (za Admin i SuperAdmin) -->
       <div *ngIf="isAdmin || isSuperAdmin" class="card bg-base-100 shadow-sm">
         <div class="card-body">
           <h3 class="card-title">Uposlenici</h3>
           <p class="text-sm text-gray-500">Upravljajte uposlenicima</p>
           <div class="card-actions justify-end">
             <button class="btn btn-secondary" [routerLink]="['/uposlenici']">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13 0a6 6 0 01-9 5.197"
-                />
-              </svg>
               Pregledaj
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Organizacije (za SuperAdmin) -->
       <div *ngIf="isSuperAdmin" class="card bg-base-100 shadow-sm">
         <div class="card-body">
           <h3 class="card-title">Organizacije</h3>
           <p class="text-sm text-gray-500">Upravljajte organizacijama</p>
           <div class="card-actions justify-end">
             <button class="btn btn-accent" [routerLink]="['/organizacije']">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                />
-              </svg>
               Upravljaj
             </button>
           </div>

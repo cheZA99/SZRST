@@ -1,49 +1,44 @@
 <div class="calendar-container">
-  <!-- Filter Section -->
   <div class="filter-section">
-    <!-- Tenant Filter - Only for SuperAdmin and Korisnik -->
     <div class="filter-group" *ngIf="showTenantFilter">
       <label for="tenantFilter">Organizacija:</label>
       <select
         id="tenantFilter"
         class="filter-select"
-        [value]="selectedTenantId ?? ''"
+        [value]="selectedTenantId || ''"
         (change)="onTenantFilterChange($event)"
       >
         <option value="" disabled>Odaberite organizaciju</option>
-
-        <option *ngFor="let tenant of tenants" [value]="tenant.id">
+        <option
+          *ngFor="let tenant of tenants"
+          [value]="tenant.id"
+          [selected]="selectedTenantId === tenant.id"
+        >
           {{ tenant.name }}
         </option>
       </select>
     </div>
 
-    <!-- Facility Filter -->
-   <div
-  class="filter-group"
-  *ngIf="!showTenantFilter || selectedTenantId"
->
-  <label for="facilityFilter">Lokacija:</label>
-  <select
-    id="facilityFilter"
-    class="filter-select"
-    [value]="selectedFacilityId ?? ''"
-    (change)="onFacilityFilterChange($event)"
-  >
-    <option value="" disabled>Odaberite lokaciju</option>
-
-    <option
-      *ngFor="let facility of filteredFacilities"
-      [value]="facility.id"
-    >
-      {{ facility.name }}
-    </option>
-  </select>
-</div>
-
+    <div class="filter-group" *ngIf="!showTenantFilter || selectedTenantId">
+      <label for="facilityFilter">Lokacija:</label>
+      <select
+        id="facilityFilter"
+        class="filter-select"
+        [value]="selectedFacilityId || ''"
+        (change)="onFacilityFilterChange($event)"
+      >
+        <option value="" disabled>Odaberite lokaciju</option>
+        <option
+          *ngFor="let facility of filteredFacilities"
+          [value]="facility.id"
+          [selected]="selectedFacilityId === facility.id"
+        >
+          {{ facility.name }}
+        </option>
+      </select>
+    </div>
   </div>
 
-  <!-- Calendar -->
   <div
     class="calendar-placeholder"
     *ngIf="!canShowCalendar && showTenantFilter"
@@ -64,7 +59,7 @@
   </div>
 
   <full-calendar
-    *ngIf="canShowCalendar "
+    *ngIf="canShowCalendar"
     #calendar
     [options]="calendarOptions"
   ></full-calendar>

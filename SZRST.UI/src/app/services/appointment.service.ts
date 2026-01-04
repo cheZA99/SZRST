@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
@@ -10,14 +10,14 @@ export class AppointmentService {
   constructor(private http: HttpClient) {}
 
   getCalendar(
-    from: string, 
-    to: string, 
+    from: string,
+    to: string,
     facilityId?: number,
-    tenantId?: number,
+    tenantId?: number
   ) {
     const params: any = {
       from,
-      to
+      to,
     };
 
     if (facilityId) {
@@ -46,9 +46,13 @@ export class AppointmentService {
   delete(id: number) {
     return this.http.delete(`${this.apiUrl}/${id}`);
   }
-getDashboardStats(): Observable<any> {
-  return this.http.get<any>(`${this.apiUrl}/dashboard-stats`);
-}
+  getDashboardStats(tenantId?: any): Observable<any> {
+    let params = new HttpParams();
+    if (tenantId) {
+      params = params.set('tenantId', tenantId.toString());
+    }
+    return this.http.get<any>(`${this.apiUrl}/dashboard-stats`, { params });
+  }
 }
 
 export interface AppointmentPayload {

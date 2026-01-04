@@ -10,7 +10,22 @@ export class AuthService {
   private baseUrl = 'https://localhost:5001/api/Auth/';
   currentUser = signal<User | null>(null);
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) {
+    this.loadUserFromStorage();
+  }
+
+  private loadUserFromStorage(): void {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        this.currentUser.set(user);
+      } catch (e) {
+        console.error('Error parsing user from localStorage:', e);
+        localStorage.removeItem('user');
+      }
+    }
+  }
 
   login(loginObj: any) {
     return this.http.post<User>(`${this.baseUrl}login`, loginObj).pipe(
@@ -21,19 +36,55 @@ export class AuthService {
   }
 
   setCurrentUser(user: User) {
-    const decoded = JSON.parse(atob(user.accessToken.split('.')[1]));
+    const decoded = this.decodeToken(user.accessToken);
+    
+    if (!decoded) {
+      console.error('Ne mogu dekodirati token');
+      return;
+    }
 
-    const roles =
-      decoded['role'] ||
-      decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+    const roles = decoded['role'] ||
+                 decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
     
-    // Dodaj tenantId iz tokena
-    user.tenantId = decoded['tenantId'] || 
-                    decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/tenantid'];
+    let tenantId = decoded['tenantId'] || 
+                   decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/tenantid'];
     
+    if (tenantId) {
+      tenantId = +tenantId;
+    }
+
+    user.tenantId = tenantId || null;
     user.roles = Array.isArray(roles) ? roles : [roles];
+    
     localStorage.setItem('user', JSON.stringify(user));
     this.currentUser.set(user);
+  }
+
+  private decodeToken(token: string): any | null {
+    try {
+      const payload = token.split('.')[1];
+      return JSON.parse(atob(payload));
+    } catch (e) {
+      console.error('Greška pri dekodiranju tokena:', e);
+      return null;
+    }
+  }
+
+  currentUserInfo(): any | null {
+    const user = this.currentUser();
+    if (!user) return null;
+    
+    const decoded = this.getDecodedToken();
+    if (!decoded) return null;
+    
+    return {
+      userName: decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || 
+                decoded['name'] || 
+                user.userName || '',
+      userId: decoded.sub || decoded.userId || decoded.nameid,
+      tenantId: user.tenantId,
+      roles: user.roles || []
+    };
   }
 
   getAccessToken(): string | null {
@@ -73,19 +124,18 @@ export class AuthService {
     const token = this.getAccessToken();
     if (!token) return null;
 
-    const payload = token.split('.')[1];
-    return JSON.parse(atob(payload));
+    try {
+      const payload = token.split('.')[1];
+      return JSON.parse(atob(payload));
+    } catch (e) {
+      console.error('Greška pri dekodiranju tokena:', e);
+      return null;
+    }
   }
 
   getUserRoles(): string[] {
-    const decoded = this.getDecodedToken();
-    if (!decoded) return [];
-
-    const roles =
-      decoded['role'] ||
-      decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
-
-    return Array.isArray(roles) ? roles : [roles];
+    const user = this.currentUser();
+    return user?.roles || [];
   }
 
   hasRole(role: string): boolean {
