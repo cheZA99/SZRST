@@ -16,22 +16,30 @@ import { TenantService } from 'src/app/services/tenant.service';
 })
 export class UposleniciComponent implements OnInit {
   employees: Employee[] = [];
+  filteredEmployees: Employee[] = [];
   tenants: Tenant[] = [];
+
   loading = false;
   loadingTenants = false;
+
   showModal = false;
   showDeleteModal = false;
   isEditMode = false;
   selectedEmployee: Employee | null = null;
+
   employeeForm: FormGroup;
+
   showPassword = false;
   showConfirmPassword = false;
   showNewPassword = false;
   showNewConfirmPassword = false;
+
   isSuperAdmin = false;
   isAdmin = false;
 
   currentUserTenantId: number | null = null;
+
+  selectedTenantFilter: number | null = null;
 
   constructor(
     private uposleniciService: UposleniciService,
@@ -46,7 +54,6 @@ export class UposleniciComponent implements OnInit {
   private createForm(): FormGroup {
     const currentUser = this.authService.currentUser();
     this.currentUserTenantId = currentUser?.tenantId || null;
-
 
     if (this.authService.hasRole('SuperAdmin')) {
       return this.fb.group(
@@ -112,7 +119,6 @@ export class UposleniciComponent implements OnInit {
     const currentUser = this.authService.currentUser();
     this.currentUserTenantId = currentUser?.tenantId || null;
 
-
     if (this.isSuperAdmin) {
       this.loadTenants();
     }
@@ -121,7 +127,6 @@ export class UposleniciComponent implements OnInit {
   checkPermissions(): void {
     this.isSuperAdmin = this.authService.hasRole('SuperAdmin');
     this.isAdmin = this.authService.hasRole('Admin');
-
   }
 
   loadEmployees(): void {
@@ -129,6 +134,7 @@ export class UposleniciComponent implements OnInit {
     this.uposleniciService.getEmployees().subscribe({
       next: (data) => {
         this.employees = data;
+        this.applyTenantFilter();
         this.loading = false;
       },
       error: (error) => {
@@ -154,6 +160,28 @@ export class UposleniciComponent implements OnInit {
     });
   }
 
+  applyTenantFilter(): void {
+    if (this.selectedTenantFilter) {
+      this.filteredEmployees = this.employees.filter(
+        (emp) => emp.tenantId === this.selectedTenantFilter
+      );
+    } else {
+      this.filteredEmployees = this.employees;
+    }
+  }
+
+  onTenantFilterChange(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const value = select.value;
+    this.selectedTenantFilter = value ? parseInt(value, 10) : null;
+    this.applyTenantFilter();
+  }
+
+  clearFilter(): void {
+    this.selectedTenantFilter = null;
+    this.applyTenantFilter();
+  }
+
   openCreateModal(): void {
     this.isEditMode = false;
     this.selectedEmployee = null;
@@ -161,7 +189,7 @@ export class UposleniciComponent implements OnInit {
     if (this.isSuperAdmin) {
       this.employeeForm.reset({
         active: true,
-        tenantId: null, 
+        tenantId: null,
       });
     } else if (this.isAdmin) {
       this.employeeForm.reset({
@@ -176,7 +204,6 @@ export class UposleniciComponent implements OnInit {
     this.isEditMode = true;
     this.selectedEmployee = employee;
 
-
     if (this.isSuperAdmin) {
       this.employeeForm = this.fb.group(
         {
@@ -186,7 +213,7 @@ export class UposleniciComponent implements OnInit {
           ],
           email: [employee.email, [Validators.required, Validators.email]],
           active: [employee.active],
-          tenantId: [employee.tenantId, Validators.required], // OBAVEZNO za SuperAdmina
+          tenantId: [employee.tenantId, Validators.required],
           newPassword: [''],
           newConfirmPassword: [''],
         },
@@ -195,7 +222,6 @@ export class UposleniciComponent implements OnInit {
         }
       );
     } else {
-      // Admin forma - NEMA tenantId polja
       this.employeeForm = this.fb.group(
         {
           userName: [
@@ -204,7 +230,6 @@ export class UposleniciComponent implements OnInit {
           ],
           email: [employee.email, [Validators.required, Validators.email]],
           active: [employee.active],
-          // NEMA tenantId polja za Admina!
           newPassword: [''],
           newConfirmPassword: [''],
         },
@@ -224,7 +249,6 @@ export class UposleniciComponent implements OnInit {
     this.showNewPassword = false;
     this.showNewConfirmPassword = false;
 
-    // Resetuj formu
     this.employeeForm = this.createForm();
     this.selectedEmployee = null;
   }
@@ -248,102 +272,107 @@ export class UposleniciComponent implements OnInit {
     }
   }
 
- onSubmit(): void {
-  if (this.employeeForm.invalid) {
-    Object.keys(this.employeeForm.controls).forEach((key) => {
-      this.employeeForm.get(key)?.markAsTouched();
+  onSubmit(): void {
+    if (this.employeeForm.invalid) {
+      Object.keys(this.employeeForm.controls).forEach((key) => {
+        this.employeeForm.get(key)?.markAsTouched();
+      });
+
+      if (this.employeeForm.errors?.['passwordMismatch']) {
+        this.toastr.error('Lozinke se ne podudaraju');
+      }
+      if (this.employeeForm.errors?.['newPasswordMismatch']) {
+        this.toastr.error('Nove lozinke se ne podudaraju');
+      }
+
+      return;
+    }
+
+    const formData = this.employeeForm.value;
+
+    if (this.isAdmin && !this.isSuperAdmin) {
+      formData.tenantId = this.currentUserTenantId;
+    }
+
+    if (this.isEditMode && this.selectedEmployee) {
+      this.updateEmployee(this.selectedEmployee.id, formData);
+    } else {
+      this.createEmployee(formData);
+    }
+  }
+
+  createEmployee(data: any): void {
+    if (this.isSuperAdmin && !data.tenantId) {
+      this.toastr.error('Morate odabrati organizaciju');
+      return;
+    }
+
+    if (this.isAdmin && !this.isSuperAdmin) {
+      data.tenantId = this.currentUserTenantId;
+    }
+
+    this.uposleniciService.createEmployee(data).subscribe({
+      next: (response) => {
+        this.toastr.success('Uposlenik uspješno kreiran');
+        this.loadEmployees();
+        this.closeModal();
+      },
+      error: (error) => {
+        console.error('Greška pri kreiranju uposlenika:', error);
+        if (error.error?.message) {
+          this.toastr.error(error.error.message);
+        } else if (error.error?.errors) {
+          error.error.errors.forEach((err: string) => {
+            this.toastr.error(err);
+          });
+        } else {
+          this.toastr.error('Greška pri kreiranju uposlenika');
+        }
+      },
     });
+  }
 
-    if (this.employeeForm.errors?.['passwordMismatch']) {
-      this.toastr.error('Lozinke se ne podudaraju');
+  updateEmployee(id: number, data: any): void {
+    if (this.isAdmin && !this.isSuperAdmin) {
+      data.tenantId = this.selectedEmployee?.tenantId;
     }
-    if (this.employeeForm.errors?.['newPasswordMismatch']) {
-      this.toastr.error('Nove lozinke se ne podudaraju');
+
+    delete data.confirmPassword;
+
+    if (!data.newPassword) {
+      delete data.newPassword;
+      delete data.newConfirmPassword;
+    } else {
+      data.confirmPassword = data.newPassword;
     }
 
-    return;
+    this.uposleniciService.updateEmployee(id, data).subscribe({
+      next: () => {
+        this.toastr.success('Uposlenik uspješno ažuriran');
+        this.loadEmployees();
+        this.closeModal();
+      },
+      error: (error) => {
+        console.error('Greška pri ažuriranju uposlenika:', error);
+        if (error.error?.message) {
+          this.toastr.error(error.error.message);
+        } else if (error.error?.errors) {
+          error.error.errors.forEach((err: string) => {
+            this.toastr.error(err);
+          });
+        } else {
+          this.toastr.error('Greška pri ažuriranju uposlenika');
+        }
+      },
+    });
   }
 
-  const formData = this.employeeForm.value;
-
-  if (this.isAdmin && !this.isSuperAdmin) {
-    formData.tenantId = this.currentUserTenantId;
+  getTenantName(tenantId: number): string {
+    const tenant = this.tenants.find((t) => t.id === tenantId);
+    return tenant ? tenant.name : `Organizacija ${tenantId}`;
   }
 
-  if (this.isEditMode && this.selectedEmployee) {
-    this.updateEmployee(this.selectedEmployee.id, formData);
-  } else {
-    this.createEmployee(formData);
+  get displayEmployees(): Employee[] {
+    return this.isSuperAdmin ? this.filteredEmployees : this.employees;
   }
-}
-
-createEmployee(data: any): void {
-  if (this.isSuperAdmin && !data.tenantId) {
-    this.toastr.error('Morate odabrati organizaciju');
-    return;
-  }
-
-  if (this.isAdmin && !this.isSuperAdmin) {
-    data.tenantId = this.currentUserTenantId;
-  }
-
-  console.log('Creating employee with data:', data);
-
-  this.uposleniciService.createEmployee(data).subscribe({
-    next: (response) => {
-      this.toastr.success('Uposlenik uspješno kreiran');
-      this.loadEmployees();
-      this.closeModal();
-    },
-    error: (error) => {
-      console.error('Greška pri kreiranju uposlenika:', error);
-      if (error.error?.message) {
-        this.toastr.error(error.error.message);
-      } else if (error.error?.errors) {
-        error.error.errors.forEach((err: string) => {
-          this.toastr.error(err);
-        });
-      } else {
-        this.toastr.error('Greška pri kreiranju uposlenika');
-      }
-    },
-  });
-}
-
-updateEmployee(id: number, data: any): void {
-  if (this.isAdmin && !this.isSuperAdmin) {
-    data.tenantId = this.selectedEmployee?.tenantId;
-  }
-  
-  delete data.confirmPassword;
-  
-  if (!data.newPassword) {
-    delete data.newPassword;
-    delete data.newConfirmPassword;
-  } else {
-    data.confirmPassword = data.newPassword;
-  }
-
-  console.log('Updating employee with data:', data);
-
-  this.uposleniciService.updateEmployee(id, data).subscribe({
-    next: () => {
-      this.toastr.success('Uposlenik uspješno ažuriran');
-      this.loadEmployees();
-      this.closeModal();
-    },
-    error: (error) => {
-      console.error('Greška pri ažuriranju uposlenika:', error);
-      if (error.error?.message) {
-        this.toastr.error(error.error.message);
-      } else if (error.error?.errors) {
-        error.error.errors.forEach((err: string) => {
-          this.toastr.error(err);
-        });
-      } else {
-        this.toastr.error('Greška pri ažuriranju uposlenika');
-      }
-    },
-  });
-}
 }

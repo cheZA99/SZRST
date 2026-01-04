@@ -1,6 +1,6 @@
 <div class="dialog-wrapper">
   <h2 class="dialog-title">
-    {{ isEdit ? "Edit appointment" : "Create appointment" }}
+    {{ isEdit ? "Uredi termin" : "Kreiraj termin" }}
   </h2>
 
   <mat-dialog-content>
@@ -8,7 +8,7 @@
       <!-- DATE & TIME -->
       <div class="datetime-row">
         <div class="form-group">
-          <label>Date</label>
+          <label>Datum</label>
           <input
             type="date"
             class="form-control"
@@ -20,14 +20,14 @@
         </div>
 
         <div class="form-group">
-          <label>Time</label>
+          <label>Vrijeme</label>
           <select
             class="form-control"
             [value]="selectedTime"
             (change)="onTimeChange($event)"
             required
           >
-            <option value="">Select time</option>
+            <option value="">Odaberite vrijeme</option>
             <option *ngFor="let t of times" [value]="t">{{ t }}</option>
           </select>
         </div>
@@ -35,14 +35,14 @@
 
       <!-- FACILITY -->
       <div class="form-group">
-        <label>Facility *</label>
+        <label>Lokacija *</label>
         <select
           class="form-control"
           [value]="selectedFacilityId || ''"
           (change)="onFacilityChange($event)"
           required
         >
-          <option value="">Select facility</option>
+          <option value="">Odaberite lokaciju</option>
           <option *ngFor="let f of facilities" [value]="f.id">
             {{ f.name }}
           </option>
@@ -51,14 +51,14 @@
 
       <!-- APPOINTMENT TYPE -->
       <div class="form-group">
-        <label>Appointment type *</label>
+        <label>Tip termina *</label>
         <select
           class="form-control"
           [value]="selectedTypeId || ''"
           (change)="onTypeChange($event)"
           required
         >
-          <option value="">Select type</option>
+          <option value="">Odaberite tip</option>
           <option
             *ngFor="let t of appointmentTypes"
             [value]="t.id"
@@ -71,14 +71,14 @@
 
       <!-- USER - Only visible for Admin and Uposlenik -->
       <div class="form-group" *ngIf="canSelectUser">
-        <label>User *</label>
+        <label>Korisnik *</label>
         <select
           class="form-control"
           [value]="selectedUserId || ''"
           (change)="onUserChange($event)"
           required
         >
-          <option value="">Select user</option>
+          <option value="">Odaberite korisnika</option>
           <option *ngFor="let u of users" [value]="u.id">
             {{ u.userName }} ({{ u.email }})
           </option>
@@ -86,14 +86,14 @@
       </div>
 
       <!-- CHECKBOXES -->
-      <div class="checkbox-group">
+      <div hidden class="checkbox-group">
         <label class="checkbox-label">
           <input
             type="checkbox"
             [checked]="isFree"
             (change)="onFreeChange($event)"
           />
-          <span>Free</span>
+          <span>Besplatno</span>
         </label>
 
         <label class="checkbox-label">
@@ -102,7 +102,7 @@
             [checked]="isClosed"
             (change)="onClosedChange($event)"
           />
-          <span>Closed</span>
+          <span>Zatvoreno</span>
         </label>
       </div>
     </div>
@@ -115,13 +115,13 @@
       type="button"
       (click)="delete()"
     >
-      Delete
+      Obriši
     </button>
 
     <div class="spacer"></div>
 
     <button class="btn btn-secondary" type="button" (click)="cancel()">
-      Cancel
+      Otkaži
     </button>
 
     <button
@@ -130,7 +130,7 @@
       [disabled]="!isFormValid()"
       (click)="save()"
     >
-      {{ isEdit ? "Update" : "Create" }}
+      {{ isEdit ? "Ažuriraj" : "Kreiraj" }}
     </button>
   </mat-dialog-actions>
 </div>

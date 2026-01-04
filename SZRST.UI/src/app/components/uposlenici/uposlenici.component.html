@@ -10,6 +10,53 @@
     </button>
   </div>
 
+  <!-- Filter section za SuperAdmin -->
+  <div *ngIf="isSuperAdmin" class="mb-6">
+    <div class="card-body p-4">
+      <div class="flex flex-col md:flex-row md:items-center gap-4">
+        <div class="flex-1">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            Filtriraj po organizaciji
+          </label>
+          <div class="flex gap-3 items-center">
+            <select
+              class="select select-bordered w-full max-w-xs"
+              [value]="selectedTenantFilter ?? ''"
+              (change)="onTenantFilterChange($event)"
+            >
+              <option value="">Sve organizacije</option>
+              <option *ngFor="let tenant of tenants" [value]="tenant.id">
+                {{ tenant.name }}
+              </option>
+            </select>
+
+            <!-- <button
+                *ngIf="selectedTenantFilter"
+                (click)="clearFilter()"
+                class="btn btn-sm btn-ghost"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4 mr-1"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+                Očisti filter
+              </button> -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div *ngIf="loading" class="flex justify-center items-center h-64">
     <span class="loading loading-spinner loading-lg"></span>
   </div>
@@ -25,7 +72,10 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let emp of employees" [class.line-through]="emp.isDeleted">
+        <tr
+          *ngFor="let emp of displayEmployees"
+          [class.line-through]="emp.isDeleted"
+        >
           <td>{{ emp.userName }}</td>
           <td>{{ emp.email }}</td>
           <td *ngIf="isSuperAdmin">
@@ -39,7 +89,7 @@
               *ngIf="emp.tenantId && !emp.tenantName"
               class="badge badge-info"
             >
-              ID: {{ emp.tenantId }}
+              {{ getTenantName(emp.tenantId) }}
             </span>
             <span *ngIf="!emp.tenantId" class="badge badge-ghost">
               Bez organizacije
@@ -55,7 +105,7 @@
                 class="btn btn-sm btn-warning"
                 *ngIf="isSuperAdmin || isAdmin"
               >
-                Edit
+                Uredi
               </button>
             </div>
           </td>
@@ -63,8 +113,35 @@
       </tbody>
     </table>
 
-    <div *ngIf="employees.length === 0" class="text-center py-8">
-      <p class="text-gray-500">Nema uposlenika.</p>
+    <div *ngIf="displayEmployees.length === 0" class="text-center py-8">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-12 w-12 mx-auto text-gray-400"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="1"
+          d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13 0a6 6 0 01-9 5.197"
+        />
+      </svg>
+      <h3 class="mt-2 text-lg font-medium text-gray-900">Nema uposlenika</h3>
+      <p class="mt-1 text-sm text-gray-500">
+        <span *ngIf="selectedTenantFilter">
+          Nema uposlenika za organizaciju "{{
+            getTenantName(selectedTenantFilter)
+          }}".
+        </span>
+        <span *ngIf="!selectedTenantFilter">
+          Trenutno nema dostupnih uposlenika.
+        </span>
+        <span *ngIf="isAdmin || isSuperAdmin">
+          Kliknite na "Novi Uposlenik" da kreirate prvog.
+        </span>
+      </p>
     </div>
   </div>
 </div>
@@ -204,22 +281,7 @@
           </label>
         </div>
 
-        <!-- <div
-          *ngIf="isAdmin && isEditMode && selectedEmployee"
-          class="form-control w-full mt-4"
-        >
-          <label class="label">
-            <span class="label-text">Organizacija</span>
-          </label>
-          <div class="alert alert-info">
-            <span>
-              Organizacija: <strong>ID {{ selectedEmployee.tenantId }}</strong>
-              (ne može se mijenjati)
-            </span>
-          </div>
-        </div> -->
-
-        <!-- <div *ngIf="isEditMode" class="form-control mt-4">
+        <div hidden *ngIf="isEditMode" class="form-control mt-4">
           <label class="label cursor-pointer justify-start gap-3">
             <input
               type="checkbox"
@@ -228,7 +290,7 @@
             />
             <span class="label-text">Aktivan</span>
           </label>
-        </div> -->
+        </div>
       </div>
 
       <div *ngIf="!isEditMode" class="mb-6">

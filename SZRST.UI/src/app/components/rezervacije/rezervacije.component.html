@@ -3,14 +3,14 @@
   <div class="filter-section">
     <!-- Tenant Filter - Only for SuperAdmin and Korisnik -->
     <div class="filter-group" *ngIf="showTenantFilter">
-      <label for="tenantFilter">Organization:</label>
+      <label for="tenantFilter">Organizacija:</label>
       <select
         id="tenantFilter"
         class="filter-select"
         [value]="selectedTenantId ?? ''"
         (change)="onTenantFilterChange($event)"
       >
-        <option value="" disabled>Select organization</option>
+        <option value="" disabled>Odaberite organizaciju</option>
 
         <option *ngFor="let tenant of tenants" [value]="tenant.id">
           {{ tenant.name }}
@@ -23,14 +23,14 @@
   class="filter-group"
   *ngIf="!showTenantFilter || selectedTenantId"
 >
-  <label for="facilityFilter">Facility:</label>
+  <label for="facilityFilter">Lokacija:</label>
   <select
     id="facilityFilter"
     class="filter-select"
     [value]="selectedFacilityId ?? ''"
     (change)="onFacilityFilterChange($event)"
   >
-    <option value="" disabled>Select facility</option>
+    <option value="" disabled>Odaberite lokaciju</option>
 
     <option
       *ngFor="let facility of filteredFacilities"
@@ -46,20 +46,20 @@
   <!-- Calendar -->
   <div
     class="calendar-placeholder"
-    *ngIf="!canShowCalendar"
+    *ngIf="!canShowCalendar && showTenantFilter"
   >
     <p>
-      Please select <strong>Organization</strong> and
-      <strong>Facility</strong> to view the calendar.
+      Molimo odaberite <strong>Organizaciju</strong> i
+      <strong>Lokaciju</strong> kako biste vidjeli kalendar.
     </p>
   </div>
 
   <div
     class="calendar-placeholder"
-    *ngIf="canShowCalendar"
+    *ngIf="!canShowCalendar && !showTenantFilter"
   >
     <p>
-      Please select <strong>Facility</strong> to view the calendar.
+      Molimo odaberite <strong>Lokaciju</strong> kako biste vidjeli kalendar.
     </p>
   </div>
 
