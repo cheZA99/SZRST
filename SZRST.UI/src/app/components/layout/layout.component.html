@@ -17,7 +17,7 @@
 
       <a *ngIf="authService.hasRole('SuperAdmin') || authService.hasRole('Admin')" routerLink="/lokacije" routerLinkActive="text-accent">Lokacije</a>
 
-      <a *ngIf="authService.hasRole('SuperAdmin')" routerLink="/resursi" routerLinkActive="text-accent">Resursi</a>
+      <a *ngIf="authService.hasRole('SuperAdmin') || authService.hasRole('Admin')" routerLink="/resursi" routerLinkActive="text-accent">Resursi</a>
 
       <a *ngIf="authService.hasRole('SuperAdmin')" routerLink="/kategorije" routerLinkActive="text-accent">Kategorije</a>
     </nav>

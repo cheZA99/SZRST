@@ -8,12 +8,26 @@ export interface AppointmentType {
   name: string;
   duration: number;
   price: number;
+  currencyId?: number;
+  currencyName?: string;
+  tenantId: number;
+  tenantName?: string;
+  dateCreated: Date;
+  dateModified?: Date;
 }
 
 export interface AppointmentTypeCreateDto {
   name: string;
   duration: number;
   price: number;
+  currencyId?: number;
+  tenantId: number;
+}
+
+export interface Currency {
+  id: number;
+  name: string;
+  shortName: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -24,6 +38,10 @@ export class AppointmentTypeService {
 
   getAll(): Observable<AppointmentType[]> {
     return this.http.get<AppointmentType[]>(this.apiUrl);
+  }
+
+  getByTenant(tenantId: number): Observable<AppointmentType[]> {
+    return this.http.get<AppointmentType[]>(`${this.apiUrl}/by-tenant/${tenantId}`);
   }
 
   getById(id: number): Observable<AppointmentType> {

@@ -1,1 +1,385 @@
-<p>resursi works!</p>
+<div class="container mx-auto p-6">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold">Resursi</h1>
+    <button
+      (click)="openCreateModal()"
+      class="btn btn-primary"
+      *ngIf="isAdmin || isSuperAdmin"
+    >
+      + Novi Resurs
+    </button>
+  </div>
+
+  <!-- Filter section za SuperAdmin -->
+  <div *ngIf="isSuperAdmin" class="mb-6">
+    <div class="card-body p-4">
+      <div class="flex flex-col md:flex-row md:items-center gap-4">
+        <div class="flex-1">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            Filtriraj po organizaciji
+          </label>
+          <div class="flex gap-3 items-center">
+            <select
+              class="select select-bordered w-full max-w-xs"
+              [value]="selectedTenantFilter ?? ''"
+              (change)="onTenantFilterChange($event)"
+            >
+              <option value="">Sve organizacije</option>
+              <option *ngFor="let tenant of tenants" [value]="tenant.id">
+                {{ tenant.name }}
+              </option>
+            </select>
+
+            <!-- <button
+              *ngIf="selectedTenantFilter"
+              (click)="clearFilter()"
+              class="btn btn-sm btn-ghost"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4 mr-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+              Očisti filter
+            </button> -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="flex justify-center items-center h-64">
+    <span class="loading loading-spinner loading-lg"></span>
+  </div>
+
+  <div *ngIf="!loading" class="overflow-x-auto">
+    <table class="table w-full">
+      <thead>
+        <tr>
+          <th>Naziv</th>
+          <th>Trajanje</th>
+          <th>Cijena</th>
+          <th *ngIf="isSuperAdmin">Organizacija</th>
+          <th>Datum kreiranja</th>
+          <th *ngIf="isAdmin || isSuperAdmin">Akcije</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let resurs of displayAppointmentTypes">
+          <td>
+            <div class="font-semibold">{{ resurs.name }}</div>
+          </td>
+          <td>
+            <span class="badge badge-info">
+              {{ formatDuration(resurs.duration) }}
+            </span>
+          </td>
+          <td>
+            <span class="font-medium">
+              {{ formatPrice(resurs.price, resurs.currencyName) }}
+            </span>
+          </td>
+          <td *ngIf="isSuperAdmin">
+            <span *ngIf="resurs.tenantName" class="badge badge-info">
+              {{ resurs.tenantName }}
+            </span>
+            <span
+              *ngIf="resurs.tenantId && !resurs.tenantName"
+              class="badge badge-info"
+            >
+              {{ getTenantName(resurs.tenantId) }}
+            </span>
+          </td>
+          <td>
+            <span class="text-sm text-gray-500">
+              {{ formatDate(resurs.dateCreated) }}
+            </span>
+          </td>
+          <td *ngIf="isAdmin || isSuperAdmin">
+            <div class="flex gap-2">
+              <button
+                (click)="openEditModal(resurs)"
+                class="btn btn-sm btn-warning"
+              >
+                Uredi
+              </button>
+              <!-- <button
+                (click)="deleteAppointmentType(resurs.id)"
+                class="btn btn-sm btn-error"
+              >
+                Obriši
+              </button> -->
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="displayAppointmentTypes.length === 0" class="text-center py-8">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-12 w-12 mx-auto text-gray-400"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="1"
+          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+        />
+      </svg>
+      <h3 class="mt-2 text-lg font-medium text-gray-900">Nema resursa</h3>
+      <p class="mt-1 text-sm text-gray-500">
+        <span *ngIf="selectedTenantFilter">
+          Nema resursa za organizaciju "{{
+            getTenantName(selectedTenantFilter)
+          }}".
+        </span>
+        <span *ngIf="!selectedTenantFilter">
+          Trenutno nema dostupnih tipova rezervacija.
+        </span>
+        <span *ngIf="isAdmin || isSuperAdmin">
+          Kliknite na "Novi Resurs" da kreirate prvi.
+        </span>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Modal za kreiranje/uređivanje -->
+<div *ngIf="showModal" class="modal modal-open">
+  <div class="modal-box max-w-2xl">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="font-bold text-lg">
+        {{ isEditMode ? "Uredi Resurs" : "Novi Resurs" }}
+      </h3>
+      <button (click)="closeModal()" class="btn btn-sm btn-circle">✕</button>
+    </div>
+
+    <form [formGroup]="appointmentTypeForm" (ngSubmit)="onSubmit()">
+      <div class="mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Naziv -->
+          <div class="form-control w-full">
+            <label class="label">
+              <span class="label-text">Naziv *</span>
+            </label>
+            <input
+              type="text"
+              formControlName="name"
+              placeholder="Npr. Trening, Konsultacija, Pregled"
+              class="input input-bordered w-full"
+              [class.input-error]="
+                appointmentTypeForm.get('name')?.invalid &&
+                appointmentTypeForm.get('name')?.touched
+              "
+            />
+            <label
+              class="label"
+              *ngIf="
+                appointmentTypeForm.get('name')?.invalid &&
+                appointmentTypeForm.get('name')?.touched
+              "
+            >
+              <span class="label-text-alt text-error">
+                Naziv mora imati najmanje 2 karaktera
+              </span>
+            </label>
+          </div>
+
+          <!-- Trajanje -->
+          <div class="form-control w-full">
+            <label class="label">
+              <span class="label-text">Trajanje (minute) *</span>
+            </label>
+            <input
+              type="number"
+              formControlName="duration"
+              placeholder="60"
+              class="input input-bordered w-full"
+              [class.input-error]="
+                appointmentTypeForm.get('duration')?.invalid &&
+                appointmentTypeForm.get('duration')?.touched
+              "
+              min="15"
+              max="480"
+              step="15"
+            />
+            <label
+              class="label"
+              *ngIf="
+                appointmentTypeForm.get('duration')?.invalid &&
+                appointmentTypeForm.get('duration')?.touched
+              "
+            >
+              <span class="label-text-alt text-error">
+                Trajanje mora biti između 15 i 480 minuta
+              </span>
+            </label>
+            <div class="label">
+              <span class="label-text-alt">
+                <span *ngIf="appointmentTypeForm.get('duration')?.value">
+                  ≈
+                  {{
+                    formatDuration(appointmentTypeForm.get("duration")?.value)
+                  }}
+                </span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Cijena -->
+          <div class="form-control w-full">
+            <label class="label">
+              <span class="label-text">Cijena *</span>
+            </label>
+            <div class="relative">
+              <input
+                type="number"
+                formControlName="price"
+                placeholder="0.00"
+                class="input input-bordered w-full pr-10"
+                [class.input-error]="
+                  appointmentTypeForm.get('price')?.invalid &&
+                  appointmentTypeForm.get('price')?.touched
+                "
+                min="0"
+                step="0.01"
+              />
+            </div>
+            <label
+              class="label"
+              *ngIf="
+                appointmentTypeForm.get('price')?.invalid &&
+                appointmentTypeForm.get('price')?.touched
+              "
+            >
+              <span class="label-text-alt text-error">
+                Cijena mora biti veća ili jednaka 0
+              </span>
+            </label>
+          </div>
+
+          <!-- Valuta -->
+          <div class="form-control w-full">
+            <label class="label">
+              <span class="label-text">Valuta</span>
+            </label>
+            <select
+              formControlName="currencyId"
+              class="select select-bordered w-full"
+            >
+              <option [value]="null">Bez valute (KM)</option>
+              <option *ngFor="let currency of currencies" [value]="currency.id">
+                {{ currency.name }} ({{ currency.shortName }})
+              </option>
+            </select>
+            <label
+              class="label"
+              *ngIf="
+                appointmentTypeForm.get('currencyId')?.invalid &&
+                appointmentTypeForm.get('currencyId')?.touched
+              "
+            >
+              <span class="label-text-alt text-error"> Odaberite valutu </span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Organizacija (samo za SuperAdmin) -->
+        <div
+          *ngIf="isSuperAdmin && !isEditMode"
+          class="form-control w-full mt-4"
+        >
+          <label class="label">
+            <span class="label-text">Organizacija *</span>
+          </label>
+          <select
+            formControlName="tenantId"
+            class="select select-bordered w-full"
+            [class.select-error]="
+              appointmentTypeForm.get('tenantId')?.invalid &&
+              appointmentTypeForm.get('tenantId')?.touched
+            "
+          >
+            <option [value]="null" disabled selected>
+              Odaberite organizaciju
+            </option>
+            <option *ngFor="let tenant of tenants" [value]="tenant.id">
+              {{ tenant.name }}
+            </option>
+          </select>
+          <label
+            class="label"
+            *ngIf="
+              appointmentTypeForm.get('tenantId')?.invalid &&
+              appointmentTypeForm.get('tenantId')?.touched
+            "
+          >
+            <span class="label-text-alt text-error">
+              Morate odabrati organizaciju
+            </span>
+          </label>
+        </div>
+
+        <!-- Organizacija (edit mode za SuperAdmin) -->
+        <div
+          *ngIf="isSuperAdmin && isEditMode && selectedAppointmentType"
+          class="form-control w-full mt-4"
+        >
+          <label class="label">
+            <span class="label-text">Organizacija *</span>
+          </label>
+          <select
+            formControlName="tenantId"
+            class="select select-bordered w-full"
+            [class.select-error]="
+              appointmentTypeForm.get('tenantId')?.invalid &&
+              appointmentTypeForm.get('tenantId')?.touched
+            "
+          >
+            <option [value]="null" disabled>Odaberite organizaciju</option>
+            <option *ngFor="let tenant of tenants" [value]="tenant.id">
+              {{ tenant.name }}
+            </option>
+          </select>
+          <label
+            class="label"
+            *ngIf="
+              appointmentTypeForm.get('tenantId')?.invalid &&
+              appointmentTypeForm.get('tenantId')?.touched
+            "
+          >
+            <span class="label-text-alt text-error">
+              Morate odabrati organizaciju
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-action">
+        <button type="button" (click)="closeModal()" class="btn btn-ghost">
+          Odustani
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="appointmentTypeForm.invalid"
+        >
+          {{ isEditMode ? "Sačuvaj" : "Kreiraj" }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
