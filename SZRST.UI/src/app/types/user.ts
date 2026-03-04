@@ -3,7 +3,7 @@ export type User = {
   message: string;
   accessToken: string;
   refreshToken: string;
-  accessTokenExpires: string;
+  accessTokenExpires?: Date;
   roles: string[];
   tenantId?: number;
 };

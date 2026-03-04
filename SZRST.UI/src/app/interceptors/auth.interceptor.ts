@@ -15,11 +15,13 @@ export class AuthInterceptor implements HttpInterceptor {
 
   intercept(
     req: HttpRequest<any>,
-    next: HttpHandler
+    next: HttpHandler,
   ): Observable<HttpEvent<any>> {
+    const isAuthUrl = req.url.includes('/api/Auth/');
+
     const token = this.authService.getAccessToken();
 
-    if (token) {
+    if (token && !isAuthUrl) {
       req = req.clone({
         setHeaders: {
           Authorization: `Bearer ${token}`,
@@ -29,7 +31,7 @@ export class AuthInterceptor implements HttpInterceptor {
 
     return next.handle(req).pipe(
       catchError((error: HttpErrorResponse) => {
-        if (error.status === 401) {
+        if (error.status === 401 && !isAuthUrl) {
           return this.authService.refreshToken()!.pipe(
             switchMap((newUser) => {
               const newReq = req.clone({
@@ -42,12 +44,12 @@ export class AuthInterceptor implements HttpInterceptor {
             catchError((err) => {
               this.authService.logout();
               return throwError(() => err);
-            })
+            }),
           );
         }
 
         return throwError(() => error);
-      })
+      }),
     );
   }
 }

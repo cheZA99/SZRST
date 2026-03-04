@@ -329,7 +329,7 @@ namespace Application.Services
 			var newRefreshToken = new RefreshToken
 			{
 				Token = GenerateRefreshToken(),
-				UserId = userId, // Ovde koristi int
+				UserId = userId,
 				Created = DateTime.UtcNow,
 				Expires = DateTime.UtcNow.AddDays(
 				   int.Parse(_configuration["AuthSettings:RefreshTokenDays"])
@@ -356,7 +356,7 @@ namespace Application.Services
 		public bool IsSuccess { get; set; }
 
 		public string RefreshToken { get; set; }
-		public DateTime AccessTokenExpires { get; set; }
+		public DateTime? AccessTokenExpires { get; set; }
 	}
 
 	public class RefreshTokenRequest

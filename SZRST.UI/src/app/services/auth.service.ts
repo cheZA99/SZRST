@@ -2,6 +2,7 @@ import { inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { User } from '../types/user';
 import { tap } from 'rxjs';
+import { Router } from '@angular/router';
 
 @Injectable({
   providedIn: 'root',
@@ -10,7 +11,10 @@ export class AuthService {
   private baseUrl = 'https://localhost:5001/api/Auth/';
   currentUser = signal<User | null>(null);
 
-  constructor(private http: HttpClient) {
+  constructor(
+    private http: HttpClient,
+    private router: Router,
+  ) {
     this.loadUserFromStorage();
   }
 
@@ -19,9 +23,13 @@ export class AuthService {
     if (userStr) {
       try {
         const user = JSON.parse(userStr);
+
+        if (user.accessTokenExpires) {
+          const expires = new Date(user.accessTokenExpires);
+        }
+
         this.currentUser.set(user);
       } catch (e) {
-        console.error('Error parsing user from localStorage:', e);
         localStorage.removeItem('user');
       }
     }
@@ -31,31 +39,35 @@ export class AuthService {
     return this.http.post<User>(`${this.baseUrl}login`, loginObj).pipe(
       tap((user) => {
         this.setCurrentUser(user);
-      })
+      }),
     );
   }
 
   setCurrentUser(user: User) {
     const decoded = this.decodeToken(user.accessToken);
-    
+
     if (!decoded) {
       console.error('Ne mogu dekodirati token');
       return;
     }
 
-    const roles = decoded['role'] ||
-                 decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
-    
-    let tenantId = decoded['tenantId'] || 
-                   decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/tenantid'];
-    
+    const roles =
+      decoded['role'] ||
+      decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+
+    let tenantId =
+      decoded['tenantId'] ||
+      decoded[
+        'http://schemas.microsoft.com/ws/2008/06/identity/claims/tenantid'
+      ];
+
     if (tenantId) {
       tenantId = +tenantId;
     }
 
     user.tenantId = tenantId || null;
     user.roles = Array.isArray(roles) ? roles : [roles];
-    
+
     localStorage.setItem('user', JSON.stringify(user));
     this.currentUser.set(user);
   }
@@ -73,17 +85,19 @@ export class AuthService {
   currentUserInfo(): any | null {
     const user = this.currentUser();
     if (!user) return null;
-    
+
     const decoded = this.getDecodedToken();
     if (!decoded) return null;
-    
+
     return {
-      userName: decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || 
-                decoded['name'] || 
-                user.userName || '',
+      userName:
+        decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] ||
+        decoded['name'] ||
+        user.userName ||
+        '',
       userId: decoded.sub || decoded.userId || decoded.nameid,
       tenantId: user.tenantId,
-      roles: user.roles || []
+      roles: user.roles || [],
     };
   }
 
@@ -92,8 +106,17 @@ export class AuthService {
   }
 
   logout() {
+    const user = this.currentUser();
+    if (user?.refreshToken) {
+      this.http
+        .post(`${this.baseUrl}logout`, JSON.stringify(user.refreshToken), {
+          headers: { 'Content-Type': 'application/json' },
+        })
+        .subscribe();
+    }
     localStorage.removeItem('user');
     this.currentUser.set(null);
+    this.router.navigate(['/login']);
   }
 
   refreshToken() {
@@ -108,7 +131,7 @@ export class AuthService {
       .pipe(
         tap((newUser) => {
           this.setCurrentUser(newUser);
-        })
+        }),
       );
   }
 
@@ -116,7 +139,7 @@ export class AuthService {
     return this.http.post<any>(`${this.baseUrl}register`, userObj).pipe(
       tap((user) => {
         if (user) this.setCurrentUser(user);
-      })
+      }),
     );
   }
 
