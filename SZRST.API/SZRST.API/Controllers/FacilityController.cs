@@ -2,13 +2,19 @@
 using Domain.Entities;
 using Infrastructure.Persistance;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using SZRST.Domain.Constants;
 using SZRST.Shared.response;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SZRST.API.Controllers
 {
@@ -21,12 +27,14 @@ namespace SZRST.API.Controllers
 		private readonly SZRSTContext _context;
 		private readonly LocationController _locationController;
 		private readonly IMapper _mapper;
+        private readonly IWebHostEnvironment _env;
 
-		public FacilityController(SZRSTContext context, LocationController locationController, IMapper mapper)
+        public FacilityController(SZRSTContext context, LocationController locationController, IMapper mapper, IWebHostEnvironment env)
 		{
 			_context = context;
 			_locationController = locationController;
 			_mapper = mapper;
+			_env = env;
 		}
 
 		// GET: api/Facility
@@ -123,7 +131,7 @@ namespace SZRST.API.Controllers
 		}
 
 		[HttpPost("AddFacility")]
-		public async Task<ActionResult<Facility>> CreateFacilityAndLocation([FromBody] FacilityLocationCreateDto facilityDto)
+		public async Task<ActionResult<Facility>> CreateFacilityAndLocation([FromForm] FacilityLocationCreateWithImageDto facilityDto)
 		{
 			var country = await _context.Country.FindAsync(facilityDto.CountryId);
 			var city = await _context.City.FindAsync(facilityDto.CityId);
@@ -145,14 +153,52 @@ namespace SZRST.API.Controllers
 
 			_context.Location.Add(location);
 			await _context.SaveChangesAsync();
+			var imageUrl = "";
 
-			// Create Facility with new Location
-			var facility = new Facility
+			try
+			{
+				if (facilityDto.File != null)
+				{
+					var allowed = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+
+					var ext = Path.GetExtension(facilityDto.File.FileName).ToLower();
+
+					if (!allowed.Contains(ext))
+					{
+						return BadRequest("Invalid file type");
+					}
+
+					var folder = Path.Combine(_env.WebRootPath, "images");
+
+					if (!Directory.Exists(folder))
+						Directory.CreateDirectory(folder);
+
+					var fileName = Guid.NewGuid() + Path.GetExtension(facilityDto.File.FileName);
+
+					var filePath = Path.Combine(folder, fileName);
+
+					using (var stream = new FileStream(filePath, FileMode.Create))
+					{
+						await facilityDto.File.CopyToAsync(stream);
+					}
+
+					imageUrl = "/images/" + fileName;
+				}
+			}
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+                throw;
+            }
+
+            // Create Facility with new Location
+            var facility = new Facility
 			{
 				Name = facilityDto.Name,
 				FacilityType = facilityType,
 				Location = location,
-				ImageUrl = facilityDto.ImageUrl
+				ImageUrl = imageUrl,
+				TenantId = facilityDto.TenantId
 			};
 
 			_context.Facility.Add(facility);
@@ -163,7 +209,7 @@ namespace SZRST.API.Controllers
 
 		// PUT: api/Facility/{id}
 		[HttpPut("{id}")]
-		public async Task<IActionResult> UpdateFacility(int id, [FromBody] FacilityCreateDto facilityDto)
+		public async Task<IActionResult> UpdateFacility(int id, [FromForm] FacilityLocationCreateWithImageDto facilityDto)
 		{
 			var facility = await _context.Facility.FindAsync(id);
 			if (facility == null)
@@ -177,15 +223,91 @@ namespace SZRST.API.Controllers
 				return BadRequest("Invalid FacilityTypeId");
 			}
 
-			var location = await _context.Location.FindAsync(facilityDto.LocationId);
+			var location = await _context.Location.Include(x => x.Country)
+				.Include(x => x.City).FirstOrDefaultAsync(x => x.Id == facilityDto.LocationId);
 			if (location == null)
 			{
 				return BadRequest("Invalid LocationId");
 			}
 
-			facility.Name = facilityDto.Name;
+			if (location.City.Id != facilityDto.CityId ||
+				location.Country.Id != facilityDto.CountryId ||
+				location.Address != facilityDto.Address ||
+				location.AddressNumber != facilityDto.AddressNumber)
+			{
+                var existingLocation = await _context.Location
+					.Include(x => x.Country)
+					.Include(x => x.City)
+                    .FirstOrDefaultAsync(x =>
+					x.Country.Id == facilityDto.CountryId &&
+					x.City.Id == facilityDto.CityId &&
+					x.Address == facilityDto.Address &&
+					x.AddressNumber == facilityDto.AddressNumber);
+
+                if (existingLocation != null)
+                {
+                    facility.Location = existingLocation;
+                } else
+				{
+                    var country = await _context.Country.FindAsync(facilityDto.CountryId);
+                    var city = await _context.City.FindAsync(facilityDto.CityId);
+                    // Create Location
+                    var newLocation = new Location
+                    {
+                        Address = facilityDto.Address,
+                        AddressNumber = facilityDto.AddressNumber,
+                        Country = country,
+                        City = city
+                    };
+                    _context.Location.Add(newLocation);
+                    await _context.SaveChangesAsync();
+                    facility.Location = newLocation;
+                }
+            }
+
+            var imageUrl = "";
+			try
+			{
+				if (facilityDto.File != null)
+				{
+					var allowed = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+
+					var ext = Path.GetExtension(facilityDto.File.FileName).ToLower();
+
+					if (!allowed.Contains(ext))
+					{
+						return BadRequest("Invalid file type");
+					}
+
+					var folder = Path.Combine(_env.WebRootPath, "images");
+
+					if (!Directory.Exists(folder))
+						Directory.CreateDirectory(folder);
+
+					var fileName = Guid.NewGuid() + Path.GetExtension(facilityDto.File.FileName);
+
+					var filePath = Path.Combine(folder, fileName);
+
+					using (var stream = new FileStream(filePath, FileMode.Create))
+					{
+						await facilityDto.File.CopyToAsync(stream);
+					}
+
+					facility.ImageUrl = "/images/" + fileName;
+				}
+				else
+				{
+					facility.ImageUrl = null;
+				}
+			}
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+                throw;
+            }
+
+            facility.Name = facilityDto.Name;
 			facility.FacilityType = facilityType;
-			facility.Location = location;
 
 			_context.Entry(facility).State = EntityState.Modified;
 
@@ -247,5 +369,20 @@ namespace SZRST.API.Controllers
 		public int CountryId { get; set; }
 		public int CityId { get; set; }
 		public string ImageUrl { get; set; }
-	}
+		public int TenantId { get; set; }
+		public int LocationId { get; set; }
+    }
+
+    public class FacilityLocationCreateWithImageDto
+    {
+        public string Name { get; set; }
+        public int FacilityTypeId { get; set; }
+        public string Address { get; set; }
+        public string AddressNumber { get; set; }
+        public int CountryId { get; set; }
+        public int CityId { get; set; }
+        public int LocationId { get; set; }
+        public int TenantId { get; set; }
+        public IFormFile File { get; set; }
+    }
 }

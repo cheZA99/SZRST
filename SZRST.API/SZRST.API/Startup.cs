@@ -155,7 +155,8 @@ namespace SZRST.WebApi
 			app.UseRouting();
 			app.UseAuthentication();
 			app.UseAuthorization();
-			app.UseEndpoints(endpoints =>
+            app.UseStaticFiles();
+            app.UseEndpoints(endpoints =>
 			{
 				endpoints.MapControllers();
 			});
