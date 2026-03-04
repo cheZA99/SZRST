@@ -5,6 +5,7 @@ import { LoginComponent } from './components/login/login.component';
 import { SignupComponent } from './components/signup/signup.component';
 import { RezervacijeComponent } from './components/rezervacije/rezervacije.component';
 import { LayoutComponent } from './components/layout/layout.component';
+//import { LokacijeComponent } from './components/lokacije/lokacije.component';
 import { LokacijeComponent } from './components/lokacije/lokacije.component';
 import { ResursiComponent } from './components/resursi/resursi.component';
 import { KategorijeComponent } from './components/kategorije/kategorije.component';

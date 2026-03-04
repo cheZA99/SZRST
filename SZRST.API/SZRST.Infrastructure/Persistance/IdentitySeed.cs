@@ -82,7 +82,7 @@ public static class IdentitySeed
 		    email: "admin2@gmail.com",
 		    password: defaultPassword,
 		    role: Roles.Admin,
-		    tenantId: 2
+		    tenantId: 1
 		);
 	}
 

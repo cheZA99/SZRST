@@ -3,6 +3,13 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 
+export interface Facility {
+  id: number;
+  name: string;
+  facilityType: string;
+  location: string;
+}
+
 export interface FacilityResponse {
   id: number;
   name: string;
@@ -27,6 +34,7 @@ export interface FacilityResponse {
   imageUrl: string;
   isDeleted: boolean;
   tenantId?: number;
+  tenantName: string;
 }
 
 export interface FacilityCreateDto {
@@ -44,13 +52,21 @@ export interface FacilityLocationCreateDto {
   countryId: number;
   cityId: number;
   imageUrl: string;
+  locationId: number;
+  tenantId: number;
+}
+
+
+export interface Tenant {
+  id: number;
+  name: string;
 }
 
 @Injectable({ providedIn: 'root' })
 export class FacilityService {
   private readonly apiUrl = `${environment.apiUrl}/api/facility`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   getAll(filter?: string, value?: string): Observable<FacilityResponse[]> {
     let params = new HttpParams();
@@ -72,10 +88,69 @@ export class FacilityService {
   }
 
   createWithLocation(
+    data: FacilityLocationCreateDto,
+    file: File | null
+  ): Observable<FacilityResponse> {
+
+    const formData = new FormData();
+
+    formData.append("name", data.name);
+    formData.append("facilityTypeId", data.facilityTypeId.toString());
+    formData.append("address", data.address);
+    formData.append("addressNumber", data.addressNumber);
+    formData.append("countryId", data.countryId.toString());
+    formData.append("cityId", data.cityId.toString());
+    formData.append("tenantId", data.tenantId.toString());
+
+    if (file) {
+      formData.append("file", file);
+    }
+
+    console.log("Data-->", data);
+    console.log("FormData-->", formData);
+
+    return this.http.post<FacilityResponse>(`${this.apiUrl}/AddFacility`, formData);
+  }
+
+  /*createWithLocation(
     data: FacilityLocationCreateDto
   ): Observable<FacilityResponse> {
     return this.http.post<FacilityResponse>(`${this.apiUrl}/AddFacility`, data);
+  }*/
+
+  updateWithLocation(
+    id: number,
+    data: FacilityLocationCreateDto,
+    file: File | null
+  ): Observable<FacilityResponse> {
+
+    const formData = new FormData();
+
+    formData.append("name", data.name);
+    formData.append("facilityTypeId", data.facilityTypeId.toString());
+    formData.append("address", data.address);
+    formData.append("addressNumber", data.addressNumber);
+    formData.append("countryId", data.countryId.toString());
+    formData.append("cityId", data.cityId.toString());
+
+    if (data.tenantId) {
+      formData.append("tenantId", data.tenantId.toString());
+    }
+
+    formData.append("locationId", data.locationId?.toString());
+
+    if (file) {
+      formData.append("file", file);
+    }
+
+    return this.http.put<FacilityResponse>(`${this.apiUrl}/${id}`, formData);
   }
+
+  /*updateWithLocation(id: number,
+  data: FacilityLocationCreateDto
+): Observable<FacilityResponse> {
+  return this.http.put<FacilityResponse>(`${this.apiUrl}/${id}`, data);
+}*/
 
   update(id: number, data: FacilityCreateDto): Observable<void> {
     return this.http.put<void>(`${this.apiUrl}/${id}`, data);
