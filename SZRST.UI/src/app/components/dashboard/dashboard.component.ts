@@ -5,6 +5,7 @@ import { TenantService, Tenant } from 'src/app/services/tenant.service';
 import { FacilityService } from 'src/app/services/facility.service';
 import { AuthService } from 'src/app/services/auth.service';
 import { AppointmentService } from 'src/app/services/appointment.service';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-dashboard',
@@ -25,6 +26,7 @@ export class DashboardComponent implements OnInit {
   selectedFacilityId: number | null = null;
   selectedTenantName: string = '';
   selectedTenantFacilities: any[] = [];
+  apiUrl: string = environment.apiUrl;
 
   stats = {
     totalUsers: 0,
