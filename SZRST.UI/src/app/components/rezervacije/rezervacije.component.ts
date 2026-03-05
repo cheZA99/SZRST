@@ -211,7 +211,7 @@ loadAllData(): void {
   }).subscribe({
     next: (data) => {
       this.tenants = data.tenants;
-      this.facilities = data.facilities;
+      this.facilities = data.facilities.items;
       
       console.log('Data loaded:', {
         tenants: this.tenants.length,
@@ -346,7 +346,7 @@ applyQueryParams(): void {
   loadFacilities() {
     this.facilityService.getAll().subscribe({
       next: (data) => {
-        this.facilities = data;
+        this.facilities = data.items;
         this.applyFacilityFilter();
         
         if (this.selectedFacilityId) {

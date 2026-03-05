@@ -21,9 +21,10 @@
         "ACTIONS": "Actions",
         "EDIT": "Edit",
         "WITHOUT_ORGANIZATION": "Without organization",
-        "NO_FACILITIES_MESS":"No facilities",
+        "NO_FACILITIES_MESS": "No facilities",
         "NO_FACILITIES": "Currently don't have available facilities.",
         "NO_FACILITIES_TENANT": " No facilities for tenant",
+        "PAGE": "page.",
         "FACILITY_FORM": {
             "TITLE_CREATE": "New facility",
             "TITLE_EDIT": "Edit facility",
@@ -54,6 +55,24 @@
             "CANCEL": "Odustani",
             "SAVE": "Spasi",
             "CREATE": "Kreiraj"
+        },
+        "FILTER": {
+            "TITLE": "Search facilities",
+            "NAME": "Facility name",
+            "TYPE": "Facility type",
+            "ADDRESS": "Address",
+            "COUNTRY": "Country",
+            "CITY": "City",
+            "ORGANIZATION": "Organization",
+            "PLACEHOLDER_SEARCH": "Search...",
+            "ALL_TYPES": "All facility types",
+            "ALL_COUNTRIES": "All countries",
+            "ALL_CITIES": "All cities",
+            "ALL_ORGANIZATIONS": "All organizations"
+        },
+        "BUTTONS": {
+            "SEARCH": "Search",
+            "CLEAR": "Clear filter"
         }
     }
 }
