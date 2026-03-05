@@ -11,7 +11,7 @@ using SZRST.Domain.Constants;
 
 namespace SZRST.API.Controllers
 {
-	[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}, {Roles.Uposlenik}")]
+	[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}, {Roles.Uposlenik}, {Roles.Korisnik}")]
 	[Authorize]
 	[Route("api/[controller]")]
 	[ApiController]
