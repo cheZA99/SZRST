@@ -3,12 +3,13 @@ import { HttpClient } from '@angular/common/http';
 import { User } from '../types/user';
 import { tap } from 'rxjs';
 import { Router } from '@angular/router';
+import { environment } from 'src/environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
-  private baseUrl = 'https://localhost:5001/api/Auth/';
+  private baseUrl = `${environment.apiUrl}/api/Auth/`;
   currentUser = signal<User | null>(null);
 
   constructor(

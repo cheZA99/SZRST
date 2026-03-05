@@ -2,6 +2,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from 'src/environments/environment';
 
 export interface Tenant {
   id: number;
@@ -12,7 +13,7 @@ export interface Tenant {
   providedIn: 'root',
 })
 export class TenantService {
-  private baseUrl = 'https://localhost:5001/api/tenant/';
+  private baseUrl = `${environment.apiUrl}/api/Tenant/`;
 
   constructor(private http: HttpClient) {}
 

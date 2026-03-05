@@ -10,50 +10,102 @@
     </button>
   </div>
 
-  <!-- Filter section za SuperAdmin -->
-  <div *ngIf="isSuperAdmin" class="mb-6">
+  <div class="card bg-base-200 mb-6">
     <div class="card-body p-4">
-      <div class="flex flex-col md:flex-row md:items-center gap-4">
-        <div class="flex-1">
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            Filtriraj po organizaciji
-          </label>
-          <div class="flex gap-3 items-center">
+      <h2 class="card-title text-base mb-3">Pretraži uposlenike</h2>
+      <form [formGroup]="filterForm" (ngSubmit)="applyFilter()">
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div class="form-control">
+            <label class="label py-1">
+              <span class="label-text text-xs">Korisničko ime</span>
+            </label>
+            <input
+              type="text"
+              formControlName="userName"
+              placeholder="Pretraži..."
+              class="input input-bordered input-sm w-full"
+            />
+          </div>
+
+          <div class="form-control">
+            <label class="label py-1">
+              <span class="label-text text-xs">Email</span>
+            </label>
+            <input
+              type="text"
+              formControlName="email"
+              placeholder="Pretraži..."
+              class="input input-bordered input-sm w-full"
+            />
+          </div>
+
+          <div class="form-control">
+            <label class="label py-1">
+              <span class="label-text text-xs">Ime</span>
+            </label>
+            <input
+              type="text"
+              formControlName="firstName"
+              placeholder="Pretraži..."
+              class="input input-bordered input-sm w-full"
+            />
+          </div>
+
+          <div class="form-control">
+            <label class="label py-1">
+              <span class="label-text text-xs">Prezime</span>
+            </label>
+            <input
+              type="text"
+              formControlName="lastName"
+              placeholder="Pretraži..."
+              class="input input-bordered input-sm w-full"
+            />
+          </div>
+
+          <div class="form-control" *ngIf="isSuperAdmin">
+            <label class="label py-1">
+              <span class="label-text text-xs">Organizacija</span>
+            </label>
             <select
-              class="select select-bordered w-full max-w-xs"
-              [value]="selectedTenantFilter ?? ''"
-              (change)="onTenantFilterChange($event)"
+              formControlName="tenantId"
+              class="select select-bordered select-sm w-full"
             >
-              <option value="">Sve organizacije</option>
+              <option [ngValue]="null">Sve organizacije</option>
               <option *ngFor="let tenant of tenants" [value]="tenant.id">
                 {{ tenant.name }}
               </option>
             </select>
-
-            <!-- <button
-                *ngIf="selectedTenantFilter"
-                (click)="clearFilter()"
-                class="btn btn-sm btn-ghost"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-4 w-4 mr-1"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-                Očisti filter
-              </button> -->
           </div>
         </div>
-      </div>
+
+        <div class="flex gap-2 mt-3">
+          <button type="submit" class="btn btn-primary btn-sm">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 mr-1"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"
+              />
+            </svg>
+            Pretraži
+          </button>
+          <button
+            type="button"
+            (click)="clearFilter()"
+            class="btn btn-ghost btn-sm"
+          >
+            Očisti filter
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -66,6 +118,8 @@
       <thead>
         <tr>
           <th>Korisničko ime</th>
+          <th>Ime</th>
+          <th>Prezime</th>
           <th>Email</th>
           <th *ngIf="isSuperAdmin">Organizacija</th>
           <th>Akcije</th>
@@ -73,20 +127,20 @@
       </thead>
       <tbody>
         <tr
-          *ngFor="let emp of displayEmployees"
+          *ngFor="let emp of employees"
           [class.line-through]="emp.isDeleted"
+          [class.opacity-50]="emp.isDeleted"
         >
           <td>{{ emp.userName }}</td>
+          <td>{{ emp.firstName || "-" }}</td>
+          <td>{{ emp.lastName || "-" }}</td>
           <td>{{ emp.email }}</td>
           <td *ngIf="isSuperAdmin">
-            <span
-              *ngIf="emp.tenantId && emp.tenantName"
-              class="badge badge-info"
-            >
+            <span *ngIf="emp.tenantName" class="badge badge-info">
               {{ emp.tenantName }}
             </span>
             <span
-              *ngIf="emp.tenantId && !emp.tenantName"
+              *ngIf="!emp.tenantName && emp.tenantId"
               class="badge badge-info"
             >
               {{ getTenantName(emp.tenantId) }}
@@ -95,9 +149,6 @@
               Bez organizacije
             </span>
           </td>
-
-          <td *ngIf="!isSuperAdmin" class="hidden"></td>
-
           <td>
             <div class="flex gap-2">
               <button
@@ -113,7 +164,7 @@
       </tbody>
     </table>
 
-    <div *ngIf="displayEmployees.length === 0" class="text-center py-8">
+    <div *ngIf="employees.length === 0" class="text-center py-8">
       <svg
         xmlns="http://www.w3.org/2000/svg"
         class="h-12 w-12 mx-auto text-gray-400"
@@ -130,18 +181,83 @@
       </svg>
       <h3 class="mt-2 text-lg font-medium text-gray-900">Nema uposlenika</h3>
       <p class="mt-1 text-sm text-gray-500">
-        <span *ngIf="selectedTenantFilter">
-          Nema uposlenika za organizaciju "{{
-            getTenantName(selectedTenantFilter)
-          }}".
-        </span>
-        <span *ngIf="!selectedTenantFilter">
-          Trenutno nema dostupnih uposlenika.
-        </span>
-        <span *ngIf="isAdmin || isSuperAdmin">
-          Kliknite na "Novi Uposlenik" da kreirate prvog.
-        </span>
+        Nema rezultata za zadane kriterije pretrage.
       </p>
+    </div>
+
+    <div
+      *ngIf="totalCount > 0"
+      class="flex flex-wrap justify-between items-center mt-4 gap-3"
+    >
+      <div class="text-sm text-gray-600">
+        Prikazano {{ (currentPage - 1) * pageSize + 1 }}–{{
+          Math.min(currentPage * pageSize, totalCount)
+        }}
+        od {{ totalCount }} uposlenika
+      </div>
+
+      <div class="flex flex-row items-center gap-2">
+        <div style="margin-top: 20px">
+          <select
+            class="select select-bordered select-sm"
+            style="
+              height: 2rem;
+              min-height: 2rem;
+              padding-top: 0;
+              padding-bottom: 0;
+            "
+            [(ngModel)]="pageSize"
+            (ngModelChange)="onPageSizeSelectChange($event)"
+          >
+            <option [ngValue]="5">5 / str.</option>
+            <option [ngValue]="10">10 / str.</option>
+            <option [ngValue]="25">25 / str.</option>
+            <option [ngValue]="50">50 / str.</option>
+          </select>
+        </div>
+
+        <div>
+          <button
+            class="join-item btn btn-sm"
+            [disabled]="currentPage === 1"
+            (click)="goToPage(1)"
+          >
+            «
+          </button>
+          <button
+            class="join-item btn btn-sm"
+            [disabled]="currentPage === 1"
+            (click)="goToPage(currentPage - 1)"
+          >
+            ‹
+          </button>
+
+          <ng-container *ngFor="let page of visiblePages">
+            <button
+              class="join-item btn btn-sm"
+              [class.btn-active]="page === currentPage"
+              (click)="goToPage(page)"
+            >
+              {{ page }}
+            </button>
+          </ng-container>
+
+          <button
+            class="join-item btn btn-sm"
+            [disabled]="currentPage === totalPages"
+            (click)="goToPage(currentPage + 1)"
+          >
+            ›
+          </button>
+          <button
+            class="join-item btn btn-sm"
+            [disabled]="currentPage === totalPages"
+            (click)="goToPage(totalPages)"
+          >
+            »
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -206,10 +322,34 @@
                 employeeForm.get('email')?.touched
               "
             >
-              <span class="label-text-alt text-error">
-                Unesite validan email
-              </span>
+              <span class="label-text-alt text-error"
+                >Unesite validan email</span
+              >
             </label>
+          </div>
+
+          <div class="form-control w-full">
+            <label class="label">
+              <span class="label-text">Ime</span>
+            </label>
+            <input
+              type="text"
+              formControlName="firstName"
+              placeholder="Unesite ime"
+              class="input input-bordered w-full"
+            />
+          </div>
+
+          <div class="form-control w-full">
+            <label class="label">
+              <span class="label-text">Prezime</span>
+            </label>
+            <input
+              type="text"
+              formControlName="lastName"
+              placeholder="Unesite prezime"
+              class="input input-bordered w-full"
+            />
           </div>
         </div>
 
@@ -242,14 +382,14 @@
               employeeForm.get('tenantId')?.touched
             "
           >
-            <span class="label-text-alt text-error">
-              Morate odabrati organizaciju
-            </span>
+            <span class="label-text-alt text-error"
+              >Morate odabrati organizaciju</span
+            >
           </label>
         </div>
 
         <div
-          *ngIf="isSuperAdmin && isEditMode && selectedEmployee"
+          *ngIf="isSuperAdmin && isEditMode"
           class="form-control w-full mt-4"
         >
           <label class="label">
@@ -258,30 +398,15 @@
           <select
             formControlName="tenantId"
             class="select select-bordered w-full"
-            [class.select-error]="
-              employeeForm.get('tenantId')?.invalid &&
-              employeeForm.get('tenantId')?.touched
-            "
           >
             <option [value]="null" disabled>Odaberite organizaciju</option>
             <option *ngFor="let tenant of tenants" [value]="tenant.id">
               {{ tenant.name }}
             </option>
           </select>
-          <label
-            class="label"
-            *ngIf="
-              employeeForm.get('tenantId')?.invalid &&
-              employeeForm.get('tenantId')?.touched
-            "
-          >
-            <span class="label-text-alt text-error">
-              Morate odabrati organizaciju
-            </span>
-          </label>
         </div>
 
-        <div hidden *ngIf="isEditMode" class="form-control mt-4">
+        <div *ngIf="isEditMode" class="form-control mt-4">
           <label class="label cursor-pointer justify-start gap-3">
             <input
               type="checkbox"
@@ -299,9 +424,9 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="form-control w-full">
-            <label class="label">
-              <span class="label-text">Lozinka *</span>
-            </label>
+            <label class="label"
+              ><span class="label-text">Lozinka *</span></label
+            >
             <div class="relative">
               <input
                 [type]="showPassword ? 'text' : 'password'"
@@ -362,16 +487,16 @@
                 employeeForm.get('password')?.touched
               "
             >
-              <span class="label-text-alt text-error">
-                Lozinka mora imati najmanje 6 karaktera
-              </span>
+              <span class="label-text-alt text-error"
+                >Lozinka mora imati najmanje 6 karaktera</span
+              >
             </label>
           </div>
 
           <div class="form-control w-full">
-            <label class="label">
-              <span class="label-text">Potvrdi Lozinku *</span>
-            </label>
+            <label class="label"
+              ><span class="label-text">Potvrdi Lozinku *</span></label
+            >
             <div class="relative">
               <input
                 [type]="showConfirmPassword ? 'text' : 'password'"
@@ -427,11 +552,14 @@
             </div>
             <label
               class="label"
-              *ngIf="employeeForm.errors?.['passwordMismatch'] && employeeForm.get('confirmPassword')?.touched"
+              *ngIf="
+                employeeForm.errors?.['passwordMismatch'] &&
+                employeeForm.get('confirmPassword')?.touched
+              "
             >
-              <span class="label-text-alt text-error">
-                Lozinke se ne podudaraju
-              </span>
+              <span class="label-text-alt text-error"
+                >Lozinke se ne podudaraju</span
+              >
             </label>
           </div>
         </div>
@@ -439,16 +567,15 @@
 
       <div *ngIf="isEditMode" class="mb-6">
         <div class="divider"></div>
-
         <p class="text-sm text-gray-500 mb-4">
           Ostavite prazno ako ne želite mijenjati lozinku.
         </p>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="form-control w-full">
-            <label class="label">
-              <span class="label-text">Nova Lozinka</span>
-            </label>
+            <label class="label"
+              ><span class="label-text">Nova Lozinka</span></label
+            >
             <div class="relative">
               <input
                 [type]="showNewPassword ? 'text' : 'password'"
@@ -501,9 +628,9 @@
           </div>
 
           <div class="form-control w-full">
-            <label class="label">
-              <span class="label-text">Potvrdi Novu Lozinku</span>
-            </label>
+            <label class="label"
+              ><span class="label-text">Potvrdi Novu Lozinku</span></label
+            >
             <div class="relative">
               <input
                 [type]="showNewConfirmPassword ? 'text' : 'password'"
@@ -559,11 +686,14 @@
             </div>
             <label
               class="label"
-              *ngIf="employeeForm.errors?.['newPasswordMismatch'] && employeeForm.get('newConfirmPassword')?.touched"
+              *ngIf="
+                employeeForm.errors?.['newPasswordMismatch'] &&
+                employeeForm.get('newConfirmPassword')?.touched
+              "
             >
-              <span class="label-text-alt text-error">
-                Lozinke se ne podudaraju
-              </span>
+              <span class="label-text-alt text-error"
+                >Lozinke se ne podudaraju</span
+              >
             </label>
           </div>
         </div>

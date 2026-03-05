@@ -9,6 +9,8 @@ namespace Domain.Entities
 	{
 		public DateTime DateCreated { get; set; }
 		public DateTime? DateModified { get; set; }
+		public string? FirstName { get; set; }
+		public string? LastName { get; set; }
 		public bool IsDeleted { get; set; }
 		public bool Active { get; set; }
 		public ICollection<UserClaim> Claims { get; set; }

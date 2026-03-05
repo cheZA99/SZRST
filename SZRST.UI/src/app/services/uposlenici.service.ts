@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
@@ -7,6 +7,8 @@ export interface Employee {
   id: number;
   userName: string;
   email: string;
+  firstName?: string;
+  lastName?: string;
   active: boolean;
   isDeleted: boolean;
   tenantId?: number;
@@ -14,9 +16,30 @@ export interface Employee {
   roles: string[];
 }
 
+export interface PagedResult<T> {
+  items: T[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface EmployeeFilterParams {
+  userName?: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  tenantId?: number | null;
+  isDeleted?: boolean;
+  pageNumber?: number;
+  pageSize?: number;
+}
+
 export interface CreateEmployeeDto {
   userName: string;
   email: string;
+  firstName?: string | null;
+  lastName?: string | null;
   password: string;
   confirmPassword: string;
   tenantId?: number;
@@ -25,6 +48,8 @@ export interface CreateEmployeeDto {
 export interface UpdateEmployeeDto {
   userName: string;
   email: string;
+  firstName?: string | null;
+  lastName?: string | null;
   active: boolean;
   tenantId?: number;
   newPassword?: string;
@@ -44,8 +69,30 @@ export class UposleniciService {
 
   constructor(private http: HttpClient) {}
 
-  getEmployees(): Observable<Employee[]> {
-    return this.http.get<Employee[]>(`${this.apiUrl}/employees`);
+  getEmployees(
+    filters: EmployeeFilterParams = {},
+  ): Observable<PagedResult<Employee>> {
+    let params = new HttpParams();
+
+    if (filters.pageNumber)
+      params = params.set('pageNumber', filters.pageNumber);
+    if (filters.pageSize) params = params.set('pageSize', filters.pageSize);
+    if (filters.userName?.trim())
+      params = params.set('userName', filters.userName.trim());
+    if (filters.email?.trim())
+      params = params.set('email', filters.email.trim());
+    if (filters.firstName?.trim())
+      params = params.set('firstName', filters.firstName.trim());
+    if (filters.lastName?.trim())
+      params = params.set('lastName', filters.lastName.trim());
+    if (filters.tenantId != null)
+      params = params.set('tenantId', filters.tenantId);
+    if (filters.isDeleted != null)
+      params = params.set('isDeleted', filters.isDeleted);
+
+    return this.http.get<PagedResult<Employee>>(`${this.apiUrl}/employees`, {
+      params,
+    });
   }
 
   getEmployeeById(id: number): Observable<Employee> {

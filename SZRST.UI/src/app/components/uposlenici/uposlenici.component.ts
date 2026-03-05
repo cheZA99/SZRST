@@ -16,18 +16,17 @@ import { TenantService } from 'src/app/services/tenant.service';
 })
 export class UposleniciComponent implements OnInit {
   employees: Employee[] = [];
-  filteredEmployees: Employee[] = [];
   tenants: Tenant[] = [];
 
   loading = false;
   loadingTenants = false;
 
   showModal = false;
-  showDeleteModal = false;
   isEditMode = false;
   selectedEmployee: Employee | null = null;
 
-  employeeForm: FormGroup;
+  employeeForm!: FormGroup;
+  filterForm!: FormGroup;
 
   showPassword = false;
   showConfirmPassword = false;
@@ -39,7 +38,13 @@ export class UposleniciComponent implements OnInit {
 
   currentUserTenantId: number | null = null;
 
-  selectedTenantFilter: number | null = null;
+  // Paging stanje
+  currentPage = 1;
+  pageSize = 5;
+  totalCount = 0;
+  totalPages = 0;
+
+  Math = Math;
 
   constructor(
     private uposleniciService: UposleniciService,
@@ -47,73 +52,12 @@ export class UposleniciComponent implements OnInit {
     public authService: AuthService,
     private fb: FormBuilder,
     private toastr: ToastrService
-  ) {
-    this.employeeForm = this.createForm();
-  }
-
-  private createForm(): FormGroup {
-    const currentUser = this.authService.currentUser();
-    this.currentUserTenantId = currentUser?.tenantId || null;
-
-    if (this.authService.hasRole('SuperAdmin')) {
-      return this.fb.group(
-        {
-          userName: ['', [Validators.required, Validators.minLength(3)]],
-          email: ['', [Validators.required, Validators.email]],
-          password: ['', [Validators.required, Validators.minLength(6)]],
-          confirmPassword: ['', [Validators.required]],
-          tenantId: [null, Validators.required],
-          active: [true],
-          newPassword: [''],
-          newConfirmPassword: [''],
-        },
-        {
-          validators: this.passwordMatchValidator,
-        }
-      );
-    } else {
-      return this.fb.group(
-        {
-          userName: ['', [Validators.required, Validators.minLength(3)]],
-          email: ['', [Validators.required, Validators.email]],
-          password: ['', [Validators.required, Validators.minLength(6)]],
-          confirmPassword: ['', [Validators.required]],
-          active: [true],
-          newPassword: [''],
-          newConfirmPassword: [''],
-        },
-        {
-          validators: this.passwordMatchValidator,
-        }
-      );
-    }
-  }
-
-  get authServiceInstance(): AuthService {
-    return this.authService;
-  }
-
-  passwordMatchValidator(g: FormGroup) {
-    const password = g.get('password')?.value;
-    const confirmPassword = g.get('confirmPassword')?.value;
-    const newPassword = g.get('newPassword')?.value;
-    const newConfirmPassword = g.get('newConfirmPassword')?.value;
-
-    const errors: any = {};
-
-    if (password && password !== confirmPassword) {
-      errors['passwordMismatch'] = true;
-    }
-
-    if (newPassword && newPassword !== newConfirmPassword) {
-      errors['newPasswordMismatch'] = true;
-    }
-
-    return Object.keys(errors).length > 0 ? errors : null;
-  }
+  ) {}
 
   ngOnInit(): void {
     this.checkPermissions();
+    this.buildFilterForm();
+    this.buildEmployeeForm();
     this.loadEmployees();
 
     const currentUser = this.authService.currentUser();
@@ -129,20 +73,69 @@ export class UposleniciComponent implements OnInit {
     this.isAdmin = this.authService.hasRole('Admin');
   }
 
+  // ========================
+  // Filter forma
+  // ========================
+
+  buildFilterForm(): void {
+    this.filterForm = this.fb.group({
+      userName: [''],
+      email: [''],
+      firstName: [''],
+      lastName: [''],
+      tenantId: [null],
+    });
+  }
+
+  applyFilter(): void {
+    this.currentPage = 1;
+    this.loadEmployees();
+  }
+
+  clearFilter(): void {
+    this.filterForm.reset({
+      userName: '',
+      email: '',
+      firstName: '',
+      lastName: '',
+      tenantId: null,
+    });
+    this.currentPage = 1;
+    this.loadEmployees();
+  }
+
+  // ========================
+  // Učitavanje podataka
+  // ========================
+
   loadEmployees(): void {
     this.loading = true;
-    this.uposleniciService.getEmployees().subscribe({
-      next: (data) => {
-        this.employees = data;
-        this.applyTenantFilter();
-        this.loading = false;
-      },
-      error: (error) => {
-        console.error('Greška pri učitavanju uposlenika:', error);
-        this.toastr.error('Greška pri učitavanju uposlenika');
-        this.loading = false;
-      },
-    });
+    const fv = this.filterForm.value;
+
+    this.uposleniciService
+      .getEmployees({
+        pageNumber: this.currentPage,
+        pageSize: this.pageSize,
+        userName: fv.userName || undefined,
+        email: fv.email || undefined,
+        firstName: fv.firstName || undefined,
+        lastName: fv.lastName || undefined,
+        tenantId: fv.tenantId || undefined,
+      })
+      .subscribe({
+        next: (result) => {
+          this.employees = result.items;
+          this.totalCount = result.totalCount;
+          this.totalPages = result.totalPages;
+          this.currentPage = result.pageNumber;
+          this.loading = false;
+        },
+        error: (error) => {
+          console.error('Greška pri učitavanju uposlenika:', error);
+          this.toastr.error('Greška pri učitavanju uposlenika');
+          this.loading = false;
+        },
+      });
   }
 
   loadTenants(): void {
@@ -152,93 +145,121 @@ export class UposleniciComponent implements OnInit {
         this.tenants = data;
         this.loadingTenants = false;
       },
-      error: (error) => {
-        console.error('Greška pri učitavanju organizacija:', error);
+      error: () => {
         this.toastr.error('Greška pri učitavanju organizacija');
         this.loadingTenants = false;
       },
     });
   }
 
-  applyTenantFilter(): void {
-    if (this.selectedTenantFilter) {
-      this.filteredEmployees = this.employees.filter(
-        (emp) => emp.tenantId === this.selectedTenantFilter
-      );
+  // ========================
+  // Paging
+  // ========================
+
+  get visiblePages(): number[] {
+    const pages: number[] = [];
+    const start = Math.max(1, this.currentPage - 2);
+    const end = Math.min(this.totalPages, this.currentPage + 2);
+    for (let i = start; i <= end; i++) pages.push(i);
+    return pages;
+  }
+
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages || page === this.currentPage) return;
+    this.currentPage = page;
+    this.loadEmployees();
+  }
+
+  onPageSizeSelectChange(newSize: number): void {
+    this.pageSize = newSize;
+    this.currentPage = 1;
+    this.loadEmployees();
+  }
+
+  // ========================
+  // Pomoćne metode
+  // ========================
+
+  getTenantName(tenantId: number): string {
+    const tenant = this.tenants.find((t) => t.id === tenantId);
+    return tenant ? tenant.name : `Organizacija ${tenantId}`;
+  }
+
+  // ========================
+  // Employee forma
+  // ========================
+
+  buildEmployeeForm(emp?: Employee): void {
+    if (this.isEditMode && emp) {
+      const fields: any = {
+        userName: [emp.userName, [Validators.required, Validators.minLength(3)]],
+        email: [emp.email, [Validators.required, Validators.email]],
+        firstName: [emp.firstName ?? ''],
+        lastName: [emp.lastName ?? ''],
+        active: [emp.active],
+        newPassword: [''],
+        newConfirmPassword: [''],
+      };
+
+      if (this.isSuperAdmin) {
+        fields['tenantId'] = [emp.tenantId, Validators.required];
+      }
+
+      this.employeeForm = this.fb.group(fields, {
+        validators: this.passwordMatchValidator,
+      });
     } else {
-      this.filteredEmployees = this.employees;
+      const fields: any = {
+        userName: ['', [Validators.required, Validators.minLength(3)]],
+        email: ['', [Validators.required, Validators.email]],
+        firstName: [''],
+        lastName: [''],
+        active: [true],
+        password: ['', [Validators.required, Validators.minLength(6)]],
+        confirmPassword: ['', Validators.required],
+        newPassword: [''],
+        newConfirmPassword: [''],
+      };
+
+      if (this.isSuperAdmin) {
+        fields['tenantId'] = [null, Validators.required];
+      }
+
+      this.employeeForm = this.fb.group(fields, {
+        validators: this.passwordMatchValidator,
+      });
     }
   }
 
-  onTenantFilterChange(event: Event): void {
-    const select = event.target as HTMLSelectElement;
-    const value = select.value;
-    this.selectedTenantFilter = value ? parseInt(value, 10) : null;
-    this.applyTenantFilter();
+  passwordMatchValidator(g: FormGroup) {
+    const errors: any = {};
+
+    const pw = g.get('password')?.value;
+    const confirmPw = g.get('confirmPassword')?.value;
+    if (pw && pw !== confirmPw) errors['passwordMismatch'] = true;
+
+    const newPw = g.get('newPassword')?.value;
+    const confirmNewPw = g.get('newConfirmPassword')?.value;
+    if (newPw && newPw !== confirmNewPw) errors['newPasswordMismatch'] = true;
+
+    return Object.keys(errors).length > 0 ? errors : null;
   }
 
-  clearFilter(): void {
-    this.selectedTenantFilter = null;
-    this.applyTenantFilter();
-  }
+  // ========================
+  // Modal
+  // ========================
 
   openCreateModal(): void {
     this.isEditMode = false;
     this.selectedEmployee = null;
-
-    if (this.isSuperAdmin) {
-      this.employeeForm.reset({
-        active: true,
-        tenantId: null,
-      });
-    } else if (this.isAdmin) {
-      this.employeeForm.reset({
-        active: true,
-      });
-    }
-
+    this.buildEmployeeForm();
     this.showModal = true;
   }
 
   openEditModal(employee: Employee): void {
     this.isEditMode = true;
     this.selectedEmployee = employee;
-
-    if (this.isSuperAdmin) {
-      this.employeeForm = this.fb.group(
-        {
-          userName: [
-            employee.userName,
-            [Validators.required, Validators.minLength(3)],
-          ],
-          email: [employee.email, [Validators.required, Validators.email]],
-          active: [employee.active],
-          tenantId: [employee.tenantId, Validators.required],
-          newPassword: [''],
-          newConfirmPassword: [''],
-        },
-        {
-          validators: this.passwordMatchValidator,
-        }
-      );
-    } else {
-      this.employeeForm = this.fb.group(
-        {
-          userName: [
-            employee.userName,
-            [Validators.required, Validators.minLength(3)],
-          ],
-          email: [employee.email, [Validators.required, Validators.email]],
-          active: [employee.active],
-          newPassword: [''],
-          newConfirmPassword: [''],
-        },
-        {
-          validators: this.passwordMatchValidator,
-        }
-      );
-    }
-
+    this.buildEmployeeForm(employee);
     this.showModal = true;
   }
 
@@ -248,48 +269,43 @@ export class UposleniciComponent implements OnInit {
     this.showConfirmPassword = false;
     this.showNewPassword = false;
     this.showNewConfirmPassword = false;
-
-    this.employeeForm = this.createForm();
     this.selectedEmployee = null;
+    this.isEditMode = false;
+    this.buildEmployeeForm();
   }
 
   togglePasswordVisibility(
     field: 'password' | 'confirm' | 'newPassword' | 'newConfirm'
   ): void {
     switch (field) {
-      case 'password':
-        this.showPassword = !this.showPassword;
-        break;
-      case 'confirm':
-        this.showConfirmPassword = !this.showConfirmPassword;
-        break;
-      case 'newPassword':
-        this.showNewPassword = !this.showNewPassword;
-        break;
-      case 'newConfirm':
-        this.showNewConfirmPassword = !this.showNewConfirmPassword;
-        break;
+      case 'password': this.showPassword = !this.showPassword; break;
+      case 'confirm': this.showConfirmPassword = !this.showConfirmPassword; break;
+      case 'newPassword': this.showNewPassword = !this.showNewPassword; break;
+      case 'newConfirm': this.showNewConfirmPassword = !this.showNewConfirmPassword; break;
     }
   }
 
+  // ========================
+  // Submit
+  // ========================
+
   onSubmit(): void {
     if (this.employeeForm.invalid) {
-      Object.keys(this.employeeForm.controls).forEach((key) => {
-        this.employeeForm.get(key)?.markAsTouched();
-      });
+      Object.keys(this.employeeForm.controls).forEach((key) =>
+        this.employeeForm.get(key)?.markAsTouched()
+      );
 
-      if (this.employeeForm.errors?.['passwordMismatch']) {
+      if (this.employeeForm.errors?.['passwordMismatch'])
         this.toastr.error('Lozinke se ne podudaraju');
-      }
-      if (this.employeeForm.errors?.['newPasswordMismatch']) {
+      if (this.employeeForm.errors?.['newPasswordMismatch'])
         this.toastr.error('Nove lozinke se ne podudaraju');
-      }
 
       return;
     }
 
-    const formData = this.employeeForm.value;
+    const formData = { ...this.employeeForm.value };
 
+    // Admin uvijek koristi vlastiti tenantId
     if (this.isAdmin && !this.isSuperAdmin) {
       formData.tenantId = this.currentUserTenantId;
     }
@@ -307,24 +323,27 @@ export class UposleniciComponent implements OnInit {
       return;
     }
 
-    if (this.isAdmin && !this.isSuperAdmin) {
-      data.tenantId = this.currentUserTenantId;
-    }
+    const dto = {
+      userName: data.userName,
+      email: data.email,
+      firstName: data.firstName || null,
+      lastName: data.lastName || null,
+      password: data.password,
+      confirmPassword: data.confirmPassword,
+      tenantId: data.tenantId,
+    };
 
-    this.uposleniciService.createEmployee(data).subscribe({
-      next: (response) => {
+    this.uposleniciService.createEmployee(dto).subscribe({
+      next: () => {
         this.toastr.success('Uposlenik uspješno kreiran');
         this.loadEmployees();
         this.closeModal();
       },
       error: (error) => {
-        console.error('Greška pri kreiranju uposlenika:', error);
         if (error.error?.message) {
           this.toastr.error(error.error.message);
         } else if (error.error?.errors) {
-          error.error.errors.forEach((err: string) => {
-            this.toastr.error(err);
-          });
+          error.error.errors.forEach((err: string) => this.toastr.error(err));
         } else {
           this.toastr.error('Greška pri kreiranju uposlenika');
         }
@@ -333,46 +352,35 @@ export class UposleniciComponent implements OnInit {
   }
 
   updateEmployee(id: number, data: any): void {
-    if (this.isAdmin && !this.isSuperAdmin) {
-      data.tenantId = this.selectedEmployee?.tenantId;
+    const dto: any = {
+      userName: data.userName,
+      email: data.email,
+      firstName: data.firstName || null,
+      lastName: data.lastName || null,
+      active: data.active,
+      tenantId: this.isSuperAdmin ? data.tenantId : this.selectedEmployee?.tenantId,
+    };
+
+    if (data.newPassword) {
+      dto.newPassword = data.newPassword;
+      dto.confirmPassword = data.newConfirmPassword;
     }
 
-    delete data.confirmPassword;
-
-    if (!data.newPassword) {
-      delete data.newPassword;
-      delete data.newConfirmPassword;
-    } else {
-      data.confirmPassword = data.newPassword;
-    }
-
-    this.uposleniciService.updateEmployee(id, data).subscribe({
+    this.uposleniciService.updateEmployee(id, dto).subscribe({
       next: () => {
         this.toastr.success('Uposlenik uspješno ažuriran');
         this.loadEmployees();
         this.closeModal();
       },
       error: (error) => {
-        console.error('Greška pri ažuriranju uposlenika:', error);
         if (error.error?.message) {
           this.toastr.error(error.error.message);
         } else if (error.error?.errors) {
-          error.error.errors.forEach((err: string) => {
-            this.toastr.error(err);
-          });
+          error.error.errors.forEach((err: string) => this.toastr.error(err));
         } else {
           this.toastr.error('Greška pri ažuriranju uposlenika');
         }
       },
     });
-  }
-
-  getTenantName(tenantId: number): string {
-    const tenant = this.tenants.find((t) => t.id === tenantId);
-    return tenant ? tenant.name : `Organizacija ${tenantId}`;
-  }
-
-  get displayEmployees(): Employee[] {
-    return this.isSuperAdmin ? this.filteredEmployees : this.employees;
   }
 }
