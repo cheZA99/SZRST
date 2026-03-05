@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
 import {
@@ -13,6 +13,8 @@ import { FacilityType } from 'src/app/services/facility-type.service';
 import { Country, CountryService } from 'src/app/services/country.service';
 import { City, CityService } from 'src/app/services/city.service';
 import { environment } from 'src/environments/environment';
+import { TranslateService } from '@ngx-translate/core';
+
 
 @Component({
   selector: 'app-lokacije-temp',
@@ -20,6 +22,8 @@ import { environment } from 'src/environments/environment';
   styleUrls: ['./lokacije.component.css'],
 })
 export class LokacijeComponent implements OnInit {
+
+  private translate = inject(TranslateService);
 
   facilities: FacilityResponse[] = [];
   filteredFacilities: FacilityResponse[] = [];
@@ -41,11 +45,6 @@ export class LokacijeComponent implements OnInit {
   removeCurrentImage = false;
 
   facilityForm: FormGroup;
-
-  showPassword = false;
-  showConfirmPassword = false;
-  showNewPassword = false;
-  showNewConfirmPassword = false;
 
   isSuperAdmin = false;
   isAdmin = false;
@@ -104,6 +103,9 @@ export class LokacijeComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    const savedLang = localStorage.getItem('lang') || 'bs';
+    this.translate.use(savedLang);
+
     this.checkPermissions();
     this.loadFacilities();
 
@@ -119,10 +121,10 @@ export class LokacijeComponent implements OnInit {
   }
 
   ngOnDestroy() {
-  if (this.imagePreview) {
-    URL.revokeObjectURL(this.imagePreview);
+    if (this.imagePreview) {
+      URL.revokeObjectURL(this.imagePreview);
+    }
   }
-}
 
   checkPermissions(): void {
     this.isSuperAdmin = this.authService.hasRole('SuperAdmin');
@@ -243,7 +245,7 @@ export class LokacijeComponent implements OnInit {
     console.log("Facility--->", facility);
     this.filteredCities = this.cities.filter(x => x.country.id === facility.location.city.country.id);
 
-    console.log("Slika-->",`${environment.apiUrl}${facility.imageUrl}`)
+    console.log("Slika-->", `${environment.apiUrl}${facility.imageUrl}`)
 
     this.imagePreview = facility.imageUrl
       ? `${environment.apiUrl}${facility.imageUrl}`
@@ -330,13 +332,12 @@ export class LokacijeComponent implements OnInit {
 
   closeModal(): void {
     this.showModal = false;
-    this.showPassword = false;
-    this.showConfirmPassword = false;
-    this.showNewPassword = false;
-    this.showNewConfirmPassword = false;
 
     this.facilityForm = this.createForm();
     this.selectedFacility = null;
+
+    this.selectedFile = null;
+    this.imagePreview = null;
   }
 
   onSubmit(): void {
@@ -393,54 +394,54 @@ export class LokacijeComponent implements OnInit {
   }
 
 
-onFileSelected(event: Event) {
+  onFileSelected(event: Event) {
 
-  const input = event.target as HTMLInputElement;
+    const input = event.target as HTMLInputElement;
 
-  if (!input.files || input.files.length === 0) {
-    return;
+    if (!input.files || input.files.length === 0) {
+      return;
+    }
+
+    const file = input.files[0];
+
+    this.selectedFile = file;
+
+    // Ako je već postojala preview slika, oslobodi memoriju
+    if (this.imagePreview) {
+      URL.revokeObjectURL(this.imagePreview);
+    }
+
+    // Kreiraj blob URL
+    this.imagePreview = URL.createObjectURL(file);
   }
 
-  const file = input.files[0];
+  /*onFileSelected(event: Event) {
+  
+    const input = event.target as HTMLInputElement;
+  
+    if (!input.files?.length) return;
+  
+    this.selectedFile = input.files[0];
+  
+    const reader = new FileReader();
+  
+    reader.onload = () => {
+      this.imagePreview = reader.result as string;
+    };
+  
+    reader.readAsDataURL(this.selectedFile);
+  }*/
 
-  this.selectedFile = file;
+  removeImage() {
 
-  // Ako je već postojala preview slika, oslobodi memoriju
-  if (this.imagePreview) {
-    URL.revokeObjectURL(this.imagePreview);
+    if (this.imagePreview) {
+      URL.revokeObjectURL(this.imagePreview);
+    }
+
+    this.imagePreview = null;
+    this.selectedFile = null;
+    this.removeCurrentImage = true;
   }
-
-  // Kreiraj blob URL
-  this.imagePreview = URL.createObjectURL(file);
-}
-
-/*onFileSelected(event: Event) {
-
-  const input = event.target as HTMLInputElement;
-
-  if (!input.files?.length) return;
-
-  this.selectedFile = input.files[0];
-
-  const reader = new FileReader();
-
-  reader.onload = () => {
-    this.imagePreview = reader.result as string;
-  };
-
-  reader.readAsDataURL(this.selectedFile);
-}*/
-
-removeImage() {
-
-  if (this.imagePreview) {
-    URL.revokeObjectURL(this.imagePreview);
-  }
-
-  this.imagePreview = null;
-  this.selectedFile = null;
-  this.removeCurrentImage = true;
-}
 
   filterCities(): void {
     this.onCountryChange();
@@ -458,7 +459,7 @@ removeImage() {
       data.tenantId = this.selectedFacility?.tenantId;
     }
 
-    this.facilityService.updateWithLocation(id, data,this.selectedFile).subscribe({
+    this.facilityService.updateWithLocation(id, data, this.selectedFile).subscribe({
       next: () => {
         this.toastr.success('Lokacija uspješno ažurirana');
         this.loadFacilities();

@@ -4,6 +4,7 @@ import { ToastrService } from "ngx-toastr";
 import { AuthService } from 'src/app/services/auth.service';
 import { UserService } from 'src/app/services/user.service';
 import { Subscription } from 'rxjs';
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-layout',
@@ -17,6 +18,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
   private userService = inject(UserService);
   private router = inject(Router);
   private toastr = inject(ToastrService);
+  private translate = inject(TranslateService);
 
   userName: string = 'userName';
   user: any = null;
@@ -24,8 +26,11 @@ export class LayoutComponent implements OnInit, OnDestroy {
   private profileSubscription?: Subscription;
 
   ngOnInit() {
+    const savedLang = localStorage.getItem('lang') || 'bs';
+    this.translate.use(savedLang);
+
     this.loadUserProfileImage();
-    
+
     // Listen for profile updates
     this.profileSubscription = this.userService.profileUpdated.subscribe(() => {
       this.loadUserProfileImage();
@@ -64,5 +69,10 @@ export class LayoutComponent implements OnInit, OnDestroy {
     } else {
       this.activeSubMenu = subMenu; // Expand if collapsed or different submenu clicked
     }
+  }
+
+  switchLanguage(lang: string) {
+    this.translate.use(lang);
+    localStorage.setItem('lang', lang);
   }
 }
