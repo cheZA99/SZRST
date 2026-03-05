@@ -21,9 +21,10 @@
         "ACTIONS": "Akcije",
         "EDIT": "Uredi",
         "WITHOUT_ORGANIZATION": "Bez organizacije",
-        "NO_FACILITIES_MESS":"Nema objekata",
-        "NO_FACILITIES":"Trenutno nema dostupnih objekata.",
+        "NO_FACILITIES_MESS": "Nema objekata",
+        "NO_FACILITIES": "Trenutno nema dostupnih objekata.",
         "NO_FACILITIES_TENANT": " Nema objekata za organizaciju",
+        "PAGE":"str.",
         "FACILITY_FORM": {
             "TITLE_CREATE": "Novi objekat",
             "TITLE_EDIT": "Uredi objekat",
@@ -54,6 +55,24 @@
             "CANCEL": "Odustani",
             "SAVE": "Spasi",
             "CREATE": "Kreiraj"
+        },
+        "FILTER": {
+            "TITLE": "Pretraži objekte",
+            "NAME": "Ime objekta",
+            "TYPE": "Tip objekta",
+            "ADDRESS": "Adresa",
+            "COUNTRY": "Država",
+            "CITY": "Grad",
+            "ORGANIZATION": "Organizacija",
+            "PLACEHOLDER_SEARCH": "Pretraži...",
+            "ALL_TYPES": "Svi tipovi objekata",
+            "ALL_COUNTRIES": "Sve države",
+            "ALL_CITIES": "Svi gradovi",
+            "ALL_ORGANIZATIONS": "Sve organizacije"
+        },
+        "BUTTONS": {
+            "SEARCH": "Pretraži",
+            "CLEAR": "Očisti filter"
         }
     }
 }

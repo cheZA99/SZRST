@@ -32,6 +32,7 @@ export class LokacijeComponent implements OnInit {
   countries: Country[] = [];
   cities: City[] = [];
   filteredCities: City[] = [];
+  filteredCitiesSearch: City[] = [];
 
   loading = false;
   loadingTenants = false;
@@ -44,7 +45,8 @@ export class LokacijeComponent implements OnInit {
   imagePreview: string | null = null;
   removeCurrentImage = false;
 
-  facilityForm: FormGroup;
+  facilityForm!: FormGroup;
+  filterForm!: FormGroup;
 
   isSuperAdmin = false;
   isAdmin = false;
@@ -52,6 +54,16 @@ export class LokacijeComponent implements OnInit {
   currentUserTenantId: number | null = null;
 
   selectedTenantFilter: number | null = null;
+
+  // Paging stanje
+  currentPage = 1;
+  pageSize = 5;
+  totalCount = 0;
+  totalPages = 0;
+  sortColumn: string = 'name';
+  sortDirection: 'asc' | 'desc' = 'asc';
+
+  Math = Math;
 
   constructor(
     private facilityService: FacilityService,
@@ -64,6 +76,35 @@ export class LokacijeComponent implements OnInit {
     private toastr: ToastrService
   ) {
     this.facilityForm = this.createForm();
+  }
+
+  buildFilterForm(): void {
+    this.filterForm = this.fb.group({
+      name: [''],
+      facilityTypeId: [null],
+      address: [''],
+      countryId: [null],
+      cityId: [null],
+      tenantId: [null],
+    });
+  }
+
+  applyFilter(): void {
+    this.currentPage = 1;
+    this.loadFacilities();
+  }
+
+  clearFilter(): void {
+    this.filterForm.reset({
+      userName: '',
+      facilityTypeId: null,
+      address: '',
+      countryId: null,
+      cityId: null,
+      tenantId: null,
+    });
+    this.currentPage = 1;
+    this.loadFacilities();
   }
 
   private createForm(): FormGroup {
@@ -106,6 +147,8 @@ export class LokacijeComponent implements OnInit {
     const savedLang = localStorage.getItem('lang') || 'bs';
     this.translate.use(savedLang);
 
+    this.buildFilterForm();
+
     this.checkPermissions();
     this.loadFacilities();
 
@@ -133,18 +176,43 @@ export class LokacijeComponent implements OnInit {
 
   loadFacilities(): void {
     this.loading = true;
-    this.facilityService.getAll().subscribe({
-      next: (data) => {
-        this.facilities = data;
-        this.applyTenantFilter();
-        this.loading = false;
-      },
-      error: (error) => {
-        console.error('Greška pri učitavanju facilitija:', error);
-        this.toastr.error('Greška pri učitavanju facilitija');
-        this.loading = false;
-      },
-    });
+
+    console.log("Ovdje sam")
+
+    const fv = this.filterForm.value;
+
+    console.log("FV-->", fv)
+
+    console.log("Ovdje sam")
+
+    this.facilityService
+      .getAll({
+        pageNumber: this.currentPage,
+        pageSize: this.pageSize,
+        name: fv.name || undefined,
+        facilityTypeId: fv.facilityTypeId || undefined,
+        address: fv.address || undefined,
+        countryId: fv.countryId || undefined,
+        cityId: fv.cityId || undefined,
+        tenantId: fv.tenantId || undefined,
+        sortColumn: this.sortColumn,
+        sortDirection: this.sortDirection
+      })
+      .subscribe({
+        next: (result) => {
+          console.log(result.items)
+          this.facilities = result.items;
+          this.totalCount = result.totalCount;
+          this.totalPages = result.totalPages;
+          this.currentPage = result.pageNumber;
+          this.loading = false;
+        },
+        error: (error) => {
+          console.error('Greška pri učitavanju objekata:', error);
+          this.toastr.error('Greška pri učitavanju objekata');
+          this.loading = false;
+        },
+      });
   }
 
   loadTenants(): void {
@@ -173,6 +241,38 @@ export class LokacijeComponent implements OnInit {
         this.loadingTenants = false;
       }
     })
+  }
+
+  sortBy(column: string) {
+
+  if (this.sortColumn === column) {
+    this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+  } else {
+    this.sortColumn = column;
+    this.sortDirection = 'asc';
+  }
+
+  this.loadFacilities();
+}
+
+  get visiblePages(): number[] {
+    const pages: number[] = [];
+    const start = Math.max(1, this.currentPage - 2);
+    const end = Math.min(this.totalPages, this.currentPage + 2);
+    for (let i = start; i <= end; i++) pages.push(i);
+    return pages;
+  }
+
+  onPageSizeSelectChange(newSize: number): void {
+    this.pageSize = newSize;
+    this.currentPage = 1;
+    this.loadFacilities();
+  }
+
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages || page === this.currentPage) return;
+    this.currentPage = page;
+    this.loadFacilities();
   }
 
   loadCities(): void {
@@ -215,11 +315,6 @@ export class LokacijeComponent implements OnInit {
     const select = event.target as HTMLSelectElement;
     const value = select.value;
     this.selectedTenantFilter = value ? parseInt(value, 10) : null;
-    this.applyTenantFilter();
-  }
-
-  clearFilter(): void {
-    this.selectedTenantFilter = null;
     this.applyTenantFilter();
   }
 
@@ -452,6 +547,16 @@ export class LokacijeComponent implements OnInit {
     this.filteredCities = this.cities.filter(x => x.country.id === countryId);
 
     console.log(this.filteredCities);
+  }
+
+  filterCitiesSearch(): void {
+    this.onCountryChange();
+    const countryId = Number(
+      this.filterForm.get('countryId')?.value
+    );
+
+    this.filteredCitiesSearch = this.cities.filter(x => x.country.id === countryId);
+
   }
 
   updateFacility(id: number, data: any): void {
