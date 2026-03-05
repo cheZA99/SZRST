@@ -119,15 +119,14 @@ namespace Infrastructure.Persistance
 			    .HasQueryFilter(e => _tenantProvider.TenantId == 0 || e.TenantId == _tenantProvider.TenantId);
 		}
 
-		// Nova metoda - filter koji respektuje SuperAdmin
 		private void SetConditionalTenantFilter<TEntity>(ModelBuilder builder)
 		    where TEntity : class, ITenantEntity
 		{
 			builder.Entity<TEntity>()
 			    .HasQueryFilter(e =>
-				   _tenantProvider.IsSuperAdminOrUser ||  // SuperAdmin vidi sve
-				   _tenantProvider.TenantId == 0 || // Fallback ako nema tenant ID
-				   e.TenantId == _tenantProvider.TenantId); // Obični korisnici vide samo svoj tenant
+				   _tenantProvider.IsSuperAdminOrUser ||
+				   _tenantProvider.TenantId == 0 ||
+				   e.TenantId == _tenantProvider.TenantId);
 		}
 
 		public override DbSet<TDb> Set<TDb>() where TDb : class
