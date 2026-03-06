@@ -141,7 +141,7 @@
       </thead>
 
       <tbody>
-        <tr *ngFor="let fac of facilities" [class.line-through]="fac.isDeleted">
+        <tr *ngFor="let fac of facilities" [class.line-through]="fac.isDeleted" @fadeIn>
 
           <td>{{ fac.name }}</td>
 
@@ -258,7 +258,7 @@
   </div>
 </div>
 
-<div *ngIf="showModal" class="modal modal-open">
+<div *ngIf="showModal" class="modal modal-open" @modalAnimation>
   <div class="modal-box max-w-2xl">
     <div class="flex justify-between items-center mb-4">
       <h3 class="font-bold text-lg">

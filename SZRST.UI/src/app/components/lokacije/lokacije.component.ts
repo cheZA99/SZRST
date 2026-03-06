@@ -15,11 +15,38 @@ import { City, CityService } from 'src/app/services/city.service';
 import { environment } from 'src/environments/environment';
 import { TranslateService } from '@ngx-translate/core';
 
+import {
+  trigger,
+  transition,
+  style,
+  animate
+} from '@angular/animations';
+
 
 @Component({
   selector: 'app-lokacije-temp',
   templateUrl: './lokacije.component.html',
   styleUrls: ['./lokacije.component.css'],
+  animations: [
+  trigger('fadeIn', [
+    transition(':enter', [
+      style({ opacity: 0, transform: 'translateY(10px)' }),
+      animate('300ms ease-out',
+        style({ opacity: 1, transform: 'translateY(0)' }))
+    ])
+  ]),
+  trigger('modalAnimation', [
+    transition(':enter', [
+      style({ opacity: 0, transform: 'scale(0.9)' }),
+      animate('200ms ease-out',
+        style({ opacity: 1, transform: 'scale(1)' }))
+    ]),
+    transition(':leave', [
+      animate('150ms ease-in',
+        style({ opacity: 0, transform: 'scale(0.9)' }))
+    ])
+  ])
+]
 })
 export class LokacijeComponent implements OnInit {
 
