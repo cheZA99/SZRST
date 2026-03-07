@@ -5,7 +5,6 @@ import { LoginComponent } from './components/login/login.component';
 import { SignupComponent } from './components/signup/signup.component';
 import { RezervacijeComponent } from './components/rezervacije/rezervacije.component';
 import { LayoutComponent } from './components/layout/layout.component';
-//import { LokacijeComponent } from './components/lokacije/lokacije.component';
 import { LokacijeComponent } from './components/lokacije/lokacije.component';
 import { ResursiComponent } from './components/resursi/resursi.component';
 import { KategorijeComponent } from './components/kategorije/kategorije.component';
@@ -82,7 +81,7 @@ const routes: Routes = [
         path: 'izvjestaji',
         component: IzvjestajiComponent,
         canActivate: [roleGuard],
-        data: { roles: ['SuperAdmin'] },
+        data: { roles: ['SuperAdmin', 'Admin'] },
       },
     ],
   },
@@ -94,4 +93,4 @@ const routes: Routes = [
   imports: [RouterModule.forRoot(routes)],
   exports: [RouterModule],
 })
-export class AppRoutingModule {}
+export class AppRoutingModule { }
