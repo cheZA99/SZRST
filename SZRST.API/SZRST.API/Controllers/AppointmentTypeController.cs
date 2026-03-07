@@ -1,4 +1,5 @@
 ﻿using Domain.Entities;
+using FluentValidation;
 using Infrastructure.Persistance;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +9,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using SZRST.Domain.Constants;
-using SZRST.Domain.Entities;
 
 namespace SZRST.API.Controllers
 {
@@ -19,10 +19,14 @@ namespace SZRST.API.Controllers
 	public class AppointmentTypeController :ControllerBase
 	{
 		private readonly SZRSTContext _context;
+		private readonly IValidator<AppointmentTypeCreateDto> _validator;
 
-		public AppointmentTypeController(SZRSTContext context)
+		public AppointmentTypeController(
+			SZRSTContext context,
+			IValidator<AppointmentTypeCreateDto> validator)
 		{
 			_context = context;
+			_validator = validator;
 		}
 
 		// GET: api/AppointmentType
@@ -30,10 +34,10 @@ namespace SZRST.API.Controllers
 		public async Task<ActionResult<IEnumerable<AppointmentTypeDto>>> GetAppointmentTypes()
 		{
 			var appointmentTypes = await _context.AppointmentType
-			    .Include(at => at.Tenant)
-			    .Include(at => at.Currency)
-			    .Where(at => !at.IsDeleted)
-			    .ToListAsync();
+				.Include(at => at.Tenant)
+				.Include(at => at.Currency)
+				.Where(at => !at.IsDeleted)
+				.ToListAsync();
 
 			var dtos = appointmentTypes.Select(at => new AppointmentTypeDto
 			{
@@ -57,14 +61,12 @@ namespace SZRST.API.Controllers
 		public async Task<ActionResult<AppointmentTypeDto>> GetAppointmentType(int id)
 		{
 			var appointmentType = await _context.AppointmentType
-			    .Include(at => at.Tenant)
-			    .Include(at => at.Currency)
-			    .FirstOrDefaultAsync(at => at.Id == id && !at.IsDeleted);
+				.Include(at => at.Tenant)
+				.Include(at => at.Currency)
+				.FirstOrDefaultAsync(at => at.Id == id && !at.IsDeleted);
 
 			if (appointmentType == null)
-			{
 				return NotFound();
-			}
 
 			var dto = new AppointmentTypeDto
 			{
@@ -88,9 +90,9 @@ namespace SZRST.API.Controllers
 		public async Task<ActionResult<IEnumerable<AppointmentTypeDto>>> GetAppointmentTypesByTenant(int tenantId)
 		{
 			var appointmentTypes = await _context.AppointmentType
-			    .Include(at => at.Currency)
-			    .Where(at => at.TenantId == tenantId && !at.IsDeleted)
-			    .ToListAsync();
+				.Include(at => at.Currency)
+				.Where(at => at.TenantId == tenantId && !at.IsDeleted)
+				.ToListAsync();
 
 			var dtos = appointmentTypes.Select(at => new AppointmentTypeDto
 			{
@@ -112,17 +114,22 @@ namespace SZRST.API.Controllers
 		[HttpPost]
 		public async Task<ActionResult<AppointmentType>> CreateAppointmentType([FromBody] AppointmentTypeCreateDto appointmentTypeDto)
 		{
-            var currencyId = await _context.Currency
+			// --- FluentValidation ---
+			var validationResult = await _validator.ValidateAsync(appointmentTypeDto);
+			if (!validationResult.IsValid)
+				return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
+
+			var currencyId = await _context.Currency
 				.Where(x => x.ShortName == "BAM")
 				.Select(x => x.Id)
 				.FirstOrDefaultAsync();
 
-            var appointmentType = new AppointmentType
+			var appointmentType = new AppointmentType
 			{
 				Name = appointmentTypeDto.Name,
 				Duration = appointmentTypeDto.Duration,
 				Price = appointmentTypeDto.Price,
-				CurrencyId = appointmentTypeDto.CurrencyId!=null ? appointmentTypeDto.CurrencyId : currencyId,
+				CurrencyId = appointmentTypeDto.CurrencyId != null ? appointmentTypeDto.CurrencyId : currencyId,
 				TenantId = appointmentTypeDto.TenantId,
 				DateCreated = DateTime.UtcNow,
 				IsDeleted = false
@@ -138,11 +145,14 @@ namespace SZRST.API.Controllers
 		[HttpPut("{id}")]
 		public async Task<IActionResult> UpdateAppointmentType(int id, [FromBody] AppointmentTypeCreateDto appointmentTypeDto)
 		{
+			// --- FluentValidation ---
+			var validationResult = await _validator.ValidateAsync(appointmentTypeDto);
+			if (!validationResult.IsValid)
+				return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
+
 			var appointmentType = await _context.AppointmentType.FindAsync(id);
 			if (appointmentType == null || appointmentType.IsDeleted)
-			{
 				return NotFound();
-			}
 
 			appointmentType.Name = appointmentTypeDto.Name;
 			appointmentType.Duration = appointmentTypeDto.Duration;
@@ -160,13 +170,9 @@ namespace SZRST.API.Controllers
 			catch (DbUpdateConcurrencyException)
 			{
 				if (!AppointmentTypeExists(id))
-				{
 					return NotFound();
-				}
 				else
-				{
 					throw;
-				}
 			}
 
 			return NoContent();
@@ -178,9 +184,7 @@ namespace SZRST.API.Controllers
 		{
 			var appointmentType = await _context.AppointmentType.FindAsync(id);
 			if (appointmentType == null)
-			{
 				return NotFound();
-			}
 
 			appointmentType.IsDeleted = true;
 			appointmentType.DateModified = DateTime.UtcNow;
@@ -216,5 +220,25 @@ namespace SZRST.API.Controllers
 		public string TenantName { get; set; }
 		public DateTime DateCreated { get; set; }
 		public DateTime? DateModified { get; set; }
+	}
+
+	public class AppointmentTypeCreateDtoValidator :AbstractValidator<AppointmentTypeCreateDto>
+	{
+		public AppointmentTypeCreateDtoValidator()
+		{
+			RuleFor(x => x.Name)
+				.NotEmpty().WithMessage("Naziv tipa termina je obavezan.")
+				.MaximumLength(100).WithMessage("Naziv ne smije biti duži od 100 karaktera.");
+
+			RuleFor(x => x.Duration)
+				.GreaterThan(0).WithMessage("Trajanje mora biti veće od 0 minuta.")
+				.LessThanOrEqualTo(480).WithMessage("Trajanje ne može biti duže od 480 minuta (8 sati).");
+
+			RuleFor(x => x.Price)
+				.GreaterThanOrEqualTo(0).WithMessage("Cijena ne može biti negativna.");
+
+			RuleFor(x => x.TenantId)
+				.GreaterThan(0).WithMessage("TenantId mora biti validan.");
+		}
 	}
 }
