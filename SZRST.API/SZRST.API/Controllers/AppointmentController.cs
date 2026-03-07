@@ -1,4 +1,5 @@
 ﻿using Domain.Entities;
+using FluentValidation;
 using Infrastructure.Persistance;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -21,14 +22,19 @@ namespace SZRST.API.Controllers
 	{
 		private readonly SZRSTContext _context;
 		private readonly UserManager<User> _userManager;
-
 		private readonly ICurrentUserService _currentUserService;
+		private readonly IValidator<AppointmentCreateDto> _validator;
 
-		public AppointmentController(SZRSTContext context, ICurrentUserService currentUserService, UserManager<User> userManager)
+		public AppointmentController(
+			SZRSTContext context,
+			ICurrentUserService currentUserService,
+			UserManager<User> userManager,
+			IValidator<AppointmentCreateDto> validator)
 		{
 			_context = context;
 			_currentUserService = currentUserService;
 			_userManager = userManager;
+			_validator = validator;
 		}
 
 		// GET: api/Appointment
@@ -36,8 +42,8 @@ namespace SZRST.API.Controllers
 		public async Task<ActionResult<IEnumerable<Appointment>>> GetAppointments()
 		{
 			return await _context.Appointment
-							 .Include(a => a.Facility)        // Include related Facility
-							 .Include(a => a.AppointmentType) // Include related AppointmentType
+							 .Include(a => a.Facility)
+							 .Include(a => a.AppointmentType)
 							 .ToListAsync();
 		}
 
@@ -46,14 +52,12 @@ namespace SZRST.API.Controllers
 		public async Task<ActionResult<Appointment>> GetAppointment(int id)
 		{
 			var appointment = await _context.Appointment
-									  .Include(a => a.Facility)        // Include related Facility
-									  .Include(a => a.AppointmentType) // Include related AppointmentType
+									  .Include(a => a.Facility)
+									  .Include(a => a.AppointmentType)
 									  .FirstOrDefaultAsync(a => a.Id == id);
 
 			if (appointment == null)
-			{
 				return NotFound();
-			}
 
 			return appointment;
 		}
@@ -62,17 +66,26 @@ namespace SZRST.API.Controllers
 		[HttpPost]
 		public async Task<ActionResult<Appointment>> CreateAppointment([FromBody] AppointmentCreateDto appointmentDto)
 		{
+			// --- FluentValidation ---
+			var validationResult = await _validator.ValidateAsync(appointmentDto);
+			if (!validationResult.IsValid)
+				return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
+
 			var facility = await _context.Facility.FindAsync(appointmentDto.FacilityId);
 			if (facility == null)
-			{
 				return BadRequest("Invalid FacilityId");
-			}
 
 			var appointmentType = await _context.AppointmentType.FindAsync(appointmentDto.AppointmentTypeId);
 			if (appointmentType == null)
-			{
 				return BadRequest("Invalid AppointmentTypeId");
-			}
+
+			var exists = await _context.Appointment.AnyAsync(a =>
+				a.Facility.Id == appointmentDto.FacilityId &&
+				a.AppointmentDateTime == appointmentDto.AppointmentDateTime &&
+				!a.IsDeleted);
+
+			if (exists)
+				return BadRequest("Appointment already exists for selected time.");
 
 			var appointment = new Appointment
 			{
@@ -86,16 +99,6 @@ namespace SZRST.API.Controllers
 				TenantId = appointmentType.TenantId
 			};
 
-			var exists = await _context.Appointment.AnyAsync(a =>
-	a.Facility.Id == appointmentDto.FacilityId &&
-	a.AppointmentDateTime == appointmentDto.AppointmentDateTime &&
-	!a.IsDeleted);
-
-			if (exists)
-			{
-				return BadRequest("Appointment already exists for selected time.");
-			}
-
 			_context.Appointment.Add(appointment);
 			await _context.SaveChangesAsync();
 
@@ -106,38 +109,33 @@ namespace SZRST.API.Controllers
 		[HttpPut("{id}")]
 		public async Task<IActionResult> UpdateAppointment(int id, [FromBody] AppointmentCreateDto appointmentDto)
 		{
+			// --- FluentValidation ---
+			var validationResult = await _validator.ValidateAsync(appointmentDto);
+			if (!validationResult.IsValid)
+				return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
+
 			var appointment = await _context.Appointment.FindAsync(id);
 			if (appointment == null)
-			{
 				return NotFound();
-			}
 
 			if (appointment.IsClosed)
-			{
 				return BadRequest("Closed appointment cannot be edited.");
-			}
 
 			var facility = await _context.Facility.FindAsync(appointmentDto.FacilityId);
 			if (facility == null)
-			{
 				return BadRequest("Invalid FacilityId");
-			}
 
 			var appointmentType = await _context.AppointmentType.FindAsync(appointmentDto.AppointmentTypeId);
 			if (appointmentType == null)
-			{
 				return BadRequest("Invalid AppointmentTypeId");
-			}
 
 			var exists = await _context.Appointment.AnyAsync(a =>
-	a.Facility.Id == appointmentDto.FacilityId &&
-	a.AppointmentDateTime == appointmentDto.AppointmentDateTime &&
-	!a.IsDeleted && a.Id != id);
+				a.Facility.Id == appointmentDto.FacilityId &&
+				a.AppointmentDateTime == appointmentDto.AppointmentDateTime &&
+				!a.IsDeleted && a.Id != id);
 
 			if (exists)
-			{
 				return BadRequest("Appointment already exists for selected time.");
-			}
 
 			appointment.AppointmentDateTime = appointmentDto.AppointmentDateTime;
 			appointment.IsFree = appointmentDto.IsFree;
@@ -156,13 +154,9 @@ namespace SZRST.API.Controllers
 			catch (DbUpdateConcurrencyException)
 			{
 				if (!AppointmentExists(id))
-				{
 					return NotFound();
-				}
 				else
-				{
 					throw;
-				}
 			}
 
 			return NoContent();
@@ -174,9 +168,7 @@ namespace SZRST.API.Controllers
 		{
 			var appointment = await _context.Appointment.FindAsync(id);
 			if (appointment == null)
-			{
 				return NotFound();
-			}
 
 			appointment.IsDeleted = true;
 			_context.Update(appointment);
@@ -207,27 +199,20 @@ namespace SZRST.API.Controllers
 					!a.IsDeleted);
 
 			if (facilityId.HasValue)
-			{
 				query = query.Where(a => a.Facility.Id == facilityId);
-			}
 
 			if (tenantId.HasValue)
-			{
 				query = query.Where(a => a.TenantId == tenantId);
-			}
 
 			var result = await query.Select(a => new AppointmentCalendarDto
 			{
 				Id = a.Id,
 				Start = a.AppointmentDateTime,
 				End = a.AppointmentDateTime.AddMinutes(a.AppointmentType.Duration),
-
 				IsFree = a.IsFree,
 				IsClosed = a.IsClosed,
-
 				FacilityId = a.Facility.Id,
 				FacilityName = a.Facility.Name,
-
 				AppointmentTypeId = a.AppointmentType.Id,
 				AppointmentTypeName = a.AppointmentType.Name,
 				TenantId = a.TenantId,
@@ -242,14 +227,11 @@ namespace SZRST.API.Controllers
 		public async Task<ActionResult<DashboardStatsDto>> GetDashboardStats([FromQuery] int? tenantId = null)
 		{
 			var today = DateTime.Today;
-			var tomorrow = today.AddDays(1);
 
 			var query = _userManager.Users.AsQueryable();
 
 			if (tenantId.HasValue)
-			{
 				query = query.Where(u => u.TenantId == tenantId.Value);
-			}
 
 			var stats = new DashboardStatsDto
 			{
@@ -297,22 +279,34 @@ namespace SZRST.API.Controllers
 	public class AppointmentCalendarDto
 	{
 		public int Id { get; set; }
-
 		public DateTime Start { get; set; }
 		public DateTime End { get; set; }
-
 		public bool IsFree { get; set; }
 		public bool IsClosed { get; set; }
-
 		public int FacilityId { get; set; }
 		public string FacilityName { get; set; }
-
 		public int AppointmentTypeId { get; set; }
 		public int UserId { get; set; }
 		public int TenantId { get; set; }
-
 		public string AppointmentTypeName { get; set; }
-
 		public decimal Price { get; set; }
+	}
+
+	public class AppointmentCreateDtoValidator :AbstractValidator<AppointmentCreateDto>
+	{
+		public AppointmentCreateDtoValidator()
+		{
+			RuleFor(x => x.FacilityId)
+				.GreaterThan(0).WithMessage("FacilityId mora biti validan.");
+
+			RuleFor(x => x.AppointmentTypeId)
+				.GreaterThan(0).WithMessage("AppointmentTypeId mora biti validan.");
+
+			RuleFor(x => x.TenantId)
+				.GreaterThan(0).WithMessage("TenantId mora biti validan.");
+
+			RuleFor(x => x.UserId)
+				.GreaterThanOrEqualTo(0).WithMessage("UserId ne može biti negativan.");
+		}
 	}
 }
