@@ -22,6 +22,7 @@ using SZRST.API.Controllers;
 using SZRST.Application.Services.MailService;
 using SZRST.Shared.Middleware;
 using WebApi.Error;
+using QuestPDF.Infrastructure;
 
 namespace SZRST.WebApi
 {
@@ -139,7 +140,9 @@ namespace SZRST.WebApi
 		// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
 		public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
 		{
-			if (env.IsDevelopment())
+            QuestPDF.Settings.License = LicenseType.Community;
+
+            if (env.IsDevelopment())
 			{
 				app.UseDeveloperExceptionPage();
 			}
@@ -147,7 +150,8 @@ namespace SZRST.WebApi
 			{
 				IdentitySeed.SeedAsync(scope.ServiceProvider).Wait();
 			}
-			app.UseSwagger();
+
+            app.UseSwagger();
 			app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "SZRST.API v1"));
 			app.UseHttpsRedirection();
 			app.UseMiddleware<ExceptionMiddleware>();

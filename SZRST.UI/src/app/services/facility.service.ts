@@ -56,10 +56,31 @@ export interface FacilityLocationCreateDto {
   tenantId: number;
 }
 
-
 export interface Tenant {
   id: number;
   name: string;
+}
+
+export interface PagedResult<T> {
+  items: T[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface FacilityFilterParams {
+  name?: string;
+  facilityTypeId?: string;
+  address?: string;
+  countryId?: number | null;
+  cityId?: number | null;
+  tenantId?: number | null;
+  isDeleted?: boolean;
+  pageNumber?: number;
+  pageSize?: number;
+  sortColumn?: string;
+  sortDirection?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -68,7 +89,7 @@ export class FacilityService {
 
   constructor(private http: HttpClient) { }
 
-  getAll(filter?: string, value?: string): Observable<FacilityResponse[]> {
+  /*getAll(filter?: string, value?: string): Observable<FacilityResponse[]> {
     let params = new HttpParams();
 
     if (filter && value) {
@@ -77,6 +98,40 @@ export class FacilityService {
     }
 
     return this.http.get<FacilityResponse[]>(this.apiUrl, { params });
+  }*/
+
+  getAll(
+    filters: FacilityFilterParams = {},
+  ): Observable<PagedResult<FacilityResponse>> {
+    let params = new HttpParams();
+
+    if (filters.pageNumber)
+      params = params.set('pageNumber', filters.pageNumber);
+    if (filters.pageSize) params = params.set('pageSize', filters.pageSize);
+    if (filters.name?.trim())
+      params = params.set('name', filters.name.trim());
+    if (filters.facilityTypeId != null)
+      params = params.set('facilityTypeId', filters.facilityTypeId);
+    if (filters.address?.trim())
+      params = params.set('address', filters.address.trim());
+    if (filters.countryId != null)
+      params = params.set('countryId', filters.countryId);
+    if (filters.cityId != null)
+      params = params.set('countryId', filters.cityId);
+    if (filters.tenantId != null)
+      params = params.set('tenantId', filters.tenantId);
+    if (filters.isDeleted != null)
+      params = params.set('isDeleted', filters.isDeleted);
+    if (filters.sortColumn?.trim())
+      params = params.set('sortColumn', filters.sortColumn.trim());
+    if (filters.sortDirection?.trim())
+      params = params.set('sortDirection', filters.sortDirection.trim());
+
+    console.log("Params--->", params)
+
+    return this.http.get<PagedResult<FacilityResponse>>(`${this.apiUrl}`, {
+      params,
+    });
   }
 
   getById(id: number): Observable<FacilityResponse> {

@@ -90,12 +90,12 @@ export class DashboardComponent implements OnInit {
 
     this.facilityService.getAll().subscribe({
       next: (facilitiesData) => {
-        this.facilities = facilitiesData;
+        this.facilities = facilitiesData.items;
 
         if (this.isSuperAdmin || this.isKorisnik) {
           this.loadTenants();
         } else if (this.isAdmin || this.isUposlenik) {
-          this.filteredFacilities = facilitiesData.filter(
+          this.filteredFacilities = facilitiesData.items.filter(
             (f) => f.tenantId === this.currentUserTenantId
           );
           this.stats.totalFacilities = this.filteredFacilities.length;

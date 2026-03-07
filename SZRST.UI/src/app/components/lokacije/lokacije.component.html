@@ -1,52 +1,106 @@
 <div class="container mx-auto p-6">
   <div class="flex justify-between items-center mb-6">
-    <h1 class="text-3xl font-bold">Lokacije</h1>
+    <h1 class="text-3xl font-bold">{{ 'FACILITY.TITLE' | translate }}</h1>
     <button (click)="openCreateModal()" class="btn btn-primary" *ngIf="isAdmin || isSuperAdmin">
-      + Nova Lokacija
+      {{ 'FACILITY.ADD_NEW' | translate }}
     </button>
   </div>
 
-  <!-- Filter section za SuperAdmin -->
-  <div *ngIf="isSuperAdmin" class="mb-6">
+  <div class="card bg-base-200 mb-6">
     <div class="card-body p-4">
-      <div class="flex flex-col md:flex-row md:items-center gap-4">
-        <div class="flex-1">
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            Filtriraj po organizaciji
-          </label>
-          <div class="flex gap-3 items-center">
-            <select class="select select-bordered w-full max-w-xs" [value]="selectedTenantFilter ?? ''"
-              (change)="onTenantFilterChange($event)">
-              <option value="">Sve organizacije</option>
+      <h2 class="card-title text-base mb-3">{{ 'FACILITY.FILTER.TITLE' | translate }}</h2>
+      <form [formGroup]="filterForm" (ngSubmit)="applyFilter()">
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div class="form-control">
+            <label class="label py-1">
+              <span class="label-text text-xs">{{ 'FACILITY.FILTER.TITLE' | translate }}</span>
+            </label>
+            <input type="text" formControlName="name"
+              placeholder="{{ 'FACILITY.FILTER.PLACEHOLDER_SEARCH' | translate }}"
+              class="input input-bordered input-sm w-full" />
+          </div>
+
+          <div class="form-control" *ngIf="isSuperAdmin">
+            <label class="label py-1">
+              <span class="label-text text-xs">{{ 'FACILITY.FILTER.TYPE' | translate }}</span>
+            </label>
+            <select formControlName="facilityTypeId" class="select select-bordered w-full">
+
+              <option [ngValue]="null">{{ 'FACILITY.FILTER.ALL_TYPES' | translate }}</option>
+
+              <option *ngFor="let facilityType of facilityTypes" [ngValue]="facilityType.id">
+                {{ facilityType.name }}
+              </option>
+
+            </select>
+          </div>
+
+          <div class="form-control">
+            <label class="label py-1">
+              <span class="label-text text-xs">{{ 'FACILITY.FILTER.ADDRESS' | translate }}</span>
+            </label>
+            <input type="text" formControlName="address"
+              placeholder="{{ 'FACILITY.FILTER.PLACEHOLDER_SEARCH' | translate }}"
+              class="input input-bordered input-sm w-full" />
+          </div>
+
+          <div class="form-control" *ngIf="isSuperAdmin">
+            <label class="label py-1">
+              <span class="label-text text-xs">{{ 'FACILITY.FILTER.COUNTRY' | translate }}</span>
+            </label>
+            <select (change)="filterCitiesSearch()" formControlName="countryId" class="select select-bordered w-full">
+
+              <option [ngValue]="null">{{ 'FACILITY.FILTER.ALL_COUNTRIES' | translate }}</option>
+
+              <option *ngFor="let country of countries" [ngValue]="country.id">
+                {{ country.name }}
+              </option>
+
+            </select>
+          </div>
+
+          <div class="form-control" *ngIf="isSuperAdmin">
+            <label class="label py-1">
+              <span class="label-text text-xs">{{ 'FACILITY.FILTER.CITY' | translate }}</span>
+            </label>
+            <select formControlName="facilityTypeId" class="select select-bordered w-full">
+
+              <option [ngValue]="null">{{ 'FACILITY.FILTER.ALL_CITIES' | translate }}</option>
+
+              <option *ngFor="let city of filteredCitiesSearch" [ngValue]="city.id">
+                {{ city.name }}
+              </option>
+
+            </select>
+          </div>
+
+          <div class="form-control" *ngIf="isSuperAdmin">
+            <label class="label py-1">
+              <span class="label-text text-xs">{{ 'FACILITY.FILTER.ORGANIZATION' | translate }}</span>
+            </label>
+            <select formControlName="tenantId" class="select select-bordered select-sm w-full">
+              <option [ngValue]="null">{{ 'FACILITY.FILTER.ALL_ORGANIZATIONS' | translate }}</option>
               <option *ngFor="let tenant of tenants" [value]="tenant.id">
                 {{ tenant.name }}
               </option>
             </select>
-
-            <!-- <button
-                *ngIf="selectedTenantFilter"
-                (click)="clearFilter()"
-                class="btn btn-sm btn-ghost"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-4 w-4 mr-1"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-                Očisti filter
-              </button> -->
           </div>
         </div>
-      </div>
+
+        <div class="flex gap-2 mt-3">
+          <button type="submit" class="btn btn-primary btn-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24"
+              stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0" />
+            </svg>
+            {{ 'FACILITY.BUTTONS.SEARCH' | translate }}
+          </button>
+          <button type="button" (click)="clearFilter()" class="btn btn-ghost btn-sm">
+            {{ 'FACILITY.BUTTONS.CLEAR' | translate }}
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -58,72 +112,161 @@
     <table class="table w-full">
       <thead>
         <tr>
-          <th>Facility name</th>
-          <th>Facility type</th>
-          <th>Adresa</th>
-          <th *ngIf="isSuperAdmin">Organizacija</th>
-          <th>Akcije</th>
+          <th (click)="sortBy('name')" class="cursor-pointer">
+            {{ 'FACILITY.NAME' | translate }}
+
+            <span *ngIf="sortColumn === 'name'">
+              {{ sortDirection === 'asc' ? '▲' : '▼' }}
+            </span>
+          </th>
+          <th (click)="sortBy('facilityType')" class="cursor-pointer">
+            {{ 'FACILITY.TYPE' | translate }}
+
+            <span *ngIf="sortColumn === 'facilityType'">
+              {{ sortDirection === 'asc' ? '▲' : '▼' }}
+            </span>
+          </th>
+          <th (click)="sortBy('address')" class="cursor-pointer">
+            {{ 'FACILITY.ADDRESS' | translate }}
+
+            <span *ngIf="sortColumn === 'address'">
+              {{ sortDirection === 'asc' ? '▲' : '▼' }}
+            </span>
+          </th>
+          <th *ngIf="isSuperAdmin">
+            {{ 'FACILITY.ORGANIZATION' | translate }}
+          </th>
+          <th>{{ 'FACILITY.ACTIONS' | translate }}</th>
         </tr>
       </thead>
+
       <tbody>
-        <tr *ngFor="let fac of displayFacilities" [class.line-through]="fac.isDeleted">
+        <tr *ngFor="let fac of facilities" [class.line-through]="fac.isDeleted" @fadeIn>
+
           <td>{{ fac.name }}</td>
+
           <td>{{ fac.facilityType.name }}</td>
-          <td>{{ fac.location.address }}</td>
+
+          <td>{{ fac.location.address }} {{ fac.location.addressNumber }}</td>
+
           <td *ngIf="isSuperAdmin">
             <span *ngIf="fac.tenantId && fac.tenantName" class="badge badge-info">
               {{ fac.tenantName }}
             </span>
+
             <span *ngIf="fac.tenantId && !fac.tenantName" class="badge badge-info">
               {{ getTenantName(fac.tenantId) }}
             </span>
+
             <span *ngIf="!fac.tenantId" class="badge badge-ghost">
-              Bez organizacije
+              {{ 'FACILITY.WITHOUT_ORGANIZATION' | translate }}
             </span>
           </td>
-
-          <td *ngIf="!isSuperAdmin" class="hidden"></td>
 
           <td>
             <div class="flex gap-2">
               <button (click)="openEditModal(fac)" class="btn btn-sm btn-warning" *ngIf="isSuperAdmin || isAdmin">
-                Uredi
+                {{ 'FACILITY.EDIT' | translate }}
+              </button>
+
+              <button (click)="confirmDeleteFacility(fac.id)" class="btn btn-sm btn-error" *ngIf="isSuperAdmin || isAdmin">
+                {{ 'FACILITY.DELETE' | translate }}
               </button>
             </div>
           </td>
+
         </tr>
       </tbody>
     </table>
 
-    <div *ngIf="displayFacilities.length === 0" class="text-center py-8">
+    <!-- EMPTY STATE -->
+    <div *ngIf="facilities.length === 0" class="text-center py-8">
       <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24"
         stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
           d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13 0a6 6 0 01-9 5.197" />
       </svg>
-      <h3 class="mt-2 text-lg font-medium text-gray-900">Nema lokacija</h3>
+
+      <h3 class="mt-2 text-lg font-medium text-gray-900">
+        {{ 'FACILITY.NO_FACILITIES_MESS' | translate }}
+      </h3>
+
       <p class="mt-1 text-sm text-gray-500">
+
         <span *ngIf="selectedTenantFilter">
-          Nema lokacija za organizaciju "{{
-          getTenantName(selectedTenantFilter)
-          }}".
+          {{ 'FACILITY.NO_FACILITIES_TENANT' | translate }}
+          "{{ getTenantName(selectedTenantFilter) }}"
         </span>
+
         <span *ngIf="!selectedTenantFilter">
-          Trenutno nema dostupnih lokacija.
+          {{ 'FACILITY.NO_FACILITIES' | translate }}
         </span>
-        <span *ngIf="isAdmin || isSuperAdmin">
-          Kliknite na "Nova Lokacija" da kreirate prvu.
-        </span>
+
       </p>
+    </div>
+
+    <!-- PAGINATION -->
+    <div *ngIf="totalCount > 0" class="flex flex-wrap justify-between items-center mt-4 gap-3">
+
+      <div class="text-sm text-gray-600">
+        {{ 'TABLE.SHOWING' | translate }}
+        {{ (currentPage - 1) * pageSize + 1 }} –
+        {{ Math.min(currentPage * pageSize, totalCount) }}
+        {{ 'TABLE.OF' | translate }}
+        {{ totalCount }}
+        {{ 'FACILITY.TITLE' | translate }}
+      </div>
+
+      <div class="flex flex-row items-center gap-2">
+
+        <!-- PAGE SIZE -->
+        <div style="margin-top:20px">
+          <select class="select select-bordered select-sm" style="height:2rem; min-height:2rem;" [(ngModel)]="pageSize"
+            (ngModelChange)="onPageSizeSelectChange($event)">
+            <option [ngValue]="5">5 / {{ 'FACILITY.PAGE' | translate }}.</option>
+            <option [ngValue]="10">10 / {{ 'FACILITY.PAGE' | translate }}</option>
+            <option [ngValue]="25">25 / {{ 'FACILITY.PAGE' | translate }}</option>
+            <option [ngValue]="50">50 / {{ 'FACILITY.PAGE' | translate }}</option>
+          </select>
+        </div>
+
+        <!-- PAGE NAVIGATION -->
+        <div>
+
+          <button class="join-item btn btn-sm" [disabled]="currentPage === 1" (click)="goToPage(1)">
+            «
+          </button>
+
+          <button class="join-item btn btn-sm" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
+            ‹
+          </button>
+
+          <ng-container *ngFor="let page of visiblePages">
+            <button class="join-item btn btn-sm" [class.btn-active]="page === currentPage" (click)="goToPage(page)">
+              {{ page }}
+            </button>
+          </ng-container>
+
+          <button class="join-item btn btn-sm" [disabled]="currentPage === totalPages"
+            (click)="goToPage(currentPage + 1)">
+            ›
+          </button>
+
+          <button class="join-item btn btn-sm" [disabled]="currentPage === totalPages" (click)="goToPage(totalPages)">
+            »
+          </button>
+
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
-<div *ngIf="showModal" class="modal modal-open">
+<div *ngIf="showModal" class="modal modal-open" @modalAnimation>
   <div class="modal-box max-w-2xl">
     <div class="flex justify-between items-center mb-4">
       <h3 class="font-bold text-lg">
-        {{ isEditMode ? "Uredi Lokaciju" : "Nova Lokacija" }}
+        {{ (isEditMode ? 'FACILITY.FACILITY_FORM.TITLE_EDIT' : 'FACILITY.FACILITY_FORM.TITLE_CREATE') | translate }}
       </h3>
       <button (click)="closeModal()" class="btn btn-sm btn-circle">✕</button>
     </div>
@@ -133,9 +276,10 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="form-control w-full">
             <label class="label">
-              <span class="label-text">Facility name *</span>
+              <span class="label-text">{{ 'FACILITY.FACILITY_FORM.NAME' | translate }} *</span>
             </label>
-            <input type="text" formControlName="name" placeholder="Unesite facility name"
+            <input type="text" formControlName="name"
+              placeholder="{{ 'FACILITY.FACILITY_FORM.NAME_PLACEHOLDER' | translate }}"
               class="input input-bordered w-full" [class.input-error]="
                 facilityForm.get('name')?.invalid &&
                 facilityForm.get('name')?.touched
@@ -145,21 +289,21 @@
                 facilityForm.get('name')?.touched
               ">
               <span class="label-text-alt text-error">
-                Facility name mora imati najmanje 3 karaktera
+                {{ 'FACILITY.FACILITY_FORM.NAME_ERROR' | translate }}
               </span>
             </label>
           </div>
 
           <div class="form-control w-full">
             <label class="label">
-              <span class="label-text">Facility type *</span>
+              <span class="label-text">{{ 'FACILITY.FACILITY_FORM.TYPE' | translate }} *</span>
             </label>
             <select formControlName="facilityTypeId" class="select select-bordered w-full" [class.select-error]="
               facilityForm.get('facilityTypeId')?.invalid &&
               facilityForm.get('facilityTypeId')?.touched
             ">
               <option [value]="null" disabled selected>
-                Odaberite Facility Type
+                {{ 'FACILITY.FACILITY_FORM.TYPE_SELECT' | translate }}
               </option>
               <option *ngFor="let facilityType of facilityTypes" [value]="facilityType.id">
                 {{ facilityType.name }}
@@ -170,7 +314,7 @@
               facilityForm.get('facilityTypeId')?.touched
             ">
               <span class="label-text-alt text-error">
-                Morate odabrati Facility Type
+                {{ 'FACILITY.FACILITY_FORM.TYPE_ERROR' | translate }}
               </span>
             </label>
           </div>
@@ -179,7 +323,7 @@
 
         <div class="form-control w-full mt-4">
           <label class="label">
-            <span class="label-text">Image</span>
+            <span class="label-text">{{ 'FACILITY.FACILITY_FORM.IMAGE' | translate }}</span>
           </label>
           <input type="file" accept="image/*" (change)="onFileSelected($event)"
             class="file-input file-input-bordered w-full" />
@@ -187,7 +331,7 @@
           <img *ngIf="imagePreview" [src]="imagePreview" class="mt-3 rounded w-40">
 
           <button *ngIf="imagePreview" type="button" class="btn btn-sm btn-error mt-2" (click)="removeImage()">
-            Ukloni sliku
+            {{ 'FACILITY.FACILITY_FORM.CHOOSE_FILE' | translate }}
           </button>
         </div>
 
@@ -195,9 +339,10 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
           <div class="form-control w-full">
             <label class="label">
-              <span class="label-text">Addresa *</span>
+              <span class="label-text">{{ 'FACILITY.FACILITY_FORM.ADDRESS' | translate }} *</span>
             </label>
-            <input type="text" formControlName="address" placeholder="Unesite adresu"
+            <input type="text" formControlName="address"
+              placeholder="{{ 'FACILITY.FACILITY_FORM.ADDRESS_PLACEHOLDER' | translate }}"
               class="input input-bordered w-full" [class.input-error]="
                 facilityForm.get('address')?.invalid &&
                 facilityForm.get('address')?.touched
@@ -207,14 +352,14 @@
                 facilityForm.get('address')?.touched
               ">
               <span class="label-text-alt text-error">
-                Adresa mora imati najmanje 3 karaktera
+                {{ 'FACILITY.FACILITY_FORM.ADDRESS_ERROR' | translate }}
               </span>
             </label>
           </div>
 
           <div class="form-control w-full">
             <label class="label">
-              <span class="label-text">Broj adrese *</span>
+              <span class="label-text">{{ 'FACILITY.FACILITY_FORM.ADDRESS_NUMBER' | translate }} *</span>
             </label>
             <input type="text" formControlName="addressNumber" placeholder="Unesite broj adresu"
               class="input input-bordered w-full" [class.input-error]="
@@ -226,7 +371,7 @@
                 facilityForm.get('addressNumber')?.touched
               ">
               <span class="label-text-alt text-error">
-                Broj adrese je obavezan
+                {{ 'FACILITY.FACILITY_FORM.ADDRESS_NUMBER_ERROR' | translate }}
               </span>
             </label>
           </div>
@@ -235,7 +380,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
           <div class="form-control w-full">
             <label class="label">
-              <span class="label-text">Država *</span>
+              <span class="label-text">{{ 'FACILITY.FACILITY_FORM.COUNTRY' | translate }} *</span>
             </label>
             <select (change)="filterCities()" formControlName="countryId" class="select select-bordered w-full"
               [class.select-error]="
@@ -243,7 +388,7 @@
               facilityForm.get('countryId')?.touched
             ">
               <option [value]="null" disabled selected>
-                Odaberite Državu
+                {{ 'FACILITY.FACILITY_FORM.SELECT_COUNTRY' | translate }}
               </option>
               <option *ngFor="let country of countries" [value]="country.id">
                 {{ country.name }}
@@ -254,21 +399,21 @@
               facilityForm.get('countryId')?.touched
             ">
               <span class="label-text-alt text-error">
-                Morate odabrati Državu
+                {{ 'FACILITY.FACILITY_FORM.COUNTRY_ERROR' | translate }}
               </span>
             </label>
           </div>
 
           <div class="form-control w-full">
             <label class="label">
-              <span class="label-text">Grad *</span>
+              <span class="label-text">{{ 'FACILITY.FACILITY_FORM.CITY' | translate }} *</span>
             </label>
             <select formControlName="cityId" class="select select-bordered w-full" [class.select-error]="
               facilityForm.get('cityId')?.invalid &&
               facilityForm.get('cityId')?.touched
             ">
               <option [value]="null" disabled selected>
-                Odaberite Grad
+                {{ 'FACILITY.FACILITY_FORM.SELECT_CITY' | translate }}
               </option>
               <option *ngFor="let city of filteredCities" [value]="city.id">
                 {{ city.name }}
@@ -279,7 +424,7 @@
               facilityForm.get('cityId')?.touched
             ">
               <span class="label-text-alt text-error">
-                Morate odabrati Grad
+                {{ 'FACILITY.FACILITY_FORM.CITY_ERROR' | translate }}
               </span>
             </label>
           </div>
@@ -287,14 +432,14 @@
 
         <div *ngIf="isSuperAdmin && !isEditMode" class="form-control w-full mt-4">
           <label class="label">
-            <span class="label-text">Organizacija *</span>
+            <span class="label-text">{{ 'FACILITY.FACILITY_FORM.ORGANIZATION' | translate }} *</span>
           </label>
           <select formControlName="tenantId" class="select select-bordered w-full" [class.select-error]="
               facilityForm.get('tenantId')?.invalid &&
               facilityForm.get('tenantId')?.touched
             ">
             <option [value]="null" disabled selected>
-              Odaberite organizaciju
+              {{ 'FACILITY.FACILITY_FORM.SELECT_ORGANIZATION' | translate }}
             </option>
             <option *ngFor="let tenant of tenants" [value]="tenant.id">
               {{ tenant.name }}
@@ -305,20 +450,20 @@
               facilityForm.get('tenantId')?.touched
             ">
             <span class="label-text-alt text-error">
-              Morate odabrati organizaciju
+              {{ 'FACILITY.FACILITY_FORM.ORGANIZATION_ERROR' | translate }}
             </span>
           </label>
         </div>
 
         <div *ngIf="isSuperAdmin && isEditMode && selectedFacility" class="form-control w-full mt-4">
           <label class="label">
-            <span class="label-text">Organizacija *</span>
+            <span class="label-text">{{ 'FACILITY.FACILITY_FORM.ORGANIZATION' | translate }} *</span>
           </label>
           <select formControlName="tenantId" class="select select-bordered w-full" [class.select-error]="
               facilityForm.get('tenantId')?.invalid &&
               facilityForm.get('tenantId')?.touched
             ">
-            <option [value]="null" disabled>Odaberite organizaciju</option>
+            <option [value]="null" disabled>{{ 'FACILITY.FACILITY_FORM.SELECT_ORGANIZATION' | translate }}</option>
             <option *ngFor="let tenant of tenants" [value]="tenant.id">
               {{ tenant.name }}
             </option>
@@ -328,7 +473,7 @@
               facilityForm.get('tenantId')?.touched
             ">
             <span class="label-text-alt text-error">
-              Morate odabrati organizaciju
+              {{ 'FACILITY.FACILITY_FORM.ORGANIZATION_ERROR' | translate }}
             </span>
           </label>
         </div>
@@ -336,10 +481,10 @@
 
       <div class="modal-action">
         <button type="button" (click)="closeModal()" class="btn btn-ghost">
-          Odustani
+          {{ 'FACILITY.FACILITY_FORM.CANCEL' | translate }}
         </button>
         <button type="submit" class="btn btn-primary" [disabled]="facilityForm.invalid">
-          {{ isEditMode ? "Sačuvaj" : "Kreiraj" }}
+          {{ (isEditMode ? 'FACILITY.FACILITY_FORM.SAVE' : 'FACILITY.FACILITY_FORM.CREATE') | translate }}
         </button>
       </div>
     </form>

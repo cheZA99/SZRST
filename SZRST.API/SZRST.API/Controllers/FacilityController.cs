@@ -4,6 +4,7 @@ using Infrastructure.Persistance;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -28,18 +29,26 @@ namespace SZRST.API.Controllers
 		private readonly LocationController _locationController;
 		private readonly IMapper _mapper;
         private readonly IWebHostEnvironment _env;
+        private readonly UserManager<User> _userManager;
+        private readonly ICurrentUserService _currentUserService;
 
-        public FacilityController(SZRSTContext context, LocationController locationController, IMapper mapper, IWebHostEnvironment env)
+        public FacilityController(SZRSTContext context, 
+			LocationController locationController, 
+			IMapper mapper, IWebHostEnvironment env,
+            UserManager<User> userManager,
+            ICurrentUserService currentUserService)
 		{
 			_context = context;
 			_locationController = locationController;
 			_mapper = mapper;
 			_env = env;
+			_currentUserService = currentUserService;
+			_userManager = userManager;
 		}
 
 		// GET: api/Facility
 		[HttpGet]
-		public async Task<ActionResult<IEnumerable<FacilityResponse>>> GetFacilities([FromQuery] string filter, [FromQuery] string value)
+        /*public async Task<ActionResult<IEnumerable<FacilityResponse>>> GetFacilities([FromQuery] string filter, [FromQuery] string value)
 		{
 			var query = _context.Facility
 							 .Include(f => f.FacilityType)  // Include related FacilityType
@@ -78,6 +87,97 @@ namespace SZRST.API.Controllers
 			}
 
 			return _mapper.Map<List<FacilityResponse>>(await query.OrderByDescending(x => x.Id).ToListAsync());
+		}*/
+
+        // GET: api/Facility
+        [HttpGet]
+		public async Task<ActionResult<PagedResult<FacilityResponse>>> GetFacilities([FromQuery] FacilityFilterDto filter)
+		{
+            var currentUser = await _userManager.FindByIdAsync(_currentUserService.UserId.ToString());
+            var currentUserRoles = await _userManager.GetRolesAsync(currentUser);
+
+
+            IQueryable<Facility> query = _context.Facility
+                .Include(f => f.FacilityType)
+                .Include(f => f.Location)
+                    .ThenInclude(f => f.City)
+                    .ThenInclude(c => c.Country);
+
+            if (!string.IsNullOrWhiteSpace(filter.Address))
+            {
+                var search = filter.Address.ToLower();
+
+                query = query.Where(u =>
+                    (u.Location.Address + " " + u.Location.AddressNumber)
+                    .ToLower()
+                    .Contains(search));
+            }
+            query = query.Where(u => !u.IsDeleted);
+            if (!string.IsNullOrWhiteSpace(filter.Name))
+                query = query.Where(u => u.Name.ToLower().Contains(filter.Name.ToLower()));
+
+            if (filter.FacilityTypeId.HasValue)
+                query = query.Where(u => u.FacilityType.Id == filter.FacilityTypeId.Value);
+
+            if (filter.CountryId.HasValue)
+                query = query.Where(u => u.Location.Country.Id == filter.CountryId.Value);
+
+            if (filter.CityId.HasValue)
+                query = query.Where(u => u.Location.City.Id == filter.CityId.Value);
+
+            if (currentUserRoles.Contains(Roles.SuperAdmin) && filter.TenantId.HasValue)
+                query = query.Where(u => u.TenantId == filter.TenantId.Value);
+
+            query = filter.SortColumn switch
+            {
+                "name" => filter.SortDirection == "asc"
+                    ? query.OrderBy(f => f.Name)
+                    : query.OrderByDescending(f => f.Name),
+
+                "facilityType" => filter.SortDirection == "asc"
+                    ? query.OrderBy(f => f.FacilityType.Name)
+                    : query.OrderByDescending(f => f.FacilityType.Name),
+
+                "address" => filter.SortDirection == "asc"
+                    ? query.OrderBy(f => f.Location.Address)
+                    : query.OrderByDescending(f => f.Location.Address),
+
+                _ => query.OrderBy(f => f.Name)
+            };
+
+            int pageNumber = filter.PageNumber < 1 ? 1 : filter.PageNumber;
+            int pageSize = filter.PageSize < 1 ? 10 : (filter.PageSize > 100 ? 100 : filter.PageSize);
+
+            var totalCount = await query.CountAsync();
+
+            var pagedUsers = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+			var facilityDtos = new List<FacilityResponse>();
+
+			foreach (var facility in pagedUsers)
+			{
+                facilityDtos.Add(new FacilityResponse
+                    {
+						Id = facility.Id,
+						Name= facility.Name,
+						FacilityType = facility.FacilityType,
+						Location = facility.Location,
+						ImageUrl = facility.ImageUrl,
+						TenantId = facility.TenantId
+					});
+			}
+
+			return Ok(new PagedResult<FacilityResponse>
+			{
+				Items = facilityDtos,
+				TotalCount = totalCount,
+				PageNumber = pageNumber,
+				PageSize = pageSize,
+				TotalPages = (int)Math.Ceiling((double)totalCount / pageSize)
+			});
 		}
 
 		// GET: api/Facility/{id}
@@ -384,5 +484,21 @@ namespace SZRST.API.Controllers
         public int LocationId { get; set; }
         public int TenantId { get; set; }
         public IFormFile File { get; set; }
+    }
+
+    public class FacilityFilterDto
+    {
+        public string? Name { get; set; }
+        public int? FacilityTypeId { get; set; }
+        public string? Address { get; set; }
+        public int? CountryId { get; set; }
+        public int? CityId { get; set; }
+        public int? TenantId { get; set; }
+        public bool? IsDeleted { get; set; }
+
+        public int PageNumber { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
+        public string? SortColumn { get; set; }
+        public string? SortDirection { get; set; }
     }
 }

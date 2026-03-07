@@ -14,7 +14,6 @@ import { SignupComponent } from './components/signup/signup.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { RezervacijeComponent } from './components/rezervacije/rezervacije.component';
-//import { LokacijeComponent } from './components/lokacije/lokacije.component';
 import { LokacijeComponent } from './components/lokacije/lokacije.component';
 import { ResursiComponent } from './components/resursi/resursi.component';
 import { KategorijeComponent } from './components/kategorije/kategorije.component';
@@ -34,6 +33,14 @@ import { AppointmentDialogComponent } from './components/rezervacije-dialog/reze
 import { OverlayModule } from '@angular/cdk/overlay';
 import { A11yModule } from '@angular/cdk/a11y';
 import { OrganizacijeComponent } from './components/organizacije/organizacije.component';
+
+import { TranslateModule, TranslateLoader } from '@ngx-translate/core';
+import { HttpClientModule, HttpClient } from '@angular/common/http';
+import { TranslateHttpLoader } from '@ngx-translate/http-loader';
+
+export function HttpLoaderFactory(http: HttpClient) {
+  return new TranslateHttpLoader(http, './assets/i18n/', '.json');
+}
 
 @NgModule({
   declarations: [
@@ -68,6 +75,15 @@ import { OrganizacijeComponent } from './components/organizacije/organizacije.co
     MatButtonModule,
     A11yModule,
     OverlayModule,
+    HttpClientModule,
+  TranslateModule.forRoot({
+    defaultLanguage: 'bs',
+    loader: {
+      provide: TranslateLoader,
+      useFactory: HttpLoaderFactory,
+      deps: [HttpClient]
+    }
+  })
   ],
   providers: [
     provideHttpClient(withInterceptorsFromDi()),

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using SZRST.Domain.Constants;
+using SZRST.Domain.Entities;
 
 namespace SZRST.API.Controllers
 {
@@ -111,12 +112,17 @@ namespace SZRST.API.Controllers
 		[HttpPost]
 		public async Task<ActionResult<AppointmentType>> CreateAppointmentType([FromBody] AppointmentTypeCreateDto appointmentTypeDto)
 		{
-			var appointmentType = new AppointmentType
+            var currencyId = await _context.Currency
+				.Where(x => x.ShortName == "BAM")
+				.Select(x => x.Id)
+				.FirstOrDefaultAsync();
+
+            var appointmentType = new AppointmentType
 			{
 				Name = appointmentTypeDto.Name,
 				Duration = appointmentTypeDto.Duration,
 				Price = appointmentTypeDto.Price,
-				CurrencyId = appointmentTypeDto.CurrencyId,
+				CurrencyId = appointmentTypeDto.CurrencyId!=null ? appointmentTypeDto.CurrencyId : currencyId,
 				TenantId = appointmentTypeDto.TenantId,
 				DateCreated = DateTime.UtcNow,
 				IsDeleted = false
