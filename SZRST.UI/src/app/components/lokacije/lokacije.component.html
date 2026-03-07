@@ -168,6 +168,10 @@
               <button (click)="openEditModal(fac)" class="btn btn-sm btn-warning" *ngIf="isSuperAdmin || isAdmin">
                 {{ 'FACILITY.EDIT' | translate }}
               </button>
+
+              <button (click)="confirmDeleteFacility(fac.id)" class="btn btn-sm btn-error" *ngIf="isSuperAdmin || isAdmin">
+                {{ 'FACILITY.DELETE' | translate }}
+              </button>
             </div>
           </td>
 

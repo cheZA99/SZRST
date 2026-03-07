@@ -112,7 +112,7 @@ namespace SZRST.API.Controllers
                     .ToLower()
                     .Contains(search));
             }
-
+            query = query.Where(u => !u.IsDeleted);
             if (!string.IsNullOrWhiteSpace(filter.Name))
                 query = query.Where(u => u.Name.ToLower().Contains(filter.Name.ToLower()));
 
