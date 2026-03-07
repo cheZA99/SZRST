@@ -2,6 +2,8 @@ using Application.Interfaces;
 using Application.Mapper;
 using Application.Services;
 using Domain.Entities;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Infrastructure;
 using Infrastructure.Persistance;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -15,6 +17,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using QuestPDF.Infrastructure;
 using System;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,7 +25,6 @@ using SZRST.API.Controllers;
 using SZRST.Application.Services.MailService;
 using SZRST.Shared.Middleware;
 using WebApi.Error;
-using QuestPDF.Infrastructure;
 
 namespace SZRST.WebApi
 {
@@ -93,6 +95,8 @@ namespace SZRST.WebApi
 			});
 
 			services.AddControllers();
+			services.AddFluentValidationAutoValidation();
+			services.AddValidatorsFromAssemblyContaining<RegisterViewModelValidator>();
 			services.AddAutoMapper(typeof(MapperProfile));
 			services.AddSwaggerGen(c =>
 			{
@@ -140,9 +144,9 @@ namespace SZRST.WebApi
 		// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
 		public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
 		{
-            QuestPDF.Settings.License = LicenseType.Community;
+			QuestPDF.Settings.License = LicenseType.Community;
 
-            if (env.IsDevelopment())
+			if (env.IsDevelopment())
 			{
 				app.UseDeveloperExceptionPage();
 			}
@@ -151,7 +155,7 @@ namespace SZRST.WebApi
 				IdentitySeed.SeedAsync(scope.ServiceProvider).Wait();
 			}
 
-            app.UseSwagger();
+			app.UseSwagger();
 			app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "SZRST.API v1"));
 			app.UseHttpsRedirection();
 			app.UseMiddleware<ExceptionMiddleware>();
@@ -159,11 +163,11 @@ namespace SZRST.WebApi
 			app.UseRouting();
 			app.UseAuthentication();
 			app.UseAuthorization();
-            app.UseStaticFiles();
-            app.UseEndpoints(endpoints =>
-			{
-				endpoints.MapControllers();
-			});
+			app.UseStaticFiles();
+			app.UseEndpoints(endpoints =>
+			   {
+				   endpoints.MapControllers();
+			   });
 			Console.WriteLine("Loaded CS = " + Configuration.GetConnectionString("SZRST"));
 
 			Console.WriteLine("ENV = " + env.EnvironmentName);

@@ -1,9 +1,11 @@
 ﻿using Application.Services;
+using FluentValidation;
 using Infrastructure.Persistance;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using System.Linq;
 using System.Threading.Tasks;
 using SZRST.Application.Services.MailService;
 using SZRST.Shared;
@@ -14,16 +16,27 @@ namespace SZRST.API.Controllers
 	[ApiController]
 	public class AuthController :ControllerBase
 	{
-		private IAuthService _authService;
-		private IMailService _mailService;
-		private IConfiguration _configuration;
-		private SZRSTContext _context;
-		public AuthController(IAuthService AuthService, IMailService mailService, IConfiguration configuration, SZRSTContext context)
+		private readonly IAuthService _authService;
+		private readonly IMailService _mailService;
+		private readonly IConfiguration _configuration;
+		private readonly SZRSTContext _context;
+		private readonly IValidator<RegisterViewModel> _registerValidator;
+		private readonly IValidator<LoginViewModel> _loginValidator;
+
+		public AuthController(
+			IAuthService authService,
+			IMailService mailService,
+			IConfiguration configuration,
+			SZRSTContext context,
+			IValidator<RegisterViewModel> registerValidator,
+			IValidator<LoginViewModel> loginValidator)
 		{
-			_authService = AuthService;
+			_authService = authService;
 			_mailService = mailService;
 			_configuration = configuration;
 			_context = context;
+			_registerValidator = registerValidator;
+			_loginValidator = loginValidator;
 		}
 
 		// /api/auth/register
@@ -31,17 +44,15 @@ namespace SZRST.API.Controllers
 		[HttpPost("register")]
 		public async Task<IActionResult> Register([FromBody] RegisterViewModel model)
 		{
-			if (ModelState.IsValid)
-			{
-				var result = await _authService.RegisterUserAsync(model);
+			var validation = await _registerValidator.ValidateAsync(model);
+			if (!validation.IsValid)
+				return BadRequest(validation.Errors.Select(e => e.ErrorMessage));
 
-				if (result.IsSuccess)
-					return Ok(result); // Status Code: 200 
+			var result = await _authService.RegisterUserAsync(model);
+			if (result.IsSuccess)
+				return Ok(result);
 
-				return BadRequest(result);
-			}
-
-			return BadRequest("Some properties are not valid"); // Status code: 400
+			return BadRequest(result);
 		}
 
 		// /api/auth/login
@@ -49,29 +60,17 @@ namespace SZRST.API.Controllers
 		[HttpPost("login")]
 		public async Task<IActionResult> LoginAsync([FromBody] LoginViewModel model)
 		{
-			if (ModelState.IsValid)
-			{
-				var ipAddress = GetIpAddress();
+			var validation = await _loginValidator.ValidateAsync(model);
+			if (!validation.IsValid)
+				return BadRequest(validation.Errors.Select(e => e.ErrorMessage));
 
-				var result = await _authService.LoginUserAsync(model, ipAddress);
-				if (result.IsSuccess)
-				{
-					//await _mailService.SendEmailAsync(model.Email, "New login", "<h1>Hey!, new login to your account noticed</h1><p>New login to your account at " + DateTime.Now + "</p>");
-					return Ok(result);
-				}
-				return BadRequest(result);
-			}
-			return BadRequest("Some properties are not valid");
-		}
+			var ipAddress = GetIpAddress();
+			var result = await _authService.LoginUserAsync(model, ipAddress);
 
-		private string GetIpAddress()
-		{
-			if (Request.Headers.ContainsKey("X-Forwarded-For"))
-			{
-				return Request.Headers["X-Forwarded-For"].ToString().Split(',')[0].Trim();
-			}
+			if (result.IsSuccess)
+				return Ok(result);
 
-			return HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+			return BadRequest(result);
 		}
 
 		[HttpPost("refresh-token")]
@@ -91,7 +90,7 @@ namespace SZRST.API.Controllers
 		public async Task<IActionResult> Logout([FromBody] string refreshToken)
 		{
 			var token = await _context.RefreshTokens
-			    .FirstOrDefaultAsync(x => x.Token == refreshToken);
+				.FirstOrDefaultAsync(x => x.Token == refreshToken);
 
 			if (token == null)
 				return Ok();
@@ -101,7 +100,6 @@ namespace SZRST.API.Controllers
 
 			return Ok();
 		}
-
 
 		// /api/auth/confirmemail?userid&token
 		[HttpGet("ConfirmEmail")]
@@ -113,9 +111,7 @@ namespace SZRST.API.Controllers
 			var result = await _authService.ConfirmEmailAsync(userId, token);
 
 			if (result.IsSuccess)
-			{
 				return Redirect($"{_configuration["AppUrl"]}/ConfirmEmail.html");
-			}
 
 			return BadRequest(result);
 		}
@@ -130,9 +126,9 @@ namespace SZRST.API.Controllers
 			var result = await _authService.ForgetPasswordAsync(email);
 
 			if (result.IsSuccess)
-				return Ok(result); // 200
+				return Ok(result);
 
-			return BadRequest(result); // 400
+			return BadRequest(result);
 		}
 
 		// api/auth/resetpassword
@@ -152,5 +148,43 @@ namespace SZRST.API.Controllers
 			return BadRequest("Some properties are not valid");
 		}
 
+		private string GetIpAddress()
+		{
+			if (Request.Headers.ContainsKey("X-Forwarded-For"))
+				return Request.Headers["X-Forwarded-For"].ToString().Split(',')[0].Trim();
+
+			return HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+		}
+	}
+
+	public class RegisterViewModelValidator :AbstractValidator<RegisterViewModel>
+	{
+		public RegisterViewModelValidator()
+		{
+			RuleFor(x => x.Email)
+				.NotEmpty().WithMessage("Email je obavezan.")
+				.EmailAddress().WithMessage("Email nije u ispravnom formatu.");
+
+			RuleFor(x => x.Password)
+				.NotEmpty().WithMessage("Lozinka je obavezna.")
+				.MinimumLength(6).WithMessage("Lozinka mora imati najmanje 6 karaktera.");
+
+			RuleFor(x => x.Username)
+				.NotEmpty().WithMessage("Korisničko ime je obavezno.")
+				.MinimumLength(3).WithMessage("Korisničko ime mora imati najmanje 3 karaktera.");
+		}
+	}
+
+	public class LoginViewModelValidator :AbstractValidator<LoginViewModel>
+	{
+		public LoginViewModelValidator()
+		{
+			RuleFor(x => x.Email)
+				.NotEmpty().WithMessage("Email je obavezan.")
+				.EmailAddress().WithMessage("Email nije u ispravnom formatu.");
+
+			RuleFor(x => x.Password)
+				.NotEmpty().WithMessage("Lozinka je obavezna.");
+		}
 	}
 }
