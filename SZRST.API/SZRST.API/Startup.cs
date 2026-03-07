@@ -25,6 +25,10 @@ using SZRST.API.Controllers;
 using SZRST.Application.Services.MailService;
 using SZRST.Shared.Middleware;
 using WebApi.Error;
+using Hangfire;
+using Hangfire.SqlServer;
+using SZRST.Web.Schedule;
+using SZRST.Web.Serivces;
 
 namespace SZRST.WebApi
 {
@@ -94,6 +98,21 @@ namespace SZRST.WebApi
                 };
             });
 
+            services.AddHangfire(config =>
+            {
+                config.UseSqlServerStorage(
+                    Configuration.GetConnectionString("SZRST"),
+                    new Hangfire.SqlServer.SqlServerStorageOptions
+                    {
+                        PrepareSchemaIfNecessary = true,
+                        QueuePollInterval = TimeSpan.Zero,
+                        UseRecommendedIsolationLevel = true,
+                        DisableGlobalLocks = true
+                    });
+            });
+
+            services.AddHangfireServer();
+
             services.AddControllers();
             services.AddFluentValidationAutoValidation();
             services.AddValidatorsFromAssemblyContaining<RegisterViewModelValidator>();
@@ -138,6 +157,9 @@ namespace SZRST.WebApi
             services.AddTransient<FacilityController>();
             services.AddTransient<LocationController>();
 
+            services.AddScoped<IReservationReportService, ReservationReportService>();
+            services.AddScoped<ReportService>();
+
             #endregion Binding
         }
 
@@ -157,6 +179,7 @@ namespace SZRST.WebApi
 
             app.UseSwagger();
             app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "SZRST.API v1"));
+            app.UseHangfireDashboard("/hangfire");
             app.UseHttpsRedirection();
             app.UseMiddleware<ExceptionMiddleware>();
             app.UseCors("MyPolicy");
@@ -168,6 +191,13 @@ namespace SZRST.WebApi
             {
                 endpoints.MapControllers();
             });
+
+            RecurringJob.AddOrUpdate<ReportService>(
+                "monthly-reports",
+                service => service.GenerateMonthlyReports(),
+                "0 0 1 * *"
+            );
+
             Console.WriteLine("Loaded CS = " + Configuration.GetConnectionString("SZRST"));
 
             Console.WriteLine("ENV = " + env.EnvironmentName);
