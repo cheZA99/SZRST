@@ -27,7 +27,6 @@ export class IzvjestajiComponent implements OnInit {
 
   reportForm: FormGroup;
 
-  // Filter varijable
   selectedTenantFilter: number | null = null;
 
   ngOnInit(): void {
@@ -95,7 +94,6 @@ export class IzvjestajiComponent implements OnInit {
     return null;
   }
 
-  // Metoda za filtriranje po organizaciji
   applyTenantFilter(): void {
     if (this.selectedTenantFilter) {
       this.filteredReports = this.reports.filter(
@@ -207,7 +205,6 @@ export class IzvjestajiComponent implements OnInit {
     return d.toLocaleDateString('bs-BA');
   }
 
-  // Getter za resurse koji se prikazuju (sa ili bez filtera)
   get displayReservationReports(): ReservationReport[] {
     return this.isSuperAdmin ? this.filteredReports : this.reports;
   }

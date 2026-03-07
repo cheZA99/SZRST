@@ -38,7 +38,6 @@ export class UposleniciComponent implements OnInit {
 
   currentUserTenantId: number | null = null;
 
-  // Paging stanje
   currentPage = 1;
   pageSize = 5;
   totalCount = 0;
@@ -51,7 +50,7 @@ export class UposleniciComponent implements OnInit {
     private tenantService: TenantService,
     public authService: AuthService,
     private fb: FormBuilder,
-    private toastr: ToastrService
+    private toastr: ToastrService,
   ) {}
 
   ngOnInit(): void {
@@ -72,10 +71,6 @@ export class UposleniciComponent implements OnInit {
     this.isSuperAdmin = this.authService.hasRole('SuperAdmin');
     this.isAdmin = this.authService.hasRole('Admin');
   }
-
-  // ========================
-  // Filter forma
-  // ========================
 
   buildFilterForm(): void {
     this.filterForm = this.fb.group({
@@ -103,10 +98,6 @@ export class UposleniciComponent implements OnInit {
     this.currentPage = 1;
     this.loadEmployees();
   }
-
-  // ========================
-  // Učitavanje podataka
-  // ========================
 
   loadEmployees(): void {
     this.loading = true;
@@ -152,10 +143,6 @@ export class UposleniciComponent implements OnInit {
     });
   }
 
-  // ========================
-  // Paging
-  // ========================
-
   get visiblePages(): number[] {
     const pages: number[] = [];
     const start = Math.max(1, this.currentPage - 2);
@@ -176,23 +163,18 @@ export class UposleniciComponent implements OnInit {
     this.loadEmployees();
   }
 
-  // ========================
-  // Pomoćne metode
-  // ========================
-
   getTenantName(tenantId: number): string {
     const tenant = this.tenants.find((t) => t.id === tenantId);
     return tenant ? tenant.name : `Organizacija ${tenantId}`;
   }
 
-  // ========================
-  // Employee forma
-  // ========================
-
   buildEmployeeForm(emp?: Employee): void {
     if (this.isEditMode && emp) {
       const fields: any = {
-        userName: [emp.userName, [Validators.required, Validators.minLength(3)]],
+        userName: [
+          emp.userName,
+          [Validators.required, Validators.minLength(3)],
+        ],
         email: [emp.email, [Validators.required, Validators.email]],
         firstName: [emp.firstName ?? ''],
         lastName: [emp.lastName ?? ''],
@@ -245,10 +227,6 @@ export class UposleniciComponent implements OnInit {
     return Object.keys(errors).length > 0 ? errors : null;
   }
 
-  // ========================
-  // Modal
-  // ========================
-
   openCreateModal(): void {
     this.isEditMode = false;
     this.selectedEmployee = null;
@@ -275,24 +253,28 @@ export class UposleniciComponent implements OnInit {
   }
 
   togglePasswordVisibility(
-    field: 'password' | 'confirm' | 'newPassword' | 'newConfirm'
+    field: 'password' | 'confirm' | 'newPassword' | 'newConfirm',
   ): void {
     switch (field) {
-      case 'password': this.showPassword = !this.showPassword; break;
-      case 'confirm': this.showConfirmPassword = !this.showConfirmPassword; break;
-      case 'newPassword': this.showNewPassword = !this.showNewPassword; break;
-      case 'newConfirm': this.showNewConfirmPassword = !this.showNewConfirmPassword; break;
+      case 'password':
+        this.showPassword = !this.showPassword;
+        break;
+      case 'confirm':
+        this.showConfirmPassword = !this.showConfirmPassword;
+        break;
+      case 'newPassword':
+        this.showNewPassword = !this.showNewPassword;
+        break;
+      case 'newConfirm':
+        this.showNewConfirmPassword = !this.showNewConfirmPassword;
+        break;
     }
   }
-
-  // ========================
-  // Submit
-  // ========================
 
   onSubmit(): void {
     if (this.employeeForm.invalid) {
       Object.keys(this.employeeForm.controls).forEach((key) =>
-        this.employeeForm.get(key)?.markAsTouched()
+        this.employeeForm.get(key)?.markAsTouched(),
       );
 
       if (this.employeeForm.errors?.['passwordMismatch'])
@@ -305,7 +287,6 @@ export class UposleniciComponent implements OnInit {
 
     const formData = { ...this.employeeForm.value };
 
-    // Admin uvijek koristi vlastiti tenantId
     if (this.isAdmin && !this.isSuperAdmin) {
       formData.tenantId = this.currentUserTenantId;
     }
@@ -358,7 +339,9 @@ export class UposleniciComponent implements OnInit {
       firstName: data.firstName || null,
       lastName: data.lastName || null,
       active: data.active,
-      tenantId: this.isSuperAdmin ? data.tenantId : this.selectedEmployee?.tenantId,
+      tenantId: this.isSuperAdmin
+        ? data.tenantId
+        : this.selectedEmployee?.tenantId,
     };
 
     if (data.newPassword) {

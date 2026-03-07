@@ -157,7 +157,6 @@
   </div>
 </div>
 
-<!-- Modal za kreiranje/uređivanje -->
 <div *ngIf="showModal" class="modal modal-open">
   <div class="modal-box max-w-2xl">
     <div class="flex justify-between items-center mb-4">
@@ -170,7 +169,6 @@
     <form [formGroup]="appointmentTypeForm" (ngSubmit)="onSubmit()">
       <div class="mb-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Naziv -->
           <div class="form-control w-full">
             <label class="label">
               <span class="label-text">Naziv *</span>
@@ -198,7 +196,6 @@
             </label>
           </div>
 
-          <!-- Trajanje -->
           <div class="form-control w-full">
             <label class="label">
               <span class="label-text">Trajanje (minute) *</span>
@@ -239,7 +236,6 @@
             </div>
           </div>
 
-          <!-- Cijena -->
           <div class="form-control w-full">
             <label class="label">
               <span class="label-text">Cijena *</span>
@@ -271,7 +267,6 @@
             </label>
           </div>
 
-          <!-- Valuta -->
           <div class="form-control w-full">
             <label class="label">
               <span class="label-text">Valuta</span>
@@ -297,7 +292,6 @@
           </div>
         </div>
 
-        <!-- Organizacija (samo za SuperAdmin) -->
         <div
           *ngIf="isSuperAdmin && !isEditMode"
           class="form-control w-full mt-4"
@@ -333,7 +327,6 @@
           </label>
         </div>
 
-        <!-- Organizacija (edit mode za SuperAdmin) -->
         <div
           *ngIf="isSuperAdmin && isEditMode && selectedAppointmentType"
           class="form-control w-full mt-4"

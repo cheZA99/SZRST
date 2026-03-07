@@ -33,7 +33,6 @@ export class ResursiComponent implements OnInit {
   
   currentUserTenantId: number | null = null;
   
-  // Filter varijable
   selectedTenantFilter: number | null = null;
 
   constructor(
@@ -96,7 +95,6 @@ export class ResursiComponent implements OnInit {
     this.loading = true;
     
     if (this.isSuperAdmin) {
-      // SuperAdmin vidi sve resurse
       this.appointmentTypeService.getAll().subscribe({
         next: (data) => {
           this.appointmentTypes = data;
@@ -110,12 +108,11 @@ export class ResursiComponent implements OnInit {
         }
       });
     } else if (this.isAdmin || this.isUposlenik) {
-      // Admin/Uposlenik vidi samo resurse svoje organizacije
       if (this.currentUserTenantId) {
         this.appointmentTypeService.getByTenant(this.currentUserTenantId).subscribe({
           next: (data) => {
             this.appointmentTypes = data;
-            this.filteredAppointmentTypes = data; // Za ne-SuperAdmin, nema filtera
+            this.filteredAppointmentTypes = data; 
             this.loading = false;
           },
           error: (error) => {
@@ -161,7 +158,6 @@ export class ResursiComponent implements OnInit {
     });
   }
 
-  // Metoda za filtriranje po organizaciji
   applyTenantFilter(): void {
     if (this.selectedTenantFilter) {
       this.filteredAppointmentTypes = this.appointmentTypes.filter(
@@ -247,7 +243,6 @@ export class ResursiComponent implements OnInit {
 
     const formData = this.appointmentTypeForm.value;
 
-    // Ako je Admin/Uposlenik, dodaj tenantId iz tokena
     if (this.isAdmin && !this.isSuperAdmin) {
       formData.tenantId = this.currentUserTenantId;
     }
@@ -292,7 +287,6 @@ export class ResursiComponent implements OnInit {
   }
 
   updateAppointmentType(id: number, data: AppointmentTypeCreateDto): void {
-    // Ako je Admin, koristi tenantId iz postojećeg resursa
     if (this.isAdmin && !this.isSuperAdmin && this.selectedAppointmentType?.tenantId) {
       data.tenantId = this.selectedAppointmentType.tenantId;
     }
@@ -365,7 +359,6 @@ export class ResursiComponent implements OnInit {
     return tenant ? tenant.name : `Organizacija ${tenantId}`;
   }
 
-  // Getter za resurse koji se prikazuju (sa ili bez filtera)
   get displayAppointmentTypes(): AppointmentType[] {
     return this.isSuperAdmin ? this.filteredAppointmentTypes : this.appointmentTypes;
   }

@@ -52,7 +52,6 @@ export class SignupComponent implements OnInit {
 
   onSignUp() {
     if (this.signUpForm.valid) {
-      // Email validacija
       if (!/^\S+@\S+\.\S+$/.test(this.signUpForm.value.email)) {
         this.toastr.error(
           "Molimo unesite ispravnu e-poštu. Trebala bi slijediti format 'ime@primjer.com'."

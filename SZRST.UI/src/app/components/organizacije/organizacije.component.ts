@@ -73,7 +73,6 @@ export class OrganizacijeComponent implements OnInit {
     this.isEditMode = true;
     this.selectedOrganizacija = organizacija;
     
-    // Za edit samo naziv organizacije
     this.organizacijaForm = this.fb.group({
       name: [organizacija.name, [Validators.required, Validators.minLength(2)]],
     });
@@ -86,7 +85,6 @@ export class OrganizacijeComponent implements OnInit {
     this.showPassword = false;
     this.showConfirmPassword = false;
     
-    // Resetuj formu na originalni oblik za kreiranje
     this.organizacijaForm = this.fb.group({
       tenantName: ['', [Validators.required, Validators.minLength(2)]],
       adminEmail: ['', [Validators.required, Validators.email]],

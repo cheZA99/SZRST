@@ -83,7 +83,6 @@ export class LokacijeComponent implements OnInit {
 
   selectedTenantFilter: number | null = null;
 
-  // Paging stanje
   currentPage = 1;
   pageSize = 5;
   totalCount = 0;
@@ -566,12 +565,10 @@ confirmDeleteFacility(id: number) {
 
     this.selectedFile = file;
 
-    // Ako je već postojala preview slika, oslobodi memoriju
     if (this.imagePreview) {
       URL.revokeObjectURL(this.imagePreview);
     }
 
-    // Kreiraj blob URL
     this.imagePreview = URL.createObjectURL(file);
   }
 
