@@ -37,7 +37,6 @@ namespace Infrastructure.Persistance
 			{
 				if (typeof(ITenantEntity).IsAssignableFrom(entityType.ClrType))
 				{
-					// Entiteti koji nikad nemaju tenant filter
 					if (entityType.ClrType == typeof(User) ||
 					    entityType.ClrType == typeof(Role) ||
 					    entityType.ClrType == typeof(UserRole) ||
@@ -54,7 +53,6 @@ namespace Infrastructure.Persistance
 						continue;
 					}
 
-					// Entiteti koji preskačaju filter za SuperAdmin
 					if (entityType.ClrType == typeof(Reservation) ||
 					    entityType.ClrType == typeof(Facility) ||
 					    entityType.ClrType == typeof(Location))
@@ -66,7 +64,6 @@ namespace Infrastructure.Persistance
 					}
 					else
 					{
-						// Svi ostali entiteti - standardni tenant filter
 						var method = typeof(SZRSTContext)
 						    .GetMethod(nameof(SetTenantFilter), BindingFlags.NonPublic | BindingFlags.Instance)
 						    .MakeGenericMethod(entityType.ClrType);
