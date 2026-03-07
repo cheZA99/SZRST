@@ -14,6 +14,7 @@ import { Country, CountryService } from 'src/app/services/country.service';
 import { City, CityService } from 'src/app/services/city.service';
 import { environment } from 'src/environments/environment';
 import { TranslateService } from '@ngx-translate/core';
+import Swal from 'sweetalert2';
 
 import {
   trigger,
@@ -28,25 +29,25 @@ import {
   templateUrl: './lokacije.component.html',
   styleUrls: ['./lokacije.component.css'],
   animations: [
-  trigger('fadeIn', [
-    transition(':enter', [
-      style({ opacity: 0, transform: 'translateY(10px)' }),
-      animate('300ms ease-out',
-        style({ opacity: 1, transform: 'translateY(0)' }))
-    ])
-  ]),
-  trigger('modalAnimation', [
-    transition(':enter', [
-      style({ opacity: 0, transform: 'scale(0.9)' }),
-      animate('200ms ease-out',
-        style({ opacity: 1, transform: 'scale(1)' }))
+    trigger('fadeIn', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateY(10px)' }),
+        animate('300ms ease-out',
+          style({ opacity: 1, transform: 'translateY(0)' }))
+      ])
     ]),
-    transition(':leave', [
-      animate('150ms ease-in',
-        style({ opacity: 0, transform: 'scale(0.9)' }))
+    trigger('modalAnimation', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'scale(0.9)' }),
+        animate('200ms ease-out',
+          style({ opacity: 1, transform: 'scale(1)' }))
+      ]),
+      transition(':leave', [
+        animate('150ms ease-in',
+          style({ opacity: 0, transform: 'scale(0.9)' }))
+      ])
     ])
-  ])
-]
+  ]
 })
 export class LokacijeComponent implements OnInit {
 
@@ -204,13 +205,7 @@ export class LokacijeComponent implements OnInit {
   loadFacilities(): void {
     this.loading = true;
 
-    console.log("Ovdje sam")
-
     const fv = this.filterForm.value;
-
-    console.log("FV-->", fv)
-
-    console.log("Ovdje sam")
 
     this.facilityService
       .getAll({
@@ -272,15 +267,15 @@ export class LokacijeComponent implements OnInit {
 
   sortBy(column: string) {
 
-  if (this.sortColumn === column) {
-    this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
-  } else {
-    this.sortColumn = column;
-    this.sortDirection = 'asc';
-  }
+    if (this.sortColumn === column) {
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortColumn = column;
+      this.sortDirection = 'asc';
+    }
 
-  this.loadFacilities();
-}
+    this.loadFacilities();
+  }
 
   get visiblePages(): number[] {
     const pages: number[] = [];
@@ -363,11 +358,10 @@ export class LokacijeComponent implements OnInit {
     this.showModal = true;
   }
 
-  openEditModal(facility: FacilityResponse): void {
-    console.log("Facility--->", facility);
-    this.filteredCities = this.cities.filter(x => x.country.id === facility.location.city.country.id);
 
-    console.log("Slika-->", `${environment.apiUrl}${facility.imageUrl}`)
+
+  openEditModal(facility: FacilityResponse): void {
+    this.filteredCities = this.cities.filter(x => x.country.id === facility.location.city.country.id);
 
     this.imagePreview = facility.imageUrl
       ? `${environment.apiUrl}${facility.imageUrl}`
@@ -483,6 +477,50 @@ export class LokacijeComponent implements OnInit {
     }
   }
 
+confirmDeleteFacility(id: number) {
+
+  const title = this.translate.instant('FACILITY.DELETE_CONFIRM_TITLE');
+  const text = this.translate.instant('FACILITY.DELETE_CONFIRM_TEXT');
+  const confirmBtn = this.translate.instant('FACILITY.DELETE_CONFIRM_BUTTON');
+  const cancelBtn = this.translate.instant('FACILITY.CANCEL');
+
+  Swal.fire({
+    title: title,
+    text: text,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: confirmBtn,
+    cancelButtonText: cancelBtn,
+    confirmButtonColor: '#d33'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      this.deleteFacility(id);
+    }
+  });
+}
+
+  deleteFacility(id: number) {
+    this.facilityService.delete(id).subscribe({
+      next: (response) => {
+        this.toastr.success('Facility uspješno izbrisan');
+        this.loadFacilities();
+        this.closeModal();
+      },
+      error: (error) => {
+        console.error('Greška pri brisanju facilitija:', error);
+        if (error.error?.message) {
+          this.toastr.error(error.error.message);
+        } else if (error.error?.errors) {
+          error.error.errors.forEach((err: string) => {
+            this.toastr.error(err);
+          });
+        } else {
+          this.toastr.error('Greška pri brisanju facilitija');
+        }
+      },
+    })
+  }
+
   createFacility(data: any): void {
     console.log("Dataa--->", data);
     if (this.isSuperAdmin && !data.tenantId) {
@@ -536,23 +574,6 @@ export class LokacijeComponent implements OnInit {
     // Kreiraj blob URL
     this.imagePreview = URL.createObjectURL(file);
   }
-
-  /*onFileSelected(event: Event) {
-  
-    const input = event.target as HTMLInputElement;
-  
-    if (!input.files?.length) return;
-  
-    this.selectedFile = input.files[0];
-  
-    const reader = new FileReader();
-  
-    reader.onload = () => {
-      this.imagePreview = reader.result as string;
-    };
-  
-    reader.readAsDataURL(this.selectedFile);
-  }*/
 
   removeImage() {
 

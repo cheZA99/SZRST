@@ -574,7 +574,7 @@ updateUrlWithSelectedFilters(): void {
 
     forkJoin(requests).subscribe({
       next: (data: any) => {
-        let filteredFacilities = data.facilities;
+        let filteredFacilities = data.facilities.items;
         let filteredTypes = data.appointmentTypes;
 
         if (this.selectedTenantId) {
