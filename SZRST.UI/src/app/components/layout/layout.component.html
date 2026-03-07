@@ -27,8 +27,12 @@
       <a *ngIf="authService.hasRole('SuperAdmin') || authService.hasRole('Admin')" routerLink="/resursi"
         routerLinkActive="text-accent">{{ 'NAV.RESOURCES' | translate }}</a>
 
+        <a *ngIf="authService.hasRole('SuperAdmin') || authService.hasRole('Admin')" routerLink="/izvjestaji"
+        routerLinkActive="text-accent">{{ 'NAV.REPORTS' | translate }}</a>
+
       <a *ngIf="authService.hasRole('SuperAdmin')" routerLink="/kategorije"
         routerLinkActive="text-accent">{{ 'NAV.CATEGORIES' | translate }}</a>
+        
     </nav>
 
 

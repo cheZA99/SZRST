@@ -57,7 +57,8 @@ namespace Infrastructure.Persistance
 					// Entiteti koji preskačaju filter za SuperAdmin
 					if (entityType.ClrType == typeof(Reservation) ||
 					    entityType.ClrType == typeof(Facility) ||
-					    entityType.ClrType == typeof(Location))
+					    entityType.ClrType == typeof(Location) ||
+                        entityType.ClrType == typeof(ReservationReport))
 					{
 						var method = typeof(SZRSTContext)
 						    .GetMethod(nameof(SetConditionalTenantFilter), BindingFlags.NonPublic | BindingFlags.Instance)
@@ -143,7 +144,8 @@ namespace Infrastructure.Persistance
 		public DbSet<Appointment> Appointment { get; set; }
 		public DbSet<AppointmentType> AppointmentType { get; set; }
 		public DbSet<Reservation> Reservation { get; set; }
-		public DbSet<Review> Review { get; set; }
+        public DbSet<ReservationReport> ReservationReport { get; set; }
+        public DbSet<Review> Review { get; set; }
 		public DbSet<Worker> Worker { get; set; }
 		public DbSet<WorkerType> WorkerType { get; set; }
 
