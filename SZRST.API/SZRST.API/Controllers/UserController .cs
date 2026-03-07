@@ -1,4 +1,5 @@
 ﻿using Domain.Entities;
+using FluentValidation;
 using Infrastructure.Persistance;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -21,15 +22,21 @@ namespace SZRST.API.Controllers
 		private readonly UserManager<User> _userManager;
 		private readonly SZRSTContext _context;
 		private readonly ICurrentUserService _currentUserService;
+		private readonly IValidator<EmployeeCreateDto> _employeeCreateValidator;
+		private readonly IValidator<EmployeeUpdateDto> _employeeUpdateValidator;
 
 		public UserController(
 			UserManager<User> userManager,
 			SZRSTContext context,
-			ICurrentUserService currentUserService)
+			ICurrentUserService currentUserService,
+			IValidator<EmployeeCreateDto> employeeCreateValidator,
+			IValidator<EmployeeUpdateDto> employeeUpdateValidator)
 		{
 			_userManager = userManager;
 			_context = context;
 			_currentUserService = currentUserService;
+			_employeeCreateValidator = employeeCreateValidator;
+			_employeeUpdateValidator = employeeUpdateValidator;
 		}
 
 		// GET: api/User
@@ -163,12 +170,9 @@ namespace SZRST.API.Controllers
 			return users;
 		}
 
-		/// <summary>
-		/// GET: api/User/employees
-		/// </summary>
+		// GET: api/User/employees
 		[HttpGet("employees")]
-		public async Task<ActionResult<PagedResult<UserListDto>>> GetEmployees(
-			[FromQuery] EmployeeFilterDto filter)
+		public async Task<ActionResult<PagedResult<UserListDto>>> GetEmployees([FromQuery] EmployeeFilterDto filter)
 		{
 			var currentUser = await _userManager.FindByIdAsync(_currentUserService.UserId.ToString());
 			var currentUserRoles = await _userManager.GetRolesAsync(currentUser);
@@ -179,13 +183,9 @@ namespace SZRST.API.Controllers
 				.ThenBy(x => x.UserName);
 
 			if (currentUserRoles.Contains(Roles.SuperAdmin))
-			{
 				query = query.Where(u => u.TenantId != null);
-			}
 			else if (currentUserRoles.Contains(Roles.Admin))
-			{
 				query = query.Where(u => u.TenantId == _currentUserService.TenantId);
-			}
 
 			if (!string.IsNullOrWhiteSpace(filter.UserName))
 				query = query.Where(u => u.UserName.ToLower().Contains(filter.UserName.ToLower()));
@@ -209,14 +209,9 @@ namespace SZRST.API.Controllers
 			int pageSize = filter.PageSize < 1 ? 10 : (filter.PageSize > 100 ? 100 : filter.PageSize);
 
 			var totalCount = await query.CountAsync();
-
-			var pagedUsers = await query
-				.Skip((pageNumber - 1) * pageSize)
-				.Take(pageSize)
-				.ToListAsync();
+			var pagedUsers = await query.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
 
 			var employeeDtos = new List<UserListDto>();
-
 			foreach (var employee in pagedUsers)
 			{
 				var roles = await _userManager.GetRolesAsync(employee);
@@ -252,6 +247,11 @@ namespace SZRST.API.Controllers
 		[HttpPost("create-employee")]
 		public async Task<IActionResult> CreateEmployee([FromBody] EmployeeCreateDto dto)
 		{
+			// --- FluentValidation ---
+			var validation = await _employeeCreateValidator.ValidateAsync(dto);
+			if (!validation.IsValid)
+				return BadRequest(validation.Errors.Select(e => new { message = e.ErrorMessage }));
+
 			var currentUser = await _userManager.FindByIdAsync(_currentUserService.UserId.ToString());
 			var currentUserRoles = await _userManager.GetRolesAsync(currentUser);
 
@@ -263,18 +263,6 @@ namespace SZRST.API.Controllers
 
 			if (await _userManager.FindByNameAsync(dto.UserName) != null)
 				return BadRequest(new { message = "Korisnik sa tim korisničkim imenom već postoji." });
-
-			if (dto.Password != dto.ConfirmPassword)
-				return BadRequest(new { message = "Lozinke se ne podudaraju." });
-
-			if (string.IsNullOrWhiteSpace(dto.UserName) || dto.UserName.Length < 3)
-				return BadRequest(new { message = "Korisničko ime mora imati najmanje 3 karaktera." });
-
-			if (string.IsNullOrWhiteSpace(dto.Email))
-				return BadRequest(new { message = "Email je obavezan." });
-
-			if (string.IsNullOrWhiteSpace(dto.Password) || dto.Password.Length < 6)
-				return BadRequest(new { message = "Lozinka mora imati najmanje 6 karaktera." });
 
 			var user = new User
 			{
@@ -315,6 +303,11 @@ namespace SZRST.API.Controllers
 		[HttpPut("update-employee/{id}")]
 		public async Task<IActionResult> UpdateEmployee(int id, [FromBody] EmployeeUpdateDto dto)
 		{
+			// --- FluentValidation ---
+			var validation = await _employeeUpdateValidator.ValidateAsync(dto);
+			if (!validation.IsValid)
+				return BadRequest(validation.Errors.Select(e => new { message = e.ErrorMessage }));
+
 			var user = await _userManager.FindByIdAsync(id.ToString());
 			if (user == null)
 				return NotFound();
@@ -332,12 +325,6 @@ namespace SZRST.API.Controllers
 			var existingByUsername = await _userManager.FindByNameAsync(dto.UserName);
 			if (existingByUsername != null && existingByUsername.Id != id)
 				return BadRequest(new { message = "Korisnik sa tim korisničkim imenom već postoji." });
-
-			if (string.IsNullOrWhiteSpace(dto.UserName) || dto.UserName.Length < 3)
-				return BadRequest(new { message = "Korisničko ime mora imati najmanje 3 karaktera." });
-
-			if (string.IsNullOrWhiteSpace(dto.Email))
-				return BadRequest(new { message = "Email je obavezan." });
 
 			user.UserName = dto.UserName;
 			user.Email = dto.Email;
@@ -359,9 +346,6 @@ namespace SZRST.API.Controllers
 
 			if (!string.IsNullOrEmpty(dto.NewPassword))
 			{
-				if (dto.NewPassword.Length < 6)
-					return BadRequest(new { message = "Nova lozinka mora imati najmanje 6 karaktera." });
-
 				if (dto.NewPassword != dto.ConfirmPassword)
 					return BadRequest(new { message = "Lozinke se ne podudaraju." });
 
@@ -379,16 +363,13 @@ namespace SZRST.API.Controllers
 			return NoContent();
 		}
 
-
 		[HttpGet("profile")]
 		public async Task<ActionResult<UserProfileDto>> GetCurrentUserProfile()
 		{
 			var userId = _currentUserService.UserId;
 			var user = await _userManager.Users
-				.Include(u => u.AppMember)
-					.ThenInclude(am => am.City)
-				.Include(u => u.AppMember)
-					.ThenInclude(am => am.Country)
+				.Include(u => u.AppMember).ThenInclude(am => am.City)
+				.Include(u => u.AppMember).ThenInclude(am => am.Country)
 				.FirstOrDefaultAsync(u => u.Id == userId);
 
 			if (user == null)
@@ -527,7 +508,6 @@ namespace SZRST.API.Controllers
 		public int TotalPages { get; set; }
 	}
 
-
 	public class EmployeeFilterDto
 	{
 		public string? UserName { get; set; }
@@ -536,7 +516,6 @@ namespace SZRST.API.Controllers
 		public string? LastName { get; set; }
 		public int? TenantId { get; set; }
 		public bool? IsDeleted { get; set; }
-
 		public int PageNumber { get; set; } = 1;
 		public int PageSize { get; set; } = 10;
 	}
@@ -637,5 +616,49 @@ namespace SZRST.API.Controllers
 	public class ImageUploadDto
 	{
 		public string Base64Image { get; set; }
+	}
+
+	public class EmployeeCreateDtoValidator :AbstractValidator<EmployeeCreateDto>
+	{
+		public EmployeeCreateDtoValidator()
+		{
+			RuleFor(x => x.UserName)
+				.NotEmpty().WithMessage("Korisničko ime je obavezno.")
+				.MinimumLength(3).WithMessage("Korisničko ime mora imati najmanje 3 karaktera.");
+
+			RuleFor(x => x.Email)
+				.NotEmpty().WithMessage("Email je obavezan.")
+				.EmailAddress().WithMessage("Email nije u ispravnom formatu.");
+
+			RuleFor(x => x.Password)
+				.NotEmpty().WithMessage("Lozinka je obavezna.")
+				.MinimumLength(6).WithMessage("Lozinka mora imati najmanje 6 karaktera.");
+
+			RuleFor(x => x.ConfirmPassword)
+				.Equal(x => x.Password).WithMessage("Lozinke se ne podudaraju.");
+		}
+	}
+
+	public class EmployeeUpdateDtoValidator :AbstractValidator<EmployeeUpdateDto>
+	{
+		public EmployeeUpdateDtoValidator()
+		{
+			RuleFor(x => x.UserName)
+				.NotEmpty().WithMessage("Korisničko ime je obavezno.")
+				.MinimumLength(3).WithMessage("Korisničko ime mora imati najmanje 3 karaktera.");
+
+			RuleFor(x => x.Email)
+				.NotEmpty().WithMessage("Email je obavezan.")
+				.EmailAddress().WithMessage("Email nije u ispravnom formatu.");
+
+			When(x => !string.IsNullOrEmpty(x.NewPassword), () =>
+			{
+				RuleFor(x => x.NewPassword)
+					.MinimumLength(6).WithMessage("Nova lozinka mora imati najmanje 6 karaktera.");
+
+				RuleFor(x => x.ConfirmPassword)
+					.Equal(x => x.NewPassword).WithMessage("Lozinke se ne podudaraju.");
+			});
+		}
 	}
 }
