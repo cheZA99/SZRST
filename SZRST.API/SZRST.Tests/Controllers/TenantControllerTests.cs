@@ -1,5 +1,6 @@
 ﻿using Domain.Entities;
 using FluentAssertions;
+using FluentValidation;
 using Infrastructure.Persistance;
 using Microsoft.AspNetCore.Mvc;
 using SZRST.API.Controllers;
@@ -14,10 +15,10 @@ namespace SZRST.Tests.Controllers
 		{
 			var roles = new[]
 			{
-			 new { Name = "SuperAdmin",  Normalized = "SUPERADMIN"  },
-			 new { Name = "Admin",       Normalized = "ADMIN"       },
-			 new { Name = "Uposlenik",   Normalized = "UPOSLENIK"   },
-			 new { Name = "Korisnik",    Normalized = "KORISNIK"    },
+			 new { Name = "SuperAdmin", Normalized = "SUPERADMIN" },
+			 new { Name = "Admin",      Normalized = "ADMIN"      },
+			 new { Name = "Uposlenik",  Normalized = "UPOSLENIK"  },
+			 new { Name = "Korisnik",   Normalized = "KORISNIK"   },
 		  };
 
 			foreach (var r in roles)
@@ -36,6 +37,15 @@ namespace SZRST.Tests.Controllers
 			await context.SaveChangesAsync();
 		}
 
+		private static TenantController CreateController(SZRSTContext context,
+		    Microsoft.AspNetCore.Identity.UserManager<User> userManager)
+		{
+			IValidator<CreateTenantWithAdminDto> createValidator = new CreateTenantWithAdminDtoValidator();
+			IValidator<UpdateTenantDto> updateValidator = new UpdateTenantDtoValidator();
+			return new TenantController(context, userManager, createValidator, updateValidator);
+		}
+
+
 		[Fact]
 		public async Task CreateTenantWithAdmin_ValidData_ReturnsOkWithTenant()
 		{
@@ -44,7 +54,7 @@ namespace SZRST.Tests.Controllers
 			var userManager = TestUserManagerFactory.Create(context);
 			await SeedRoles(context);
 
-			var controller = new TenantController(context, userManager);
+			var controller = CreateController(context, userManager);
 
 			var dto = new CreateTenantWithAdminDto
 			{
@@ -92,7 +102,7 @@ namespace SZRST.Tests.Controllers
 			};
 			await userManager.CreateAsync(existingUser, "Password123!");
 
-			var controller = new TenantController(context, userManager);
+			var controller = CreateController(context, userManager);
 
 			var dto = new CreateTenantWithAdminDto
 			{

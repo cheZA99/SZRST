@@ -3,7 +3,6 @@ using Infrastructure.Persistance;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -38,7 +37,6 @@ namespace SZRST.API.Controllers
 		public async Task<ActionResult<City>> GetCity(int id)
 		{
 			var city = await _context.City
-								 //.Include(c => c.Country)
 								 .FirstOrDefaultAsync(c => c.Id == id);
 
 			if (city == null)

@@ -4,6 +4,7 @@ using Application.Services;
 using Domain.Entities;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using Hangfire;
 using Infrastructure;
 using Infrastructure.Persistance;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -73,10 +74,10 @@ namespace SZRST.WebApi
 				{
 					OnChallenge = context =>
 				  {
-					   context.HandleResponse();
-					   context.Response.StatusCode = 401;
-					   return Task.CompletedTask;
-				   }
+					  context.HandleResponse();
+					  context.Response.StatusCode = 401;
+					  return Task.CompletedTask;
+				  }
 				};
 
 				options.TokenValidationParameters = new TokenValidationParameters
@@ -100,12 +101,12 @@ namespace SZRST.WebApi
 				config.UseSqlServerStorage(
 				 Configuration.GetConnectionString("SZRST"),
 				 new Hangfire.SqlServer.SqlServerStorageOptions
-				   {
-					   PrepareSchemaIfNecessary = true,
-					   QueuePollInterval = TimeSpan.Zero,
-					   UseRecommendedIsolationLevel = true,
-					   DisableGlobalLocks = true
-				   });
+				 {
+					 PrepareSchemaIfNecessary = true,
+					 QueuePollInterval = TimeSpan.Zero,
+					 UseRecommendedIsolationLevel = true,
+					 DisableGlobalLocks = true
+				 });
 			});
 
 			services.AddHangfireServer();
@@ -160,7 +161,6 @@ namespace SZRST.WebApi
 			#endregion Binding
 		}
 
-		// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
 		public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
 		{
 			QuestPDF.Settings.License = LicenseType.Community;
