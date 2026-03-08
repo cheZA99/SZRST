@@ -98,12 +98,16 @@ namespace SZRST.Web.Serivces
              var firstDayLastMonth = firstDayThisMonth.AddMonths(-1);
              var lastDayLastMonth = firstDayThisMonth.AddDays(-1);
 
-             //var tenants = await _context.Tenant.ToListAsync();
+            //var tenants = await _context.Tenant.ToListAsync();
 
-             //foreach (var tenant in tenants)
-             //{
-                 await GenerateReport(firstDayLastMonth, lastDayLastMonth, 3);
-             //}
+            var tenantIds = await _context.Database
+                .SqlQuery<int>($"SELECT Id FROM Tenant")
+                .ToListAsync();
+
+            foreach (var tenantId in tenantIds)
+             {
+                 await GenerateReport(firstDayLastMonth, lastDayLastMonth, tenantId);
+             }
         }
 
         public byte[] GeneratePdf(List<MonthlyReservationReport> data, DateTime from, DateTime to, int totalReservations, float totalProfit)
