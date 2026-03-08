@@ -251,7 +251,7 @@ export class AppointmentDialogComponent implements OnInit {
   delete() {
     if (!this.data?.appointment?.id) return;
 
-    if (confirm('Are you sure you want to delete this appointment?')) {
+    if (confirm('Da li ste sigurni da želite obrisati ovu rezervaciju?')) {
       this.dialogRef.close({
         action: 'delete',
         id: this.data.appointment.id,
