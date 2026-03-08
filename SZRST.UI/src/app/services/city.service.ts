@@ -14,6 +14,12 @@ export interface City {
   isDeleted: boolean;
 }
 
+export interface CityCreateRequest {
+  name: string;
+  countryId: number;
+  isDeleted: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -28,4 +34,7 @@ export class CityService {
   getCity(id: number): Observable<City> {
     return this.http.get<City>(`${this.baseUrl}/city/${id}`);
   }
+    create(data: CityCreateRequest): Observable<City> {
+      return this.http.post<City>(`${this.baseUrl}/city`, data);
+    }
 }
