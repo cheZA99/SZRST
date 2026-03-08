@@ -11,6 +11,12 @@ export interface Country {
   isDeleted: boolean;
 }
 
+export interface CountryCreateRequest {
+  name: string;
+  shortName: string;
+  currencyId: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -24,5 +30,9 @@ export class CountryService {
 
   getCountry(id: number): Observable<Country> {
     return this.http.get<Country>(`${this.baseUrl}/country/${id}`);
+  }
+
+  create(data: CountryCreateRequest): Observable<Country> {
+    return this.http.post<Country>(`${this.baseUrl}/country`, data);
   }
 }

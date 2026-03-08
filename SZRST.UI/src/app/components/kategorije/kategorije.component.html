@@ -1,1 +1,289 @@
-<p>kategorije works!</p>
+<div class="p-6 space-y-10">
+
+  <!-- COUNTRIES -->
+  <div class="card bg-base-100 shadow">
+    <div class="card-body">
+
+      <div class="flex justify-between items-center">
+        <h2 class="card-title">DRŽAVE</h2>
+
+        <button class="btn btn-primary" (click)="openCountryModal()">
+          Dodaj državu
+        </button>
+      </div>
+
+      <table class="table w-full mt-4">
+        <thead>
+          <tr>
+            <th>Naziv</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let country of countries">
+            <td>{{country.name}}</td>
+          </tr>
+        </tbody>
+      </table>
+
+    </div>
+  </div>
+
+  <!-- CITIES -->
+  <div class="card bg-base-100 shadow">
+    <div class="card-body">
+
+      <div class="flex justify-between items-center">
+        <h2 class="card-title">Gradovi</h2>
+
+        <button class="btn btn-primary" (click)="openCityModal()">
+          Dodaj grad
+        </button>
+      </div>
+
+      <table class="table w-full mt-4">
+        <thead>
+          <tr>
+            <th>Naziv</th>
+            <th>Država</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let city of cities">
+            <td>{{city.name}}</td>
+            <td>{{city.country?.name}}</td>
+          </tr>
+        </tbody>
+      </table>
+
+    </div>
+  </div>
+
+  <!-- FACILITY TYPES -->
+  <div class="card bg-base-100 shadow">
+    <div class="card-body">
+
+      <div class="flex justify-between items-center">
+        <h2 class="card-title">Tipovi objekata</h2>
+
+        <button class="btn btn-primary" (click)="openFacilityModal()">
+          Dodaj tip
+        </button>
+      </div>
+
+      <table class="table w-full mt-4">
+        <thead>
+          <tr>
+            <th>Naziv</th>
+            <th>Opis</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let f of facilityTypes">
+            <td>{{f.name}}</td>
+            <td>{{f.description}}</td>
+          </tr>
+        </tbody>
+      </table>
+
+    </div>
+  </div>
+
+
+  <!-- CURRENCIES -->
+  <div class="card bg-base-100 shadow">
+    <div class="card-body">
+
+      <div class="flex justify-between items-center">
+        <h2 class="card-title">Valute</h2>
+
+        <button class="btn btn-primary" (click)="openCurrencyModal()">
+          Dodaj valutu
+        </button>
+      </div>
+
+      <table class="table w-full mt-4">
+        <thead>
+          <tr>
+            <th>Naziv</th>
+            <th>Skraćeno</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of currencies">
+            <td>{{c.name}}</td>
+            <td>{{c.shortName}}</td>
+          </tr>
+        </tbody>
+      </table>
+
+    </div>
+  </div>
+
+</div>
+
+
+
+<!-- CITY MODAL -->
+<dialog id="cityModal" class="modal">
+  <div class="modal-box">
+
+    <h3 class="font-bold text-lg mb-4">Dodaj grad</h3>
+
+    <div class="space-y-3">
+
+      <input
+        type="text"
+        placeholder="Naziv grada"
+        class="input input-bordered w-full"
+        [(ngModel)]="cityForm.name"
+      />
+
+      <select
+        class="select select-bordered w-full"
+        [(ngModel)]="cityForm.countryId"
+      >
+        <option *ngFor="let c of countries" [value]="c.id">
+          {{c.name}}
+        </option>
+      </select>
+
+    </div>
+
+    <div class="modal-action">
+
+      <button class="btn" (click)="closeCityModal()">
+        Cancel
+      </button>
+
+      <button class="btn btn-primary" (click)="saveCity()">
+        Save
+      </button>
+
+    </div>
+
+  </div>
+</dialog>
+
+<!-- COUNTRY MODAL -->
+<dialog id="countryModal" class="modal">
+  <div class="modal-box">
+
+    <h3 class="font-bold text-lg mb-4">Dodaj državu</h3>
+
+    <div class="space-y-3">
+
+      <input
+        type="text"
+        placeholder="Naziv države"
+        class="input input-bordered w-full"
+        [(ngModel)]="countryForm.name"
+      />
+
+            <input
+        type="text"
+        placeholder="Naziv države Skraćeno"
+        class="input input-bordered w-full"
+        [(ngModel)]="countryForm.shortName"
+      />
+
+      <select
+        class="select select-bordered w-full"
+        [(ngModel)]="countryForm.currencyId"
+      >
+        <option *ngFor="let c of currencies" [value]="c.id">
+          {{c.name}}
+        </option>
+      </select>
+
+    </div>
+
+    <div class="modal-action">
+
+      <button class="btn" (click)="closeCountryModal()">
+        Cancel
+      </button>
+
+      <button class="btn btn-primary" (click)="saveCountry()">
+        Save
+      </button>
+
+    </div>
+
+  </div>
+</dialog>
+
+<!-- FACILITY TYPE MODAL -->
+<dialog id="facilityModal" class="modal">
+  <div class="modal-box">
+
+    <h3 class="font-bold text-lg mb-4">Dodaj tip objekta</h3>
+
+    <div class="space-y-3">
+
+      <input
+        type="text"
+        placeholder="Naziv"
+        class="input input-bordered w-full"
+        [(ngModel)]="facilityTypeForm.name"
+      />
+
+      <input
+        type="text"
+        placeholder="Opis"
+        class="input input-bordered w-full"
+        [(ngModel)]="facilityTypeForm.description"
+      />
+    </div>
+
+    <div class="modal-action">
+
+      <button class="btn" (click)="closeFacilityTypeModal()">
+        Cancel
+      </button>
+
+      <button class="btn btn-primary" (click)="saveFacilityType()">
+        Save
+      </button>
+
+    </div>
+
+  </div>
+</dialog>
+
+<!-- CURRENCY MODAL -->
+<dialog id="currencyModal" class="modal">
+  <div class="modal-box">
+
+    <h3 class="font-bold text-lg mb-4">Dodaj valutu</h3>
+
+    <div class="space-y-3">
+
+      <input
+        type="text"
+        placeholder="Naziv"
+        class="input input-bordered w-full"
+        [(ngModel)]="currencyForm.name"
+      />
+
+      <input
+        type="text"
+        placeholder="Skraceno"
+        class="input input-bordered w-full"
+        [(ngModel)]="currencyForm.shortName"
+      />
+    </div>
+
+    <div class="modal-action">
+
+      <button class="btn" (click)="closeCurrencyModal()">
+        Cancel
+      </button>
+
+      <button class="btn btn-primary" (click)="saveCurrency()">
+        Save
+      </button>
+
+    </div>
+
+  </div>
+</dialog>
