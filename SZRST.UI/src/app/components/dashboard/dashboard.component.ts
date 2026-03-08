@@ -239,5 +239,21 @@ openFacilityCalendar(facility: any): void {
       return `Dobrodošao/la ${userName}! Rezervišite termin.`;
     }
   }
+
+  shareFacebook() {
+  const url = encodeURIComponent(window.location.href);
+  window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
+}
+
+shareTwitter() {
+  const url = encodeURIComponent(window.location.href);
+  const text = encodeURIComponent("Pogledajte ovu objavu!");
+  window.open(`https://twitter.com/intent/tweet?url=${url}&text=${text}`, '_blank');
+}
+
+shareLinkedIn() {
+  const url = encodeURIComponent(window.location.href);
+  window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank');
+}
   
 }
