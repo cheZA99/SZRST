@@ -11,8 +11,7 @@ using SZRST.Shared;
 
 namespace SZRST.API.Controllers
 {
-	[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}, {Roles.Uposlenik}")]
-	[Authorize]
+	[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin},{Roles.Uposlenik}")]
 	[Route("api/[controller]")]
 	[ApiController]
 	public class LocationController :ControllerBase

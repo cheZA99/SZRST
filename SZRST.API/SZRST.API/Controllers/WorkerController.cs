@@ -11,8 +11,7 @@ using SZRST.Domain.Constants;
 
 namespace SZRST.API.Controllers
 {
-	[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}, {Roles.Uposlenik}")]
-	[Authorize]
+	[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin},{Roles.Uposlenik}")]
 	[Route("api/[controller]")]
 	[ApiController]
 	public class WorkerController :ControllerBase
@@ -26,24 +25,51 @@ namespace SZRST.API.Controllers
 
 		// GET: api/Worker
 		[HttpGet]
-		public async Task<ActionResult<IEnumerable<Worker>>> GetWorkers()
+		public async Task<ActionResult<IEnumerable<WorkerDto>>> GetWorkers()
 		{
-			return await _context.Worker
-							 .Include(w => w.User)          // Include related User
-							 .Include(w => w.WorkerType)    // Include related WorkerType
-							 .Include(w => w.Facility)      // Include related Facility
+			var workers = await _context.Worker
+							 .Include(w => w.User)
+							 .Include(w => w.WorkerType)
+							 .Include(w => w.Facility)
+							 .Where(w => !w.IsDeleted)
+							 .Select(w => new WorkerDto
+							 {
+								 Id = w.Id,
+								 DateOfEmployment = w.DateOfEmployment,
+								 UserId = w.User.Id,
+								 UserName = w.User.UserName,
+								 WorkerTypeId = w.WorkerType.Id,
+								 WorkerTypeName = w.WorkerType.Name,
+								 FacilityId = w.Facility.Id,
+								 FacilityName = w.Facility.Name,
+								 TenantId = w.TenantId
+							 })
 							 .ToListAsync();
+			return Ok(workers);
 		}
 
 		// GET: api/Worker/{id}
 		[HttpGet("{id}")]
-		public async Task<ActionResult<Worker>> GetWorker(int id)
+		public async Task<ActionResult<WorkerDto>> GetWorker(int id)
 		{
 			var worker = await _context.Worker
-								  .Include(w => w.User)          // Include related User
-								  .Include(w => w.WorkerType)    // Include related WorkerType
-								  .Include(w => w.Facility)      // Include related Facility
-								  .FirstOrDefaultAsync(w => w.Id == id);
+								  .Include(w => w.User)
+								  .Include(w => w.WorkerType)
+								  .Include(w => w.Facility)
+								  .Where(w => w.Id == id)
+								  .Select(w => new WorkerDto
+								  {
+									  Id = w.Id,
+									  DateOfEmployment = w.DateOfEmployment,
+									  UserId = w.User.Id,
+									  UserName = w.User.UserName,
+									  WorkerTypeId = w.WorkerType.Id,
+									  WorkerTypeName = w.WorkerType.Name,
+									  FacilityId = w.Facility.Id,
+									  FacilityName = w.Facility.Name,
+									  TenantId = w.TenantId
+								  })
+								  .FirstOrDefaultAsync();
 
 			if (worker == null)
 			{
@@ -172,5 +198,18 @@ namespace SZRST.API.Controllers
 		public int UserId { get; set; }
 		public int WorkerTypeId { get; set; }
 		public int FacilityId { get; set; }
+	}
+
+	public class WorkerDto
+	{
+		public int Id { get; set; }
+		public DateTime DateOfEmployment { get; set; }
+		public int UserId { get; set; }
+		public string UserName { get; set; }
+		public int WorkerTypeId { get; set; }
+		public string WorkerTypeName { get; set; }
+		public int FacilityId { get; set; }
+		public string FacilityName { get; set; }
+		public int TenantId { get; set; }
 	}
 }

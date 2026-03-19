@@ -20,10 +20,14 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using QuestPDF.Infrastructure;
 using System;
+using System.Linq;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using SZRST.API.Controllers;
+using SZRST.API.Security;
 using SZRST.Application.Services.MailService;
+using SZRST.Domain.Constants;
 using SZRST.Shared.Middleware;
 using SZRST.Web.Schedule;
 using SZRST.Web.Serivces;
@@ -72,6 +76,41 @@ namespace SZRST.WebApi
 			{
 				options.Events = new JwtBearerEvents
 				{
+					OnTokenValidated = async context =>
+					{
+						var principal = context.Principal;
+						if (principal?.Identity?.IsAuthenticated != true)
+						{
+							context.Fail("Neispravan token.");
+							return;
+						}
+
+						if (principal.IsInRole(Roles.SuperAdmin))
+						{
+							return;
+						}
+
+						if (principal.IsInRole(Roles.Korisnik))
+						{
+							return;
+						}
+
+						var tenantClaim = principal.FindFirst("tenantId")?.Value;
+						if (!int.TryParse(tenantClaim, out var tenantId) || tenantId <= 0)
+						{
+							context.Fail("Tenant claim nedostaje ili nije validan.");
+							return;
+						}
+
+						var userManager = context.HttpContext.RequestServices.GetRequiredService<UserManager<User>>();
+						var userId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+						var user = string.IsNullOrWhiteSpace(userId) ? null : await userManager.FindByIdAsync(userId);
+
+						if (user == null || user.TenantId != tenantId)
+						{
+							context.Fail("Tenant claim nije usklađen sa korisnikom.");
+						}
+					},
 					OnChallenge = context =>
 				  {
 					  context.HandleResponse();
@@ -176,7 +215,10 @@ namespace SZRST.WebApi
 
 			app.UseSwagger();
 			app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "SZRST.API v1"));
-			app.UseHangfireDashboard("/hangfire");
+			app.UseHangfireDashboard("/hangfire", new DashboardOptions
+			{
+				Authorization = new[] { new AdminDashboardAuthorizationFilter() }
+			});
 			app.UseHttpsRedirection();
 			app.UseMiddleware<ExceptionMiddleware>();
 			app.UseCors("MyPolicy");
@@ -195,10 +237,7 @@ namespace SZRST.WebApi
 			    "0 0 1 * *"
 			);
 
-			Console.WriteLine("Loaded CS = " + Configuration.GetConnectionString("SZRST"));
-
 			Console.WriteLine("ENV = " + env.EnvironmentName);
-			Console.WriteLine("CS = " + Configuration.GetConnectionString("SZRST"));
 		}
 	}
 }

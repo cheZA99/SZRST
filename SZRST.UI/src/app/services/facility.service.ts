@@ -117,7 +117,7 @@ export class FacilityService {
     if (filters.countryId != null)
       params = params.set('countryId', filters.countryId);
     if (filters.cityId != null)
-      params = params.set('countryId', filters.cityId);
+      params = params.set('cityId', filters.cityId);
     if (filters.tenantId != null)
       params = params.set('tenantId', filters.tenantId);
     if (filters.isDeleted != null)

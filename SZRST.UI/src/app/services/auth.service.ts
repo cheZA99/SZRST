@@ -39,7 +39,9 @@ export class AuthService {
   login(loginObj: any) {
     return this.http.post<User>(`${this.baseUrl}login`, loginObj).pipe(
       tap((user) => {
-        this.setCurrentUser(user);
+        if (user?.accessToken) {
+          this.setCurrentUser(user);
+        }
       }),
     );
   }
@@ -139,7 +141,7 @@ export class AuthService {
   signUp(userObj: any) {
     return this.http.post<any>(`${this.baseUrl}register`, userObj).pipe(
       tap((user) => {
-        if (user) this.setCurrentUser(user);
+        if (user?.accessToken) this.setCurrentUser(user);
       }),
     );
   }

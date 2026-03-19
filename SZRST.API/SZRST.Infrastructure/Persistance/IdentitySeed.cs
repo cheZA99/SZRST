@@ -36,7 +36,7 @@ public static class IdentitySeed
 		// =====================
 		// SUPER ADMIN
 		// =====================
-		await CreateUserIfNotExists(
+		await EnsureSeedUser(
 		    userManager,
 		    email: "superadmin@gmail.com",
 		    password: defaultPassword,
@@ -47,7 +47,7 @@ public static class IdentitySeed
 		// =====================
 		// ADMIN (example tenant)
 		// =====================
-		await CreateUserIfNotExists(
+		await EnsureSeedUser(
 		    userManager,
 		    email: "admin@gmail.com",
 		    password: defaultPassword,
@@ -58,7 +58,7 @@ public static class IdentitySeed
 		// =====================
 		// UPOSLENIK (same tenant)
 		// =====================
-		await CreateUserIfNotExists(
+		await EnsureSeedUser(
 		    userManager,
 		    email: "uposlenik@gmail.com",
 		    password: defaultPassword,
@@ -66,18 +66,18 @@ public static class IdentitySeed
 		    tenantId: 1
 		);
 
-		await CreateUserIfNotExists(
+		await EnsureSeedUser(
 		    userManager,
 		    email: "korisnik@gmail.com",
 		    password: defaultPassword,
 		    role: Roles.Korisnik,
-		    tenantId: 1
+		    tenantId: null
 		);
 
 		// =====================
 		// ADMIN (example tenant)
 		// =====================
-		await CreateUserIfNotExists(
+		await EnsureSeedUser(
 		    userManager,
 		    email: "admin2@gmail.com",
 		    password: defaultPassword,
@@ -86,7 +86,7 @@ public static class IdentitySeed
 		);
 	}
 
-	private static async Task CreateUserIfNotExists(
+	private static async Task EnsureSeedUser(
 	    UserManager<User> userManager,
 	    string email,
 	    string password,
@@ -95,25 +95,56 @@ public static class IdentitySeed
 	)
 	{
 		var user = await userManager.FindByEmailAsync(email);
-
-		if (user != null)
-			return;
-
-		user = new User
+		if (user == null)
 		{
-			UserName = email,
-			Email = email,
-			EmailConfirmed = true,
-			TenantId = tenantId
-		};
+			user = new User
+			{
+				UserName = email,
+				Email = email,
+				EmailConfirmed = true,
+				TenantId = tenantId,
+				Active = true,
+				IsDeleted = false
+			};
 
-		var result = await userManager.CreateAsync(user, password);
+			var createResult = await userManager.CreateAsync(user, password);
 
-		if (!result.Succeeded)
+			if (!createResult.Succeeded)
+			{
+				throw new Exception($"Failed to create user {email}: {string.Join(", ", createResult.Errors)}");
+			}
+		}
+		else
 		{
-			throw new Exception($"Failed to create user {email}: {string.Join(", ", result.Errors)}");
+			var requiresUpdate =
+				user.UserName != email ||
+				user.Email != email ||
+				user.EmailConfirmed != true ||
+				user.TenantId != tenantId ||
+				!user.Active ||
+				user.IsDeleted;
+
+			if (requiresUpdate)
+			{
+				user.UserName = email;
+				user.Email = email;
+				user.EmailConfirmed = true;
+				user.TenantId = tenantId;
+				user.Active = true;
+				user.IsDeleted = false;
+
+				var updateResult = await userManager.UpdateAsync(user);
+				if (!updateResult.Succeeded)
+				{
+					throw new Exception($"Failed to update seeded user {email}: {string.Join(", ", updateResult.Errors)}");
+				}
+			}
 		}
 
-		await userManager.AddToRoleAsync(user, role);
+		if (!await userManager.IsInRoleAsync(user, role))
+		{
+			await userManager.AddToRoleAsync(user, role);
+		}
+
 	}
 }

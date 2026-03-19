@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using SZRST.API.Security;
 using SZRST.Domain.Constants;
 using SZRST.Domain.Entities;
 using SZRST.Web.Serivces;
@@ -16,23 +17,26 @@ using SZRST.Web.Serivces;
 namespace SZRST.Web.Controllers
 {
     [Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}")]
-    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class ReservationReportController : ControllerBase
     {
         private readonly IReservationReportService _reportService;
+        private readonly ICurrentUserService _currentUserService;
 
 
-
-        public ReservationReportController(IReservationReportService reportService)
+        public ReservationReportController(IReservationReportService reportService, ICurrentUserService currentUserService)
         {
             _reportService = reportService;
+            _currentUserService = currentUserService;
         }
 
     [HttpPost("generate")]
     public async Task<IActionResult> GenerateReport([FromBody] ReservationReportRequest request)
         {
+            if (!_currentUserService.IsSuperAdmin && !_currentUserService.CanAccessTenant(request.TenantId))
+                return Forbid();
+
             var reportId = await _reportService.GenerateReport(
                 request.DateFrom,
                 request.DateTo,
@@ -50,6 +54,9 @@ namespace SZRST.Web.Controllers
             if (report == null)
                 return NotFound();
 
+            if (!_currentUserService.CanAccessTenant(report.TenantId))
+                return Forbid();
+
             return File(report.PdfData, "application/pdf", report.FileName);
         }
 
@@ -58,12 +65,18 @@ namespace SZRST.Web.Controllers
         {
             var reports = await _reportService.GetReports();
 
+            if (!_currentUserService.IsSuperAdmin)
+                reports = reports.Where(r => _currentUserService.CanAccessTenant(r.TenantId)).ToList();
+
             return Ok(reports);
         }
 
         [HttpGet("{tenantId}")]
         public async Task<IActionResult> GetReportsByTenantId(int tenantId)
         {
+            if (!_currentUserService.IsSuperAdmin && !_currentUserService.CanAccessTenant(tenantId))
+                return Forbid();
+
             var reports = await _reportService.GetReportsByTenantId(tenantId);
 
             return Ok(reports);

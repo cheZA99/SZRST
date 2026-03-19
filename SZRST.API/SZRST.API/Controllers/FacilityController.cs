@@ -13,18 +13,18 @@ using System.Diagnostics.Metrics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using SZRST.API.Security;
 using SZRST.Domain.Constants;
 using SZRST.Shared.response;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SZRST.API.Controllers
 {
-	[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}, {Roles.Uposlenik},{Roles.Korisnik}")]
-	[Authorize]
+	[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin},{Roles.Uposlenik},{Roles.Korisnik}")]
 	[Route("api/[controller]")]
 	[ApiController]
 	public class FacilityController :ControllerBase
 	{
+		private const long MaxUploadSizeBytes = 5 * 1024 * 1024;
 		private readonly SZRSTContext _context;
 		private readonly LocationController _locationController;
 		private readonly IMapper _mapper;
@@ -90,18 +90,36 @@ namespace SZRST.API.Controllers
 		}*/
 
         // GET: api/Facility
-        [HttpGet]
+		[HttpGet]
 		public async Task<ActionResult<PagedResult<FacilityResponse>>> GetFacilities([FromQuery] FacilityFilterDto filter)
 		{
-            var currentUser = await _userManager.FindByIdAsync(_currentUserService.UserId.ToString());
-            var currentUserRoles = await _userManager.GetRolesAsync(currentUser);
+			if (!_currentUserService.IsSuperAdmin &&
+			    !_currentUserService.IsKorisnik &&
+			    !_currentUserService.TenantId.HasValue)
+			{
+				return Forbid();
+			}
 
+			IQueryable<Facility> query = _context.Facility
+				.IgnoreQueryFilters()
+				.Include(f => f.FacilityType)
+				.Include(f => f.Tenant)
+				.Include(f => f.Location)
+					.ThenInclude(f => f.City)
+					.ThenInclude(c => c.Country);
 
-            IQueryable<Facility> query = _context.Facility
-                .Include(f => f.FacilityType)
-                .Include(f => f.Location)
-                    .ThenInclude(f => f.City)
-                    .ThenInclude(c => c.Country);
+			if (_currentUserService.IsSuperAdmin || _currentUserService.IsKorisnik)
+			{
+				if (filter.TenantId.HasValue)
+					query = query.Where(u => u.TenantId == filter.TenantId.Value);
+			}
+			else
+			{
+				if (filter.TenantId.HasValue && filter.TenantId.Value != _currentUserService.TenantId.Value)
+					return Forbid();
+
+				query = query.Where(u => u.TenantId == _currentUserService.TenantId.Value);
+			}
 
             if (!string.IsNullOrWhiteSpace(filter.Address))
             {
@@ -124,9 +142,6 @@ namespace SZRST.API.Controllers
 
             if (filter.CityId.HasValue)
                 query = query.Where(u => u.Location.City.Id == filter.CityId.Value);
-
-            if (currentUserRoles.Contains(Roles.SuperAdmin) && filter.TenantId.HasValue)
-                query = query.Where(u => u.TenantId == filter.TenantId.Value);
 
             query = filter.SortColumn switch
             {
@@ -159,15 +174,7 @@ namespace SZRST.API.Controllers
 
 			foreach (var facility in pagedUsers)
 			{
-                facilityDtos.Add(new FacilityResponse
-                    {
-						Id = facility.Id,
-						Name= facility.Name,
-						FacilityType = facility.FacilityType,
-						Location = facility.Location,
-						ImageUrl = facility.ImageUrl,
-						TenantId = facility.TenantId
-					});
+                facilityDtos.Add(MapFacility(facility));
 			}
 
 			return Ok(new PagedResult<FacilityResponse>
@@ -185,24 +192,37 @@ namespace SZRST.API.Controllers
 		public async Task<ActionResult<FacilityResponse>> GetFacility(int id)
 		{
 			var facility = await _context.Facility
+								    .IgnoreQueryFilters()
 								    .Include(f => f.FacilityType)  // Include related FacilityType
+								    .Include(f => f.Tenant)
 								    .Include(f => f.Location)      // Include related Location
 								    .ThenInclude(f => f.City)
 								    .ThenInclude(f => f.Country)
-								    .FirstOrDefaultAsync(f => f.Id == id);
+								    .FirstOrDefaultAsync(f => f.Id == id && !f.IsDeleted);
 
 			if (facility == null)
 			{
 				return NotFound();
 			}
 
-			return _mapper.Map<FacilityResponse>(facility);
+			if (!_currentUserService.IsSuperAdmin &&
+			    !_currentUserService.IsKorisnik &&
+			    !_currentUserService.CanAccessTenant(facility.TenantId))
+			{
+				return Forbid();
+			}
+
+			return Ok(MapFacility(facility));
 		}
 
 		// POST: api/Facility
+		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}")]
 		[HttpPost]
 		public async Task<ActionResult<Facility>> CreateFacility([FromBody] FacilityCreateDto facilityDto)
 		{
+			if (!_currentUserService.IsSuperAdmin && !_currentUserService.HasValidTenant)
+				return Forbid();
+
 			var facilityType = await _context.FacilityType.FindAsync(facilityDto.FacilityTypeId);
 			if (facilityType == null)
 			{
@@ -221,8 +241,12 @@ namespace SZRST.API.Controllers
 				FacilityType = facilityType,
 				Location = location,
 				IsDeleted = false,
-				ImageUrl = facilityDto.ImageUrl
+				ImageUrl = facilityDto.ImageUrl,
+				TenantId = _currentUserService.IsSuperAdmin ? facilityDto.TenantId.GetValueOrDefault() : _currentUserService.TenantId!.Value
 			};
+
+			if (facility.TenantId <= 0)
+				return BadRequest("TenantId mora biti validan.");
 
 			_context.Facility.Add(facility);
 			await _context.SaveChangesAsync();
@@ -230,9 +254,14 @@ namespace SZRST.API.Controllers
 			return CreatedAtAction(nameof(GetFacility), new { id = facility.Id }, facility);
 		}
 
+		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}")]
+		[RequestSizeLimit(MaxUploadSizeBytes)]
 		[HttpPost("AddFacility")]
 		public async Task<ActionResult<Facility>> CreateFacilityAndLocation([FromForm] FacilityLocationCreateWithImageDto facilityDto)
 		{
+			if (!_currentUserService.IsSuperAdmin && !_currentUserService.HasValidTenant)
+				return Forbid();
+
 			var country = await _context.Country.FindAsync(facilityDto.CountryId);
 			var city = await _context.City.FindAsync(facilityDto.CityId);
 			var facilityType = await _context.FacilityType.FindAsync(facilityDto.FacilityTypeId);
@@ -259,13 +288,14 @@ namespace SZRST.API.Controllers
 			{
 				if (facilityDto.File != null)
 				{
-					var allowed = new[] { ".jpg", ".jpeg", ".png", ".webp" };
-
-					var ext = Path.GetExtension(facilityDto.File.FileName).ToLower();
-
-					if (!allowed.Contains(ext))
+					if (facilityDto.File.Length > MaxUploadSizeBytes)
 					{
-						return BadRequest("Invalid file type");
+						return BadRequest("Maksimalna veličina fajla je 5MB.");
+					}
+
+					if (!FileSignatureValidator.IsValidImage(facilityDto.File))
+					{
+						return BadRequest("Dozvoljene su samo validne JPG, PNG ili WEBP slike.");
 					}
 
 					var folder = Path.Combine(_env.WebRootPath, "images");
@@ -292,14 +322,17 @@ namespace SZRST.API.Controllers
             }
 
             // Create Facility with new Location
-            var facility = new Facility
+			var facility = new Facility
 			{
 				Name = facilityDto.Name,
 				FacilityType = facilityType,
 				Location = location,
 				ImageUrl = imageUrl,
-				TenantId = facilityDto.TenantId
+				TenantId = _currentUserService.IsSuperAdmin ? facilityDto.TenantId : _currentUserService.TenantId!.Value
 			};
+
+			if (facility.TenantId <= 0)
+				return BadRequest("TenantId mora biti validan.");
 
 			_context.Facility.Add(facility);
 			await _context.SaveChangesAsync();
@@ -308,14 +341,19 @@ namespace SZRST.API.Controllers
 		}
 
 		// PUT: api/Facility/{id}
+		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}")]
+		[RequestSizeLimit(MaxUploadSizeBytes)]
 		[HttpPut("{id}")]
 		public async Task<IActionResult> UpdateFacility(int id, [FromForm] FacilityLocationCreateWithImageDto facilityDto)
 		{
-			var facility = await _context.Facility.FindAsync(id);
+			var facility = await _context.Facility.IgnoreQueryFilters().FirstOrDefaultAsync(f => f.Id == id);
 			if (facility == null)
 			{
 				return NotFound();
 			}
+
+			if (!_currentUserService.CanAccessTenant(facility.TenantId))
+				return Forbid();
 
 			var facilityType = await _context.FacilityType.FindAsync(facilityDto.FacilityTypeId);
 			if (facilityType == null)
@@ -364,19 +402,18 @@ namespace SZRST.API.Controllers
                     facility.Location = newLocation;
                 }
             }
-
-            var imageUrl = "";
 			try
 			{
 				if (facilityDto.File != null)
 				{
-					var allowed = new[] { ".jpg", ".jpeg", ".png", ".webp" };
-
-					var ext = Path.GetExtension(facilityDto.File.FileName).ToLower();
-
-					if (!allowed.Contains(ext))
+					if (facilityDto.File.Length > MaxUploadSizeBytes)
 					{
-						return BadRequest("Invalid file type");
+						return BadRequest("Maksimalna veličina fajla je 5MB.");
+					}
+
+					if (!FileSignatureValidator.IsValidImage(facilityDto.File))
+					{
+						return BadRequest("Dozvoljene su samo validne JPG, PNG ili WEBP slike.");
 					}
 
 					var folder = Path.Combine(_env.WebRootPath, "images");
@@ -408,6 +445,10 @@ namespace SZRST.API.Controllers
 
             facility.Name = facilityDto.Name;
 			facility.FacilityType = facilityType;
+			facility.TenantId = _currentUserService.IsSuperAdmin ? facilityDto.TenantId : _currentUserService.TenantId!.Value;
+
+			if (facility.TenantId <= 0)
+				return BadRequest("TenantId mora biti validan.");
 
 			_context.Entry(facility).State = EntityState.Modified;
 
@@ -431,16 +472,20 @@ namespace SZRST.API.Controllers
 		}
 
 		// DELETE: api/Facility/{id}
+		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}")]
 		[HttpDelete("{id}")]
 		public async Task<IActionResult> DeleteFacility(int id)
 		{
-			var facility = await _context.Facility.FindAsync(id);
+			var facility = await _context.Facility.IgnoreQueryFilters().FirstOrDefaultAsync(f => f.Id == id);
 			if (facility == null)
 			{
 				return NotFound();
 			}
 
-			_context.Facility.Remove(facility);
+			if (!_currentUserService.CanAccessTenant(facility.TenantId))
+				return Forbid();
+
+			facility.IsDeleted = true;
 			await _context.SaveChangesAsync();
 
 			return NoContent();
@@ -450,6 +495,47 @@ namespace SZRST.API.Controllers
 		{
 			return _context.Facility.Any(e => e.Id == id);
 		}
+
+		private static FacilityResponse MapFacility(Facility facility)
+		{
+			return new FacilityResponse
+			{
+				Id = facility.Id,
+				Name = facility.Name,
+				ImageUrl = facility.ImageUrl,
+				TenantId = facility.TenantId,
+				TenantName = facility.Tenant?.Name,
+				FacilityType = facility.FacilityType == null ? null : new FacilityTypeSummary
+				{
+					Id = facility.FacilityType.Id,
+					Name = facility.FacilityType.Name,
+					Description = facility.FacilityType.Description
+				},
+				Location = facility.Location == null ? null : new LocationSummary
+				{
+					Id = facility.Location.Id,
+					Address = facility.Location.Address,
+					AddressNumber = facility.Location.AddressNumber,
+					Country = facility.Location.Country == null ? null : new CountrySummary
+					{
+						Id = facility.Location.Country.Id,
+						Name = facility.Location.Country.Name,
+						ShortName = facility.Location.Country.ShortName
+					},
+					City = facility.Location.City == null ? null : new CitySummary
+					{
+						Id = facility.Location.City.Id,
+						Name = facility.Location.City.Name,
+						Country = facility.Location.City.Country == null ? null : new CountrySummary
+						{
+							Id = facility.Location.City.Country.Id,
+							Name = facility.Location.City.Country.Name,
+							ShortName = facility.Location.City.Country.ShortName
+						}
+					}
+				}
+			};
+		}
 	}
 
 	public class FacilityCreateDto
@@ -458,6 +544,7 @@ namespace SZRST.API.Controllers
 		public int FacilityTypeId { get; set; }
 		public int LocationId { get; set; }
 		public string ImageUrl { get; set; }
+		public int? TenantId { get; set; }
 	}
 
 	public class FacilityLocationCreateDto

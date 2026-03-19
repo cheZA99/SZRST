@@ -10,8 +10,7 @@ using SZRST.Domain.Constants;
 
 namespace SZRST.API.Controllers
 {
-	[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}, {Roles.Uposlenik}")]
-	[Authorize]
+	[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin},{Roles.Uposlenik}")]
 	[Route("api/[controller]")]
 	[ApiController]
 	public class CountryController :ControllerBase
@@ -25,22 +24,39 @@ namespace SZRST.API.Controllers
 
 		// GET: api/Country
 		[HttpGet]
-		public async Task<ActionResult<IEnumerable<Country>>> GetCountries()
+		public async Task<ActionResult<IEnumerable<CountryDto>>> GetCountries()
 		{
-			return await _context.Country
+			return Ok(await _context.Country
 							 .Where(c => !c.IsDeleted)
 							 .Include(c => c.Currency)
-							 .ToListAsync();
+							 .Select(c => new CountryDto
+							 {
+								 Id = c.Id,
+								 Name = c.Name,
+								 ShortName = c.ShortName,
+								 CurrencyId = c.Currency != null ? c.Currency.Id : null,
+								 CurrencyShortName = c.Currency != null ? c.Currency.ShortName : null
+							 })
+							 .ToListAsync());
 		}
 
 		// GET: api/Country/{id}
 		[HttpGet("{id}")]
-		public async Task<ActionResult<Country>> GetCountry(int id)
+		public async Task<ActionResult<CountryDto>> GetCountry(int id)
 		{
 			var country = await _context.Country
 								    .Where(c => !c.IsDeleted)
 								    .Include(c => c.Currency)
-								    .FirstOrDefaultAsync(c => c.Id == id);
+								    .Where(c => c.Id == id)
+								    .Select(c => new CountryDto
+								    {
+										Id = c.Id,
+										Name = c.Name,
+										ShortName = c.ShortName,
+										CurrencyId = c.Currency != null ? c.Currency.Id : null,
+										CurrencyShortName = c.Currency != null ? c.Currency.ShortName : null
+								    })
+								    .FirstOrDefaultAsync();
 
 			if (country == null)
 			{
@@ -142,5 +158,14 @@ namespace SZRST.API.Controllers
 		public string Name { get; set; }
 		public string ShortName { get; set; }
 		public int? CurrencyId { get; set; }
+	}
+
+	public class CountryDto
+	{
+		public int Id { get; set; }
+		public string Name { get; set; }
+		public string ShortName { get; set; }
+		public int? CurrencyId { get; set; }
+		public string CurrencyShortName { get; set; }
 	}
 }

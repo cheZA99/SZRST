@@ -8,6 +8,9 @@ public interface ICurrentUserService
 	int? TenantId { get; }
 	string Username { get; }
 	bool IsAuthenticated { get; }
+	bool IsSuperAdmin { get; }
+	bool IsKorisnik { get; }
+	bool HasValidTenant { get; }
 }
 
 public class CurrentUserService :ICurrentUserService
@@ -35,7 +38,7 @@ public class CurrentUserService :ICurrentUserService
 		{
 			var tenantIdClaim = _httpContextAccessor.HttpContext?.User?
 			    .FindFirst("tenantId")?.Value;
-			return int.TryParse(tenantIdClaim, out var tenantId) ? tenantId : null;
+			return int.TryParse(tenantIdClaim, out var tenantId) && tenantId > 0 ? tenantId : null;
 		}
 	}
 
@@ -52,4 +55,10 @@ public class CurrentUserService :ICurrentUserService
 	    .FindFirst(ClaimTypes.Name)?.Value;
 
 	public bool IsAuthenticated => _httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated ?? false;
+
+	public bool IsSuperAdmin => _httpContextAccessor.HttpContext?.User?.IsInRole(SZRST.Domain.Constants.Roles.SuperAdmin) ?? false;
+
+	public bool IsKorisnik => _httpContextAccessor.HttpContext?.User?.IsInRole(SZRST.Domain.Constants.Roles.Korisnik) ?? false;
+
+	public bool HasValidTenant => IsSuperAdmin || TenantId.HasValue;
 }

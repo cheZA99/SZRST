@@ -8,32 +8,47 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using SZRST.API.Security;
 using SZRST.Domain.Constants;
 
 namespace SZRST.API.Controllers
 {
-	[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}, {Roles.Uposlenik}, {Roles.Korisnik}")]
-	[Authorize]
+	[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin},{Roles.Uposlenik},{Roles.Korisnik}")]
 	[Route("api/[controller]")]
 	[ApiController]
 	public class AppointmentTypeController :ControllerBase
 	{
 		private readonly SZRSTContext _context;
 		private readonly IValidator<AppointmentTypeCreateDto> _validator;
+		private readonly ICurrentUserService _currentUserService;
 
 		public AppointmentTypeController(
 			SZRSTContext context,
-			IValidator<AppointmentTypeCreateDto> validator)
+			IValidator<AppointmentTypeCreateDto> validator,
+			ICurrentUserService currentUserService)
 		{
 			_context = context;
 			_validator = validator;
+			_currentUserService = currentUserService;
 		}
 
 		// GET: api/AppointmentType
 		[HttpGet]
 		public async Task<ActionResult<IEnumerable<AppointmentTypeDto>>> GetAppointmentTypes()
 		{
-			var appointmentTypes = await _context.AppointmentType
+			if (!_currentUserService.IsSuperAdmin &&
+			    !_currentUserService.IsKorisnik &&
+			    !_currentUserService.TenantId.HasValue)
+			{
+				return Forbid();
+			}
+
+			var query = _context.AppointmentType.IgnoreQueryFilters();
+
+			if (!_currentUserService.IsSuperAdmin && !_currentUserService.IsKorisnik)
+				query = query.Where(at => at.TenantId == _currentUserService.TenantId.Value);
+
+			var appointmentTypes = await query
 				.Include(at => at.Tenant)
 				.Include(at => at.Currency)
 				.Where(at => !at.IsDeleted)
@@ -61,12 +76,20 @@ namespace SZRST.API.Controllers
 		public async Task<ActionResult<AppointmentTypeDto>> GetAppointmentType(int id)
 		{
 			var appointmentType = await _context.AppointmentType
+				.IgnoreQueryFilters()
 				.Include(at => at.Tenant)
 				.Include(at => at.Currency)
 				.FirstOrDefaultAsync(at => at.Id == id && !at.IsDeleted);
 
 			if (appointmentType == null)
 				return NotFound();
+
+			if (!_currentUserService.IsSuperAdmin &&
+			    !_currentUserService.IsKorisnik &&
+			    !_currentUserService.CanAccessTenant(appointmentType.TenantId))
+			{
+				return Forbid();
+			}
 
 			var dto = new AppointmentTypeDto
 			{
@@ -89,7 +112,14 @@ namespace SZRST.API.Controllers
 		[HttpGet("by-tenant/{tenantId}")]
 		public async Task<ActionResult<IEnumerable<AppointmentTypeDto>>> GetAppointmentTypesByTenant(int tenantId)
 		{
-			var appointmentTypes = await _context.AppointmentType
+			if (!_currentUserService.IsSuperAdmin &&
+			    !_currentUserService.IsKorisnik &&
+			    _currentUserService.TenantId != tenantId)
+				return Forbid();
+
+			var query = _context.AppointmentType.IgnoreQueryFilters();
+
+			var appointmentTypes = await query
 				.Include(at => at.Currency)
 				.Where(at => at.TenantId == tenantId && !at.IsDeleted)
 				.ToListAsync();
@@ -111,18 +141,28 @@ namespace SZRST.API.Controllers
 		}
 
 		// POST: api/AppointmentType
+		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}")]
 		[HttpPost]
 		public async Task<ActionResult<AppointmentType>> CreateAppointmentType([FromBody] AppointmentTypeCreateDto appointmentTypeDto)
 		{
-			// --- FluentValidation ---
 			var validationResult = await _validator.ValidateAsync(appointmentTypeDto);
 			if (!validationResult.IsValid)
 				return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
+
+			if (!_currentUserService.HasValidTenant)
+				return Forbid();
 
 			var currencyId = await _context.Currency
 				.Where(x => x.ShortName == "BAM")
 				.Select(x => x.Id)
 				.FirstOrDefaultAsync();
+
+			var tenantId = _currentUserService.IsSuperAdmin
+				? appointmentTypeDto.TenantId
+				: _currentUserService.TenantId!.Value;
+
+			if (tenantId <= 0)
+				return BadRequest("TenantId mora biti validan.");
 
 			var appointmentType = new AppointmentType
 			{
@@ -130,7 +170,7 @@ namespace SZRST.API.Controllers
 				Duration = appointmentTypeDto.Duration,
 				Price = appointmentTypeDto.Price,
 				CurrencyId = appointmentTypeDto.CurrencyId != null ? appointmentTypeDto.CurrencyId : currencyId,
-				TenantId = appointmentTypeDto.TenantId,
+				TenantId = tenantId,
 				DateCreated = DateTime.UtcNow,
 				IsDeleted = false
 			};
@@ -142,23 +182,28 @@ namespace SZRST.API.Controllers
 		}
 
 		// PUT: api/AppointmentType/{id}
+		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}")]
 		[HttpPut("{id}")]
 		public async Task<IActionResult> UpdateAppointmentType(int id, [FromBody] AppointmentTypeCreateDto appointmentTypeDto)
 		{
-			// --- FluentValidation ---
 			var validationResult = await _validator.ValidateAsync(appointmentTypeDto);
 			if (!validationResult.IsValid)
 				return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
 
-			var appointmentType = await _context.AppointmentType.FindAsync(id);
+			var appointmentType = await _context.AppointmentType.IgnoreQueryFilters().FirstOrDefaultAsync(at => at.Id == id);
 			if (appointmentType == null || appointmentType.IsDeleted)
 				return NotFound();
+
+			if (!_currentUserService.CanAccessTenant(appointmentType.TenantId))
+				return Forbid();
 
 			appointmentType.Name = appointmentTypeDto.Name;
 			appointmentType.Duration = appointmentTypeDto.Duration;
 			appointmentType.Price = appointmentTypeDto.Price;
 			appointmentType.CurrencyId = appointmentTypeDto.CurrencyId;
-			appointmentType.TenantId = appointmentTypeDto.TenantId;
+			appointmentType.TenantId = _currentUserService.IsSuperAdmin
+				? appointmentTypeDto.TenantId
+				: _currentUserService.TenantId!.Value;
 			appointmentType.DateModified = DateTime.UtcNow;
 
 			_context.Entry(appointmentType).State = EntityState.Modified;
@@ -179,12 +224,16 @@ namespace SZRST.API.Controllers
 		}
 
 		// DELETE: api/AppointmentType/{id}
+		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}")]
 		[HttpDelete("{id}")]
 		public async Task<IActionResult> DeleteAppointmentType(int id)
 		{
-			var appointmentType = await _context.AppointmentType.FindAsync(id);
+			var appointmentType = await _context.AppointmentType.IgnoreQueryFilters().FirstOrDefaultAsync(at => at.Id == id);
 			if (appointmentType == null)
 				return NotFound();
+
+			if (!_currentUserService.CanAccessTenant(appointmentType.TenantId))
+				return Forbid();
 
 			appointmentType.IsDeleted = true;
 			appointmentType.DateModified = DateTime.UtcNow;
