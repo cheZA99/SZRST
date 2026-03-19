@@ -186,7 +186,7 @@ namespace SZRST.API.Controllers
 				.Select(ur => ur.UserId);
 
 			var usersQuery = _userManager.Users
-				.Where(u => u.Active && !u.IsDeleted);
+				.Where(u => !u.IsDeleted);
 
 			if (!_currentUserService.IsSuperAdmin)
 			{

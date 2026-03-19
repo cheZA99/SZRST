@@ -380,7 +380,7 @@ namespace SZRST.API.Controllers
 			if (requestedUserId <= 0)
 				return null;
 
-			var user = await _userManager.Users.FirstOrDefaultAsync(u => u.Id == requestedUserId && u.Active && !u.IsDeleted);
+			var user = await _userManager.Users.FirstOrDefaultAsync(u => u.Id == requestedUserId && !u.IsDeleted);
 			if (user == null)
 				return null;
 

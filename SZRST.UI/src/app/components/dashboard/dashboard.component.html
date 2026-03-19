@@ -192,9 +192,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                <span>{{facility.location.address + " " + facility.location.addressNumber + ", " +
-                  facility.location.city.name
-                  + " " + facility.location.country.name}}</span>
+                <span>{{ getFacilityLocationLabel(facility) }}</span>
               </div>
             </div>
 
@@ -252,7 +250,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-              <span>{{ facility.location || "Lokacija nije definirana" }}</span>
+              <span>{{ getFacilityLocationLabel(facility) }}</span>
             </div>
 
             <div class="flex items-center text-sm text-gray-600">

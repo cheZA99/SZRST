@@ -267,5 +267,20 @@ shareLinkedIn() {
   const url = encodeURIComponent(window.location.href);
   window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank');
 }
+
+  getFacilityLocationLabel(facility: any): string {
+    const address = facility?.location?.address;
+    const addressNumber = facility?.location?.addressNumber;
+    const cityName = facility?.location?.city?.name;
+    const countryName =
+      facility?.location?.city?.country?.name ?? facility?.location?.country?.name;
+
+    const parts = [address, addressNumber, cityName, countryName]
+      .filter((part) => !!part)
+      .map((part) => `${part}`.trim())
+      .filter((part) => part.length > 0);
+
+    return parts.length > 0 ? parts.join(', ') : 'Lokacija nije definirana';
+  }
   
 }

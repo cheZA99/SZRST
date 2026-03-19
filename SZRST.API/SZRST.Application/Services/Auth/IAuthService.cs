@@ -67,6 +67,8 @@ namespace Application.Services
 			{
 				Email = model.Email,
 				UserName = model.Username,
+				Active = true,
+				IsDeleted = false,
 				DateCreated = DateTime.UtcNow,
 				DateModified = DateTime.UtcNow,
 			};
