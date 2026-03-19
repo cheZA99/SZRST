@@ -354,7 +354,11 @@ export class ResursiComponent implements OnInit {
     return d.toLocaleDateString('bs-BA');
   }
 
-  getTenantName(tenantId: number): string {
+  getTenantName(tenantId: number | null): string {
+    if (tenantId === null) {
+      return '';
+    }
+
     const tenant = this.tenants.find(t => t.id === tenantId);
     return tenant ? tenant.name : `Organizacija ${tenantId}`;
   }

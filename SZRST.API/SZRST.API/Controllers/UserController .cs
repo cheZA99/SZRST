@@ -176,10 +176,30 @@ namespace SZRST.API.Controllers
 		[HttpGet("for-appointments")]
 		public async Task<ActionResult<IEnumerable<UserListDto>>> GetUsersForAppointments()
 		{
-			var tenantId = _currentUserService.TenantId;
+			var korisnikRoleId = await _context.Roles
+				.Where(r => r.Name == Roles.Korisnik)
+				.Select(r => r.Id)
+				.FirstOrDefaultAsync();
 
-			var users = await _userManager.Users
-				.Where(u => _currentUserService.IsSuperAdmin || u.TenantId == tenantId)
+			var korisnikUserIds = _context.UserRoles
+				.Where(ur => ur.RoleId == korisnikRoleId)
+				.Select(ur => ur.UserId);
+
+			var usersQuery = _userManager.Users
+				.Where(u => u.Active && !u.IsDeleted);
+
+			if (!_currentUserService.IsSuperAdmin)
+			{
+				if (!_currentUserService.TenantId.HasValue)
+					return Forbid();
+
+				var tenantId = _currentUserService.TenantId.Value;
+				usersQuery = usersQuery.Where(u =>
+					u.TenantId == tenantId ||
+					korisnikUserIds.Contains(u.Id));
+			}
+
+			var users = await usersQuery
 				.Select(u => new UserListDto
 				{
 					Id = u.Id,

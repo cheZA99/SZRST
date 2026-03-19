@@ -8,6 +8,7 @@ namespace SZRST.Shared.response
 		public LocationSummary Location { get; set; }
 		public string ImageUrl { get; set; }
 		public int TenantId { get; set; }
+		public string TenantName { get; set; }
 	}
 
 	public class FacilityTypeSummary

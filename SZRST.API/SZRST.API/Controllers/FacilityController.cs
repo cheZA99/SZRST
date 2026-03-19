@@ -90,22 +90,36 @@ namespace SZRST.API.Controllers
 		}*/
 
         // GET: api/Facility
-        [HttpGet]
+		[HttpGet]
 		public async Task<ActionResult<PagedResult<FacilityResponse>>> GetFacilities([FromQuery] FacilityFilterDto filter)
 		{
-            var currentUser = await _userManager.FindByIdAsync(_currentUserService.UserId.ToString());
-            var currentUserRoles = currentUser == null
-                ? new List<string>()
-                : await _userManager.GetRolesAsync(currentUser);
+			if (!_currentUserService.IsSuperAdmin &&
+			    !_currentUserService.IsKorisnik &&
+			    !_currentUserService.TenantId.HasValue)
+			{
+				return Forbid();
+			}
 
+			IQueryable<Facility> query = _context.Facility
+				.IgnoreQueryFilters()
+				.Include(f => f.FacilityType)
+				.Include(f => f.Tenant)
+				.Include(f => f.Location)
+					.ThenInclude(f => f.City)
+					.ThenInclude(c => c.Country);
 
-            var unrestrictedRead = currentUserRoles.Contains(Roles.SuperAdmin) || currentUserRoles.Contains(Roles.Korisnik);
+			if (_currentUserService.IsSuperAdmin || _currentUserService.IsKorisnik)
+			{
+				if (filter.TenantId.HasValue)
+					query = query.Where(u => u.TenantId == filter.TenantId.Value);
+			}
+			else
+			{
+				if (filter.TenantId.HasValue && filter.TenantId.Value != _currentUserService.TenantId.Value)
+					return Forbid();
 
-            IQueryable<Facility> query = (unrestrictedRead ? _context.Facility.IgnoreQueryFilters() : _context.Facility)
-                .Include(f => f.FacilityType)
-                .Include(f => f.Location)
-                    .ThenInclude(f => f.City)
-                    .ThenInclude(c => c.Country);
+				query = query.Where(u => u.TenantId == _currentUserService.TenantId.Value);
+			}
 
             if (!string.IsNullOrWhiteSpace(filter.Address))
             {
@@ -128,9 +142,6 @@ namespace SZRST.API.Controllers
 
             if (filter.CityId.HasValue)
                 query = query.Where(u => u.Location.City.Id == filter.CityId.Value);
-
-            if ((currentUserRoles.Contains(Roles.SuperAdmin) || currentUserRoles.Contains(Roles.Korisnik)) && filter.TenantId.HasValue)
-                query = query.Where(u => u.TenantId == filter.TenantId.Value);
 
             query = filter.SortColumn switch
             {
@@ -180,20 +191,25 @@ namespace SZRST.API.Controllers
 		[HttpGet("{id}")]
 		public async Task<ActionResult<FacilityResponse>> GetFacility(int id)
 		{
-			var query = (_currentUserService.IsSuperAdmin || _currentUserService.IsKorisnik)
-				? _context.Facility.IgnoreQueryFilters()
-				: _context.Facility;
-
-			var facility = await query
+			var facility = await _context.Facility
+								    .IgnoreQueryFilters()
 								    .Include(f => f.FacilityType)  // Include related FacilityType
+								    .Include(f => f.Tenant)
 								    .Include(f => f.Location)      // Include related Location
 								    .ThenInclude(f => f.City)
 								    .ThenInclude(f => f.Country)
-								    .FirstOrDefaultAsync(f => f.Id == id);
+								    .FirstOrDefaultAsync(f => f.Id == id && !f.IsDeleted);
 
 			if (facility == null)
 			{
 				return NotFound();
+			}
+
+			if (!_currentUserService.IsSuperAdmin &&
+			    !_currentUserService.IsKorisnik &&
+			    !_currentUserService.CanAccessTenant(facility.TenantId))
+			{
+				return Forbid();
 			}
 
 			return Ok(MapFacility(facility));
@@ -204,7 +220,7 @@ namespace SZRST.API.Controllers
 		[HttpPost]
 		public async Task<ActionResult<Facility>> CreateFacility([FromBody] FacilityCreateDto facilityDto)
 		{
-			if (!_currentUserService.HasValidTenant)
+			if (!_currentUserService.IsSuperAdmin && !_currentUserService.HasValidTenant)
 				return Forbid();
 
 			var facilityType = await _context.FacilityType.FindAsync(facilityDto.FacilityTypeId);
@@ -243,7 +259,7 @@ namespace SZRST.API.Controllers
 		[HttpPost("AddFacility")]
 		public async Task<ActionResult<Facility>> CreateFacilityAndLocation([FromForm] FacilityLocationCreateWithImageDto facilityDto)
 		{
-			if (!_currentUserService.HasValidTenant)
+			if (!_currentUserService.IsSuperAdmin && !_currentUserService.HasValidTenant)
 				return Forbid();
 
 			var country = await _context.Country.FindAsync(facilityDto.CountryId);
@@ -330,7 +346,7 @@ namespace SZRST.API.Controllers
 		[HttpPut("{id}")]
 		public async Task<IActionResult> UpdateFacility(int id, [FromForm] FacilityLocationCreateWithImageDto facilityDto)
 		{
-			var facility = await _context.Facility.FindAsync(id);
+			var facility = await _context.Facility.IgnoreQueryFilters().FirstOrDefaultAsync(f => f.Id == id);
 			if (facility == null)
 			{
 				return NotFound();
@@ -460,7 +476,7 @@ namespace SZRST.API.Controllers
 		[HttpDelete("{id}")]
 		public async Task<IActionResult> DeleteFacility(int id)
 		{
-			var facility = await _context.Facility.FindAsync(id);
+			var facility = await _context.Facility.IgnoreQueryFilters().FirstOrDefaultAsync(f => f.Id == id);
 			if (facility == null)
 			{
 				return NotFound();
@@ -488,6 +504,7 @@ namespace SZRST.API.Controllers
 				Name = facility.Name,
 				ImageUrl = facility.ImageUrl,
 				TenantId = facility.TenantId,
+				TenantName = facility.Tenant?.Name,
 				FacilityType = facility.FacilityType == null ? null : new FacilityTypeSummary
 				{
 					Id = facility.FacilityType.Id,

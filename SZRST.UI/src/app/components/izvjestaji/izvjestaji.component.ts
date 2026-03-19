@@ -31,7 +31,6 @@ export class IzvjestajiComponent implements OnInit {
 
   ngOnInit(): void {
     this.checkPermissions();
-    this.loadReports();
 
     const currentUser = this.authService.currentUser();
     this.currentUserTenantId = currentUser?.tenantId || null;
@@ -39,6 +38,8 @@ export class IzvjestajiComponent implements OnInit {
     if (this.isSuperAdmin) {
       this.loadTenants();
     }
+
+    this.loadReports();
   }
 
   constructor(
@@ -111,7 +112,11 @@ export class IzvjestajiComponent implements OnInit {
     this.applyTenantFilter();
   }
 
-  getTenantName(tenantId: number): string {
+  getTenantName(tenantId: number | null): string {
+    if (tenantId === null) {
+      return '';
+    }
+
     const tenant = this.tenants.find(t => t.id === tenantId);
     return tenant ? tenant.name : `Organizacija ${tenantId}`;
   }
@@ -143,9 +148,13 @@ export class IzvjestajiComponent implements OnInit {
 
     console.log(dto);
 
-    this.reservationReportService.generateReport(dto).subscribe(() => {
+    this.reservationReportService.generateReport(dto).subscribe((response) => {
       this.closeModal();
       this.loadReports();
+
+      if (response?.reportId) {
+        this.openReport(response.reportId);
+      }
     });
   }
 
@@ -187,15 +196,22 @@ export class IzvjestajiComponent implements OnInit {
   }
 
   download(id: number, fileName: string) {
+    this.openReport(id, fileName);
+  }
+
+  private openReport(id: number, fileName?: string) {
     this.reservationReportService.downloadReport(id).subscribe(blob => {
       const url = window.URL.createObjectURL(blob);
+      const openedWindow = window.open(url, '_blank');
 
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      a.click();
+      if (!openedWindow && fileName) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.click();
+      }
 
-      window.URL.revokeObjectURL(url);
+      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
     });
   }
 

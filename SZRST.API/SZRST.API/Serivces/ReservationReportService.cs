@@ -23,12 +23,14 @@ namespace SZRST.Web.Serivces
         public async Task<int> GenerateReport(DateTime dateFrom, DateTime dateTo, int tenantId)
         {
             var reportData = await _context.Appointment
+                .IgnoreQueryFilters()
                 .Include(a => a.AppointmentType)
                 .Include(a => a.Facility)
                 .Include(a => a.Tenant)
                 .Where(a =>
                     a.AppointmentDateTime >= dateFrom &&
                     a.AppointmentDateTime <= dateTo &&
+                    !a.IsDeleted &&
                     a.TenantId == tenantId)
                 .GroupBy(a => new
                 {
@@ -73,6 +75,8 @@ namespace SZRST.Web.Serivces
         public async Task<List<ReservationReport>> GetReports()
         {
             return await _context.ReservationReport
+                .IgnoreQueryFilters()
+                .Where(x => !x.IsDeleted)
                 .OrderByDescending(x => x.CreatedAt)
                 .ToListAsync();
         }
@@ -80,6 +84,7 @@ namespace SZRST.Web.Serivces
         public async Task<List<ReservationReport>> GetReportsByTenantId(int tenantId)
         {
             return await _context.ReservationReport
+                .IgnoreQueryFilters()
                 .Where(x => x.TenantId == tenantId && !x.IsDeleted)
                 .OrderByDescending(x => x.CreatedAt)
                 .ToListAsync();
@@ -87,7 +92,9 @@ namespace SZRST.Web.Serivces
 
         public async Task<ReservationReport> GetReport(int id)
         {
-            return await _context.ReservationReport.FindAsync(id);
+            return await _context.ReservationReport
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
         }
 
         public async Task GenerateMonthlyReports()

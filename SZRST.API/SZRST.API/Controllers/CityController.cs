@@ -34,6 +34,12 @@ namespace SZRST.API.Controllers
 								 Name = c.Name,
 								 CountryId = c.Country.Id,
 								 CountryName = c.Country.Name,
+								 Country = new CityCountryDto
+								 {
+									 Id = c.Country.Id,
+									 Name = c.Country.Name,
+									 ShortName = c.Country.ShortName
+								 },
 								 IsDeleted = c.IsDeleted
 							 })
 							 .ToListAsync());
@@ -52,6 +58,12 @@ namespace SZRST.API.Controllers
 									 Name = c.Name,
 									 CountryId = c.Country.Id,
 									 CountryName = c.Country.Name,
+									 Country = new CityCountryDto
+									 {
+										 Id = c.Country.Id,
+										 Name = c.Country.Name,
+										 ShortName = c.Country.ShortName
+									 },
 									 IsDeleted = c.IsDeleted
 								 })
 								 .FirstOrDefaultAsync();
@@ -163,6 +175,14 @@ namespace SZRST.API.Controllers
 		public string Name { get; set; }
 		public int CountryId { get; set; }
 		public string CountryName { get; set; }
+		public CityCountryDto Country { get; set; }
 		public bool IsDeleted { get; set; }
+	}
+
+	public class CityCountryDto
+	{
+		public int Id { get; set; }
+		public string Name { get; set; }
+		public string ShortName { get; set; }
 	}
 }

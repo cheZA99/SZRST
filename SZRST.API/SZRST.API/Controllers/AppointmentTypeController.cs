@@ -36,9 +36,17 @@ namespace SZRST.API.Controllers
 		[HttpGet]
 		public async Task<ActionResult<IEnumerable<AppointmentTypeDto>>> GetAppointmentTypes()
 		{
-			var query = (_currentUserService.IsSuperAdmin || _currentUserService.IsKorisnik)
-				? _context.AppointmentType.IgnoreQueryFilters()
-				: _context.AppointmentType;
+			if (!_currentUserService.IsSuperAdmin &&
+			    !_currentUserService.IsKorisnik &&
+			    !_currentUserService.TenantId.HasValue)
+			{
+				return Forbid();
+			}
+
+			var query = _context.AppointmentType.IgnoreQueryFilters();
+
+			if (!_currentUserService.IsSuperAdmin && !_currentUserService.IsKorisnik)
+				query = query.Where(at => at.TenantId == _currentUserService.TenantId.Value);
 
 			var appointmentTypes = await query
 				.Include(at => at.Tenant)
@@ -68,12 +76,20 @@ namespace SZRST.API.Controllers
 		public async Task<ActionResult<AppointmentTypeDto>> GetAppointmentType(int id)
 		{
 			var appointmentType = await _context.AppointmentType
+				.IgnoreQueryFilters()
 				.Include(at => at.Tenant)
 				.Include(at => at.Currency)
 				.FirstOrDefaultAsync(at => at.Id == id && !at.IsDeleted);
 
 			if (appointmentType == null)
 				return NotFound();
+
+			if (!_currentUserService.IsSuperAdmin &&
+			    !_currentUserService.IsKorisnik &&
+			    !_currentUserService.CanAccessTenant(appointmentType.TenantId))
+			{
+				return Forbid();
+			}
 
 			var dto = new AppointmentTypeDto
 			{
@@ -101,9 +117,7 @@ namespace SZRST.API.Controllers
 			    _currentUserService.TenantId != tenantId)
 				return Forbid();
 
-			var query = (_currentUserService.IsSuperAdmin || _currentUserService.IsKorisnik)
-				? _context.AppointmentType.IgnoreQueryFilters()
-				: _context.AppointmentType;
+			var query = _context.AppointmentType.IgnoreQueryFilters();
 
 			var appointmentTypes = await query
 				.Include(at => at.Currency)
@@ -176,7 +190,7 @@ namespace SZRST.API.Controllers
 			if (!validationResult.IsValid)
 				return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
 
-			var appointmentType = await _context.AppointmentType.FindAsync(id);
+			var appointmentType = await _context.AppointmentType.IgnoreQueryFilters().FirstOrDefaultAsync(at => at.Id == id);
 			if (appointmentType == null || appointmentType.IsDeleted)
 				return NotFound();
 
@@ -214,7 +228,7 @@ namespace SZRST.API.Controllers
 		[HttpDelete("{id}")]
 		public async Task<IActionResult> DeleteAppointmentType(int id)
 		{
-			var appointmentType = await _context.AppointmentType.FindAsync(id);
+			var appointmentType = await _context.AppointmentType.IgnoreQueryFilters().FirstOrDefaultAsync(at => at.Id == id);
 			if (appointmentType == null)
 				return NotFound();
 
