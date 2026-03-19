@@ -9,12 +9,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using SZRST.API.Security;
 using SZRST.Domain.Constants;
 using SZRST.Domain.Entities;
 
 namespace SZRST.API.Controllers
 {
-	[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}, {Roles.Uposlenik}")]
+	[Authorize]
 	[Route("api/[controller]")]
 	[ApiController]
 	public class UserController :ControllerBase
@@ -40,10 +41,11 @@ namespace SZRST.API.Controllers
 		}
 
 		// GET: api/User
+		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}")]
 		[HttpGet]
 		public async Task<ActionResult<IEnumerable<UserListDto>>> GetUsers()
 		{
-			return await _userManager.Users
+			return Ok(await _userManager.Users
 				.Select(u => new UserListDto
 				{
 					Id = u.Id,
@@ -55,11 +57,12 @@ namespace SZRST.API.Controllers
 					FirstName = u.FirstName,
 					LastName = u.LastName
 				})
-				.Where(x => x.TenantId == _currentUserService.TenantId)
-				.ToListAsync();
+				.Where(x => _currentUserService.IsSuperAdmin || x.TenantId == _currentUserService.TenantId)
+				.ToListAsync());
 		}
 
 		// GET: api/User/{id}
+		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}")]
 		[HttpGet("{id}")]
 		public async Task<ActionResult<UserListDto>> GetUser(int id)
 		{
@@ -81,19 +84,30 @@ namespace SZRST.API.Controllers
 			if (user == null)
 				return NotFound();
 
-			return user;
+			if (!_currentUserService.CanAccessTenant(user.TenantId))
+				return Forbid();
+
+			return Ok(user);
 		}
 
 		// POST: api/User
+		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}")]
 		[HttpPost]
 		public async Task<IActionResult> CreateUser([FromBody] UserCreateDto dto)
 		{
+			if (!_currentUserService.HasValidTenant)
+				return Forbid();
+
+			var tenantId = _currentUserService.IsSuperAdmin ? dto.TenantId : _currentUserService.TenantId;
+			if (!_currentUserService.IsSuperAdmin && tenantId != _currentUserService.TenantId)
+				return Forbid();
+
 			var user = new User
 			{
 				UserName = dto.UserName,
 				Email = dto.Email,
 				Active = dto.Active,
-				TenantId = dto.TenantId,
+				TenantId = tenantId,
 				FirstName = dto.FirstName,
 				LastName = dto.LastName,
 				DateCreated = DateTime.UtcNow
@@ -108,6 +122,7 @@ namespace SZRST.API.Controllers
 		}
 
 		// PUT: api/User/{id}
+		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}")]
 		[HttpPut("{id}")]
 		public async Task<IActionResult> UpdateUser(int id, [FromBody] UserUpdateDto dto)
 		{
@@ -115,11 +130,17 @@ namespace SZRST.API.Controllers
 			if (user == null)
 				return NotFound();
 
+			if (!_currentUserService.CanAccessUser(user))
+				return Forbid();
+
 			user.UserName = dto.UserName;
 			user.Email = dto.Email;
 			user.Active = dto.Active;
 			user.IsDeleted = dto.IsDeleted;
-			user.TenantId = dto.TenantId;
+			if (_currentUserService.IsSuperAdmin)
+			{
+				user.TenantId = dto.TenantId;
+			}
 			user.FirstName = dto.FirstName;
 			user.LastName = dto.LastName;
 			user.DateModified = DateTime.UtcNow;
@@ -132,12 +153,16 @@ namespace SZRST.API.Controllers
 		}
 
 		// DELETE: api/User/{id} (soft delete)
+		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}")]
 		[HttpDelete("{id}")]
 		public async Task<IActionResult> DeleteUser(int id)
 		{
 			var user = await _userManager.FindByIdAsync(id.ToString());
 			if (user == null)
 				return NotFound();
+
+			if (!_currentUserService.CanAccessUser(user))
+				return Forbid();
 
 			user.IsDeleted = true;
 			user.Active = false;
@@ -147,13 +172,14 @@ namespace SZRST.API.Controllers
 			return NoContent();
 		}
 
+		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin},{Roles.Uposlenik}")]
 		[HttpGet("for-appointments")]
 		public async Task<ActionResult<IEnumerable<UserListDto>>> GetUsersForAppointments()
 		{
 			var tenantId = _currentUserService.TenantId;
 
 			var users = await _userManager.Users
-				.Where(u => u.TenantId == tenantId || u.TenantId == null)
+				.Where(u => _currentUserService.IsSuperAdmin || u.TenantId == tenantId)
 				.Select(u => new UserListDto
 				{
 					Id = u.Id,
@@ -171,6 +197,7 @@ namespace SZRST.API.Controllers
 		}
 
 		// GET: api/User/employees
+		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}")]
 		[HttpGet("employees")]
 		public async Task<ActionResult<PagedResult<UserListDto>>> GetEmployees([FromQuery] EmployeeFilterDto filter)
 		{
@@ -244,6 +271,7 @@ namespace SZRST.API.Controllers
 		}
 
 		// POST: api/User/create-employee
+		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}")]
 		[HttpPost("create-employee")]
 		public async Task<IActionResult> CreateEmployee([FromBody] EmployeeCreateDto dto)
 		{
@@ -300,6 +328,7 @@ namespace SZRST.API.Controllers
 		}
 
 		// PUT: api/User/update-employee/{id}
+		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}")]
 		[HttpPut("update-employee/{id}")]
 		public async Task<IActionResult> UpdateEmployee(int id, [FromBody] EmployeeUpdateDto dto)
 		{
@@ -363,6 +392,7 @@ namespace SZRST.API.Controllers
 			return NoContent();
 		}
 
+		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin},{Roles.Uposlenik},{Roles.Korisnik}")]
 		[HttpGet("profile")]
 		public async Task<ActionResult<UserProfileDto>> GetCurrentUserProfile()
 		{
@@ -392,6 +422,7 @@ namespace SZRST.API.Controllers
 			};
 		}
 
+		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin},{Roles.Uposlenik},{Roles.Korisnik}")]
 		[HttpPut("profile")]
 		public async Task<IActionResult> UpdateCurrentUserProfile([FromBody] UserProfileUpdateDto dto)
 		{
@@ -463,6 +494,7 @@ namespace SZRST.API.Controllers
 			return NoContent();
 		}
 
+		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin},{Roles.Uposlenik},{Roles.Korisnik}")]
 		[HttpPost("profile/upload-image")]
 		public async Task<IActionResult> UploadProfileImage([FromBody] ImageUploadDto dto)
 		{

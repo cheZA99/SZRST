@@ -6,40 +6,58 @@ using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using SZRST.API.Security;
 using SZRST.Domain.Constants;
 
 namespace SZRST.API.Controllers
 {
-	[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}, {Roles.Uposlenik}")]
 	[Authorize]
 	[Route("api/[controller]")]
 	[ApiController]
 	public class ReviewController :ControllerBase
 	{
 		private readonly SZRSTContext _context;
+		private readonly ICurrentUserService _currentUserService;
 
-		public ReviewController(SZRSTContext context)
+		public ReviewController(SZRSTContext context, ICurrentUserService currentUserService)
 		{
 			_context = context;
+			_currentUserService = currentUserService;
 		}
 
 		// GET: api/Review
+		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin},{Roles.Uposlenik}")]
 		[HttpGet]
-		public async Task<ActionResult<IEnumerable<Review>>> GetReviews()
+		public async Task<ActionResult<IEnumerable<ReviewDto>>> GetReviews()
 		{
-			return await _context.Review
-							 .Include(r => r.User)        // Include related User
-							 .Include(r => r.Facility)    // Include related Facility
+			var reviews = await _context.Review
+							 .Include(r => r.User)
+							 .Include(r => r.Facility)
+							 .Where(r => !r.IsDeleted)
+							 .Select(r => new ReviewDto
+							 {
+								 Id = r.Id,
+								 Rating = r.Rating,
+								 Description = r.Description,
+								 UserId = r.User.Id,
+								 UserName = r.User.UserName,
+								 FacilityId = r.Facility.Id,
+								 FacilityName = r.Facility.Name,
+								 TenantId = r.TenantId
+							 })
 							 .ToListAsync();
+
+			return Ok(reviews);
 		}
 
 		// GET: api/Review/{id}
+		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin},{Roles.Uposlenik}")]
 		[HttpGet("{id}")]
-		public async Task<ActionResult<Review>> GetReview(int id)
+		public async Task<ActionResult<ReviewDto>> GetReview(int id)
 		{
 			var review = await _context.Review
-								  .Include(r => r.User)        // Include related User
-								  .Include(r => r.Facility)    // Include related Facility
+								  .Include(r => r.User)
+								  .Include(r => r.Facility)
 								  .FirstOrDefaultAsync(r => r.Id == id);
 
 			if (review == null)
@@ -47,14 +65,19 @@ namespace SZRST.API.Controllers
 				return NotFound();
 			}
 
-			return review;
+			return Ok(MapReview(review));
 		}
 
 		// POST: api/Review
+		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin},{Roles.Uposlenik},{Roles.Korisnik}")]
 		[HttpPost]
-		public async Task<ActionResult<Review>> CreateReview([FromBody] ReviewCreateDto reviewDto)
+		public async Task<ActionResult<ReviewDto>> CreateReview([FromBody] ReviewCreateDto reviewDto)
 		{
-			var user = await _context.Users.FindAsync(reviewDto.UserId);
+			if (!_currentUserService.HasValidTenant)
+				return Forbid();
+
+			var userId = _currentUserService.IsSuperAdmin ? reviewDto.UserId : _currentUserService.UserId;
+			var user = await _context.Users.FindAsync(userId);
 			if (user == null)
 			{
 				return BadRequest("Invalid UserId");
@@ -66,22 +89,31 @@ namespace SZRST.API.Controllers
 				return BadRequest("Invalid FacilityId");
 			}
 
+			if (!_currentUserService.CanAccessTenant(user.TenantId) ||
+			    !_currentUserService.CanAccessTenant(facility.TenantId) ||
+			    user.TenantId != facility.TenantId)
+			{
+				return Forbid();
+			}
+
 			var review = new Review
 			{
 				Rating = reviewDto.Rating,
 				Description = reviewDto.Description,
 				User = user,
 				Facility = facility,
-				IsDeleted = false
+				IsDeleted = false,
+				TenantId = facility.TenantId
 			};
 
 			_context.Review.Add(review);
 			await _context.SaveChangesAsync();
 
-			return CreatedAtAction(nameof(GetReview), new { id = review.Id }, review);
+			return CreatedAtAction(nameof(GetReview), new { id = review.Id }, MapReview(review));
 		}
 
 		// PUT: api/Review/{id}
+		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin},{Roles.Uposlenik},{Roles.Korisnik}")]
 		[HttpPut("{id}")]
 		public async Task<IActionResult> UpdateReview(int id, [FromBody] ReviewCreateDto reviewDto)
 		{
@@ -91,7 +123,11 @@ namespace SZRST.API.Controllers
 				return NotFound();
 			}
 
-			var user = await _context.Users.FindAsync(reviewDto.UserId);
+			if (!_currentUserService.CanAccessTenant(review.TenantId))
+				return Forbid();
+
+			var userId = _currentUserService.IsSuperAdmin ? reviewDto.UserId : _currentUserService.UserId;
+			var user = await _context.Users.FindAsync(userId);
 			if (user == null)
 			{
 				return BadRequest("Invalid UserId");
@@ -103,10 +139,18 @@ namespace SZRST.API.Controllers
 				return BadRequest("Invalid FacilityId");
 			}
 
+			if (!_currentUserService.CanAccessTenant(user.TenantId) ||
+			    !_currentUserService.CanAccessTenant(facility.TenantId) ||
+			    user.TenantId != facility.TenantId)
+			{
+				return Forbid();
+			}
+
 			review.Rating = reviewDto.Rating;
 			review.Description = reviewDto.Description;
 			review.User = user;
 			review.Facility = facility;
+			review.TenantId = facility.TenantId;
 
 			_context.Entry(review).State = EntityState.Modified;
 
@@ -130,6 +174,7 @@ namespace SZRST.API.Controllers
 		}
 
 		// DELETE: api/Review/{id}
+		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin},{Roles.Uposlenik},{Roles.Korisnik}")]
 		[HttpDelete("{id}")]
 		public async Task<IActionResult> DeleteReview(int id)
 		{
@@ -139,7 +184,10 @@ namespace SZRST.API.Controllers
 				return NotFound();
 			}
 
-			_context.Review.Remove(review);
+			if (!_currentUserService.CanAccessTenant(review.TenantId))
+				return Forbid();
+
+			review.IsDeleted = true;
 			await _context.SaveChangesAsync();
 
 			return NoContent();
@@ -149,6 +197,33 @@ namespace SZRST.API.Controllers
 		{
 			return _context.Review.Any(e => e.Id == id);
 		}
+
+		private static ReviewDto MapReview(Review review)
+		{
+			return new ReviewDto
+			{
+				Id = review.Id,
+				Rating = review.Rating,
+				Description = review.Description,
+				UserId = review.User?.Id ?? 0,
+				UserName = review.User?.UserName,
+				FacilityId = review.Facility?.Id ?? 0,
+				FacilityName = review.Facility?.Name,
+				TenantId = review.TenantId
+			};
+		}
+	}
+
+	public class ReviewDto
+	{
+		public int Id { get; set; }
+		public int Rating { get; set; }
+		public string Description { get; set; }
+		public int UserId { get; set; }
+		public string UserName { get; set; }
+		public int FacilityId { get; set; }
+		public string FacilityName { get; set; }
+		public int TenantId { get; set; }
 	}
 
 	public class ReviewCreateDto

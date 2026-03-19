@@ -119,9 +119,13 @@ namespace Application.Services
 	   new Claim(JwtRegisteredClaimNames.Email, user.Email),
 	   new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
 	   new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-	   new Claim(ClaimTypes.Name, user.UserName),
-	   new Claim("tenantId", user.TenantId?.ToString() ?? "")
+	   new Claim(ClaimTypes.Name, user.UserName)
     };
+
+			if (user.TenantId.HasValue && user.TenantId.Value > 0)
+			{
+				claims.Add(new Claim("tenantId", user.TenantId.Value.ToString()));
+			}
 
 			foreach (var role in roles)
 			{
@@ -159,6 +163,16 @@ namespace Application.Services
 				{
 					IsSuccess = false,
 					Message = "Invalid email or password"
+				};
+			}
+
+			var roles = await _userManager.GetRolesAsync(user);
+			if (RequiresTenantAssignment(user, roles))
+			{
+				return new AuthResponseDto
+				{
+					IsSuccess = false,
+					Message = "Korisnik nema validnu organizaciju i pristup je odbijen."
 				};
 			}
 
@@ -326,6 +340,10 @@ namespace Application.Services
 			if (user == null)
 				return null;
 
+			var roles = await _userManager.GetRolesAsync(user);
+			if (RequiresTenantAssignment(user, roles))
+				return null;
+
 			var newRefreshToken = new RefreshToken
 			{
 				Token = GenerateRefreshToken(),
@@ -346,6 +364,12 @@ namespace Application.Services
 				AccessToken = newAccessToken,
 				RefreshToken = newRefreshToken.Token
 			};
+		}
+
+		private static bool RequiresTenantAssignment(User user, IList<string> roles)
+		{
+			return !roles.Contains(Roles.SuperAdmin) &&
+			       (!user.TenantId.HasValue || user.TenantId.Value <= 0);
 		}
 	}
 

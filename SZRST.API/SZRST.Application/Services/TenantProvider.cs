@@ -12,11 +12,9 @@ namespace Application.Services
 		public int TenantId { get; }
 		public bool IsSuperAdminOrUser { get; }
 
-		// Role koje mogu vidjeti sve bez tenant filtera
 		private static readonly HashSet<string> UnrestrictedRoles = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
 	   {
-		  "SuperAdmin",
-		  "Korisnik"
+		  "SuperAdmin"
 	   };
 
 		public TenantProvider(IHttpContextAccessor httpContextAccessor)
@@ -31,17 +29,17 @@ namespace Application.Services
 				return;
 			}
 
-			// Provjeri da li korisnik ima jednu od "neograničenih" rola
-			var roleClaim = httpContext.User.Claims
-			    .FirstOrDefault(x => x.Type == ClaimTypes.Role);
+			IsSuperAdminOrUser = httpContext.User.Claims
+			    .Where(x => x.Type == ClaimTypes.Role)
+			    .Select(x => x.Value)
+			    .Any(UnrestrictedRoles.Contains);
 
-			IsSuperAdminOrUser = roleClaim != null && UnrestrictedRoles.Contains(roleClaim.Value);
-
-			// Dohvati TenantId
 			var tenantClaim = httpContext.User.Claims
 			    .FirstOrDefault(x => x.Type == "tenantId");
 
-			if (tenantClaim == null || !int.TryParse(tenantClaim.Value, out int tenantId))
+			if (tenantClaim == null ||
+			    !int.TryParse(tenantClaim.Value, out int tenantId) ||
+			    tenantId <= 0)
 			{
 				TenantId = 0;
 				return;

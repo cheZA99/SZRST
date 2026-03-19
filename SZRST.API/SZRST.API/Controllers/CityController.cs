@@ -10,8 +10,7 @@ using SZRST.Domain.Constants;
 
 namespace SZRST.API.Controllers
 {
-	[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}, {Roles.Uposlenik}")]
-	[Authorize]
+	[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin},{Roles.Uposlenik}")]
 	[Route("api/[controller]")]
 	[ApiController]
 	public class CityController :ControllerBase
@@ -25,19 +24,37 @@ namespace SZRST.API.Controllers
 
 		// GET: api/City
 		[HttpGet]
-		public async Task<ActionResult<IEnumerable<City>>> GetCities()
+		public async Task<ActionResult<IEnumerable<CityDto>>> GetCities()
 		{
-			return await _context.City
+			return Ok(await _context.City
 							 .Include(c => c.Country)
-							 .ToListAsync();
+							 .Select(c => new CityDto
+							 {
+								 Id = c.Id,
+								 Name = c.Name,
+								 CountryId = c.Country.Id,
+								 CountryName = c.Country.Name,
+								 IsDeleted = c.IsDeleted
+							 })
+							 .ToListAsync());
 		}
 
 		// GET: api/City/{id}
 		[HttpGet("{id}")]
-		public async Task<ActionResult<City>> GetCity(int id)
+		public async Task<ActionResult<CityDto>> GetCity(int id)
 		{
 			var city = await _context.City
-								 .FirstOrDefaultAsync(c => c.Id == id);
+								 .Include(c => c.Country)
+								 .Where(c => c.Id == id)
+								 .Select(c => new CityDto
+								 {
+									 Id = c.Id,
+									 Name = c.Name,
+									 CountryId = c.Country.Id,
+									 CountryName = c.Country.Name,
+									 IsDeleted = c.IsDeleted
+								 })
+								 .FirstOrDefaultAsync();
 
 			if (city == null)
 			{
@@ -137,6 +154,15 @@ namespace SZRST.API.Controllers
 	{
 		public string Name { get; set; }
 		public int CountryId { get; set; }
+		public bool IsDeleted { get; set; }
+	}
+
+	public class CityDto
+	{
+		public int Id { get; set; }
+		public string Name { get; set; }
+		public int CountryId { get; set; }
+		public string CountryName { get; set; }
 		public bool IsDeleted { get; set; }
 	}
 }

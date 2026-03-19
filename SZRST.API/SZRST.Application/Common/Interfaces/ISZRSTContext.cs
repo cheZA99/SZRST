@@ -1,12 +1,12 @@
-﻿using System.Threading.Tasks;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using Domain.Entities;
 
 namespace Application.Common.Interfaces
 {
-    public interface ISZRSTContext 
+    public interface ISZRSTContext
     {
-        Task<int> SaveChangesAsync();
+        Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
         DbSet<TDb> Set<TDb>() where TDb : class;
     }
 }

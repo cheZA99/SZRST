@@ -66,7 +66,7 @@ export class DashboardComponent implements OnInit {
     const currentUser = this.authService.currentUser();
     this.currentUserTenantId = currentUser?.tenantId || null;
     
-    if ((this.isAdmin || this.isUposlenik) && this.currentUserTenantId) {
+    if ((this.isAdmin || this.isUposlenik || this.isKorisnik) && this.currentUserTenantId) {
       this.loadTenantName();
     }
   }
@@ -92,9 +92,9 @@ export class DashboardComponent implements OnInit {
       next: (facilitiesData) => {
         this.facilities = facilitiesData.items;
 
-        if (this.isSuperAdmin || this.isKorisnik) {
+        if (this.isSuperAdmin) {
           this.loadTenants();
-        } else if (this.isAdmin || this.isUposlenik) {
+        } else if (this.isAdmin || this.isUposlenik || this.isKorisnik) {
           this.filteredFacilities = facilitiesData.items.filter(
             (f) => f.tenantId === this.currentUserTenantId
           );
@@ -187,13 +187,13 @@ openFacilityCalendar(facility: any): void {
   let tenantIdForFacility = facility.tenantId;
   let tenantNameForFacility = '';
   
-  if (this.isSuperAdmin || this.isKorisnik) {
+  if (this.isSuperAdmin) {
     const tenant = this.tenants.find(t => t.id === facility.tenantId);
     if (tenant) {
       tenantIdForFacility = tenant.id;
       tenantNameForFacility = tenant.name;
     }
-  } else if (this.isAdmin || this.isUposlenik) {
+  } else if (this.isAdmin || this.isUposlenik || this.isKorisnik) {
     tenantIdForFacility = this.currentUserTenantId;
     tenantNameForFacility = this.currentUserTenantName;
   }
@@ -218,11 +218,11 @@ openFacilityCalendar(facility: any): void {
   }
 
   showOrganizations(): boolean {
-    return this.isSuperAdmin || this.isKorisnik;
+    return this.isSuperAdmin;
   }
 
   showFacilities(): boolean {
-    return this.isAdmin || this.isUposlenik;
+    return this.isAdmin || this.isUposlenik || this.isKorisnik;
   }
 
   getWelcomeMessage(): string {

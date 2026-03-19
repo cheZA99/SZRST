@@ -16,7 +16,6 @@ using SZRST.Web.Serivces;
 namespace SZRST.Web.Controllers
 {
     [Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}")]
-    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class ReservationReportController : ControllerBase

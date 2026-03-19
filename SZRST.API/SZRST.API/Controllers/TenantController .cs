@@ -15,7 +15,6 @@ using SZRST.Domain.Entities;
 namespace SZRST.API.Controllers
 {
 	[Authorize(Roles = Roles.SuperAdmin)]
-	[Authorize]
 	[Route("api/[controller]")]
 	[ApiController]
 	public class TenantController :ControllerBase
@@ -38,7 +37,6 @@ namespace SZRST.API.Controllers
 		}
 
 		// GET: api/tenant
-		[AllowAnonymous]
 		[HttpGet]
 		public async Task<ActionResult<IEnumerable<TenantDto>>> GetAllTenants()
 		{

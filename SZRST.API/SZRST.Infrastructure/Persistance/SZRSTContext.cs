@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using SZRST.Domain.Entities;
 using SZRST.Infrastructure.Configurations;
@@ -74,7 +75,7 @@ namespace Infrastructure.Persistance
 			}
 		}
 
-		public Task<int> SaveChangesAsync()
+		public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
 		{
 			ModifyTimestamps();
 
@@ -88,7 +89,7 @@ namespace Infrastructure.Persistance
 				//	    : _tenantProvider.TenantId;
 				//}
 			}
-			return base.SaveChangesAsync();
+			return base.SaveChangesAsync(cancellationToken);
 		}
 
 		private void ModifyTimestamps()
@@ -114,7 +115,9 @@ namespace Infrastructure.Persistance
     where TEntity : class, ITenantEntity
 		{
 			builder.Entity<TEntity>()
-			    .HasQueryFilter(e => _tenantProvider.TenantId == 0 || e.TenantId == _tenantProvider.TenantId);
+			    .HasQueryFilter(e =>
+					_tenantProvider.IsSuperAdminOrUser ||
+					(_tenantProvider.TenantId > 0 && e.TenantId == _tenantProvider.TenantId));
 		}
 
 		private void SetConditionalTenantFilter<TEntity>(ModelBuilder builder)
@@ -123,8 +126,7 @@ namespace Infrastructure.Persistance
 			builder.Entity<TEntity>()
 			    .HasQueryFilter(e =>
 				   _tenantProvider.IsSuperAdminOrUser ||
-				   _tenantProvider.TenantId == 0 ||
-				   e.TenantId == _tenantProvider.TenantId);
+				   (_tenantProvider.TenantId > 0 && e.TenantId == _tenantProvider.TenantId));
 		}
 
 		public override DbSet<TDb> Set<TDb>() where TDb : class
