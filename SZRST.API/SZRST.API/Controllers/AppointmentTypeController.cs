@@ -36,7 +36,11 @@ namespace SZRST.API.Controllers
 		[HttpGet]
 		public async Task<ActionResult<IEnumerable<AppointmentTypeDto>>> GetAppointmentTypes()
 		{
-			var appointmentTypes = await _context.AppointmentType
+			var query = (_currentUserService.IsSuperAdmin || _currentUserService.IsKorisnik)
+				? _context.AppointmentType.IgnoreQueryFilters()
+				: _context.AppointmentType;
+
+			var appointmentTypes = await query
 				.Include(at => at.Tenant)
 				.Include(at => at.Currency)
 				.Where(at => !at.IsDeleted)
@@ -92,10 +96,16 @@ namespace SZRST.API.Controllers
 		[HttpGet("by-tenant/{tenantId}")]
 		public async Task<ActionResult<IEnumerable<AppointmentTypeDto>>> GetAppointmentTypesByTenant(int tenantId)
 		{
-			if (!_currentUserService.IsSuperAdmin && _currentUserService.TenantId != tenantId)
+			if (!_currentUserService.IsSuperAdmin &&
+			    !_currentUserService.IsKorisnik &&
+			    _currentUserService.TenantId != tenantId)
 				return Forbid();
 
-			var appointmentTypes = await _context.AppointmentType
+			var query = (_currentUserService.IsSuperAdmin || _currentUserService.IsKorisnik)
+				? _context.AppointmentType.IgnoreQueryFilters()
+				: _context.AppointmentType;
+
+			var appointmentTypes = await query
 				.Include(at => at.Currency)
 				.Where(at => at.TenantId == tenantId && !at.IsDeleted)
 				.ToListAsync();

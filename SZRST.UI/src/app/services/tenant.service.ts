@@ -12,7 +12,7 @@ export interface Tenant {
   providedIn: 'root',
 })
 export class TenantService {
-  private baseUrl = `${environment.apiUrl}/api/Tenant/`;
+  private baseUrl = `${environment.apiUrl}/api/Tenant`;
 
   constructor(private http: HttpClient) {}
 

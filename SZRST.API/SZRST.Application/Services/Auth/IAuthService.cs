@@ -369,6 +369,7 @@ namespace Application.Services
 		private static bool RequiresTenantAssignment(User user, IList<string> roles)
 		{
 			return !roles.Contains(Roles.SuperAdmin) &&
+			       !roles.Contains(Roles.Korisnik) &&
 			       (!user.TenantId.HasValue || user.TenantId.Value <= 0);
 		}
 	}

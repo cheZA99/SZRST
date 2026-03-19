@@ -99,7 +99,9 @@ namespace SZRST.API.Controllers
                 : await _userManager.GetRolesAsync(currentUser);
 
 
-            IQueryable<Facility> query = _context.Facility
+            var unrestrictedRead = currentUserRoles.Contains(Roles.SuperAdmin) || currentUserRoles.Contains(Roles.Korisnik);
+
+            IQueryable<Facility> query = (unrestrictedRead ? _context.Facility.IgnoreQueryFilters() : _context.Facility)
                 .Include(f => f.FacilityType)
                 .Include(f => f.Location)
                     .ThenInclude(f => f.City)
@@ -127,7 +129,7 @@ namespace SZRST.API.Controllers
             if (filter.CityId.HasValue)
                 query = query.Where(u => u.Location.City.Id == filter.CityId.Value);
 
-            if (currentUserRoles.Contains(Roles.SuperAdmin) && filter.TenantId.HasValue)
+            if ((currentUserRoles.Contains(Roles.SuperAdmin) || currentUserRoles.Contains(Roles.Korisnik)) && filter.TenantId.HasValue)
                 query = query.Where(u => u.TenantId == filter.TenantId.Value);
 
             query = filter.SortColumn switch
@@ -178,7 +180,11 @@ namespace SZRST.API.Controllers
 		[HttpGet("{id}")]
 		public async Task<ActionResult<FacilityResponse>> GetFacility(int id)
 		{
-			var facility = await _context.Facility
+			var query = (_currentUserService.IsSuperAdmin || _currentUserService.IsKorisnik)
+				? _context.Facility.IgnoreQueryFilters()
+				: _context.Facility;
+
+			var facility = await query
 								    .Include(f => f.FacilityType)  // Include related FacilityType
 								    .Include(f => f.Location)      // Include related Location
 								    .ThenInclude(f => f.City)

@@ -331,7 +331,7 @@ applyQueryParams(): void {
       this.isUposlenik = this.authService.hasRole('Uposlenik');
 
       this.showTenantFilter = this.isKorisnik || this.isSuperAdmin;
-      this.canSelectUserInModal = this.isAdmin || this.isUposlenik;
+      this.canSelectUserInModal = this.isAdmin || this.isUposlenik || this.isSuperAdmin;
 
       if ((this.isAdmin || this.isUposlenik) && decoded.tenantId) {
         this.tenantIdFromToken = +decoded.tenantId;
@@ -697,7 +697,7 @@ updateUrlWithSelectedFilters(): void {
               isFree: appointmentData['isFree'],
               isClosed: appointmentData['isClosed'],
             },
-            facilities: data.facilities,
+            facilities: data.facilities.items,
             appointmentTypes: data.appointmentTypes,
             users: data.users || [],
             canSelectUser: this.canSelectUserInModal,

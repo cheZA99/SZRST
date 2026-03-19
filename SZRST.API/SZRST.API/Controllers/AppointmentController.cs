@@ -79,7 +79,7 @@ namespace SZRST.API.Controllers
 		}
 
 		// POST: api/Appointment
-		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin},{Roles.Uposlenik}")]
+		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin},{Roles.Uposlenik},{Roles.Korisnik}")]
 		[HttpPost]
 		public async Task<ActionResult<AppointmentDto>> CreateAppointment([FromBody] AppointmentCreateDto appointmentDto)
 		{
@@ -87,24 +87,36 @@ namespace SZRST.API.Controllers
 			if (!validationResult.IsValid)
 				return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
 
-			if (!_currentUserService.HasValidTenant)
+			if (!_currentUserService.IsKorisnik && !_currentUserService.HasValidTenant)
 				return Forbid();
 
-			var facility = await _context.Facility.FindAsync(appointmentDto.FacilityId);
+			var facilityQuery = (_currentUserService.IsSuperAdmin || _currentUserService.IsKorisnik)
+				? _context.Facility.IgnoreQueryFilters()
+				: _context.Facility;
+
+			var appointmentTypeQuery = (_currentUserService.IsSuperAdmin || _currentUserService.IsKorisnik)
+				? _context.AppointmentType.IgnoreQueryFilters()
+				: _context.AppointmentType;
+
+			var facility = await facilityQuery.FirstOrDefaultAsync(f => f.Id == appointmentDto.FacilityId);
 			if (facility == null)
 				return BadRequest("Invalid FacilityId");
 
-			var appointmentType = await _context.AppointmentType.FindAsync(appointmentDto.AppointmentTypeId);
+			var appointmentType = await appointmentTypeQuery.FirstOrDefaultAsync(at => at.Id == appointmentDto.AppointmentTypeId);
 			if (appointmentType == null)
 				return BadRequest("Invalid AppointmentTypeId");
 
+			if (facility.TenantId != appointmentType.TenantId)
+				return BadRequest("Facility i appointment type moraju pripadati istoj organizaciji.");
+
 			if (!_currentUserService.IsSuperAdmin &&
+			    !_currentUserService.IsKorisnik &&
 			    (facility.TenantId != _currentUserService.TenantId || appointmentType.TenantId != _currentUserService.TenantId))
 			{
 				return Forbid();
 			}
 
-			var resolvedTenantId = _currentUserService.IsSuperAdmin ? appointmentType.TenantId : _currentUserService.TenantId!.Value;
+			var resolvedTenantId = facility.TenantId;
 
 			var exists = await _context.Appointment.AnyAsync(a =>
 				a.Facility.Id == appointmentDto.FacilityId &&
@@ -140,7 +152,7 @@ namespace SZRST.API.Controllers
 		}
 
 		// PUT: api/Appointment/{id}
-		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin},{Roles.Uposlenik}")]
+		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin},{Roles.Uposlenik},{Roles.Korisnik}")]
 		[HttpPut("{id}")]
 		public async Task<IActionResult> UpdateAppointment(int id, [FromBody] AppointmentCreateDto appointmentDto)
 		{
@@ -148,25 +160,44 @@ namespace SZRST.API.Controllers
 			if (!validationResult.IsValid)
 				return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
 
-			if (!_currentUserService.HasValidTenant)
+			if (!_currentUserService.IsKorisnik && !_currentUserService.HasValidTenant)
 				return Forbid();
 
-			var appointment = await _context.Appointment.FindAsync(id);
+			var appointmentQuery = (_currentUserService.IsSuperAdmin || _currentUserService.IsKorisnik)
+				? _context.Appointment.IgnoreQueryFilters()
+				: _context.Appointment;
+
+			var appointment = await appointmentQuery.FirstOrDefaultAsync(a => a.Id == id);
 			if (appointment == null)
 				return NotFound();
 
 			if (appointment.IsClosed)
 				return BadRequest("Closed appointment cannot be edited.");
 
-			var facility = await _context.Facility.FindAsync(appointmentDto.FacilityId);
+			var facilityQuery = (_currentUserService.IsSuperAdmin || _currentUserService.IsKorisnik)
+				? _context.Facility.IgnoreQueryFilters()
+				: _context.Facility;
+
+			var appointmentTypeQuery = (_currentUserService.IsSuperAdmin || _currentUserService.IsKorisnik)
+				? _context.AppointmentType.IgnoreQueryFilters()
+				: _context.AppointmentType;
+
+			var facility = await facilityQuery.FirstOrDefaultAsync(f => f.Id == appointmentDto.FacilityId);
 			if (facility == null)
 				return BadRequest("Invalid FacilityId");
 
-			var appointmentType = await _context.AppointmentType.FindAsync(appointmentDto.AppointmentTypeId);
+			var appointmentType = await appointmentTypeQuery.FirstOrDefaultAsync(at => at.Id == appointmentDto.AppointmentTypeId);
 			if (appointmentType == null)
 				return BadRequest("Invalid AppointmentTypeId");
 
+			if (facility.TenantId != appointmentType.TenantId)
+				return BadRequest("Facility i appointment type moraju pripadati istoj organizaciji.");
+
+			if (_currentUserService.IsKorisnik && appointment.UserId != _currentUserService.UserId)
+				return Forbid();
+
 			if (!_currentUserService.IsSuperAdmin &&
+			    !_currentUserService.IsKorisnik &&
 			    (appointment.TenantId != _currentUserService.TenantId ||
 			     facility.TenantId != _currentUserService.TenantId ||
 			     appointmentType.TenantId != _currentUserService.TenantId))
@@ -174,7 +205,7 @@ namespace SZRST.API.Controllers
 				return Forbid();
 			}
 
-			var resolvedTenantId = _currentUserService.IsSuperAdmin ? appointmentType.TenantId : _currentUserService.TenantId!.Value;
+			var resolvedTenantId = facility.TenantId;
 
 			var exists = await _context.Appointment.AnyAsync(a =>
 				a.Facility.Id == appointmentDto.FacilityId &&
@@ -214,15 +245,22 @@ namespace SZRST.API.Controllers
 		}
 
 		// DELETE: api/Appointment/{id}
-		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin},{Roles.Uposlenik}")]
+		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin},{Roles.Uposlenik},{Roles.Korisnik}")]
 		[HttpDelete("{id}")]
 		public async Task<IActionResult> DeleteAppointment(int id)
 		{
-			var appointment = await _context.Appointment.FindAsync(id);
+			var query = (_currentUserService.IsSuperAdmin || _currentUserService.IsKorisnik)
+				? _context.Appointment.IgnoreQueryFilters()
+				: _context.Appointment;
+
+			var appointment = await query.FirstOrDefaultAsync(a => a.Id == id);
 			if (appointment == null)
 				return NotFound();
 
-			if (!_currentUserService.CanAccessTenant(appointment.TenantId))
+			if (_currentUserService.IsKorisnik && appointment.UserId != _currentUserService.UserId)
+				return Forbid();
+
+			if (!_currentUserService.IsKorisnik && !_currentUserService.CanAccessTenant(appointment.TenantId))
 				return Forbid();
 
 			appointment.IsDeleted = true;
@@ -245,10 +283,17 @@ namespace SZRST.API.Controllers
 			int? facilityId,
 			int? tenantId)
 		{
-			if (!_currentUserService.IsSuperAdmin && !_currentUserService.HasValidTenant)
+			if (_currentUserService.IsKorisnik && !tenantId.HasValue && !facilityId.HasValue)
+				return BadRequest("TenantId ili facilityId su obavezni.");
+
+			if (!_currentUserService.IsSuperAdmin &&
+			    !_currentUserService.IsKorisnik &&
+			    !_currentUserService.HasValidTenant)
 				return Forbid();
 
-			var query = _context.Appointment
+			var query = ((_currentUserService.IsSuperAdmin || _currentUserService.IsKorisnik)
+				? _context.Appointment.IgnoreQueryFilters()
+				: _context.Appointment)
 				.Include(a => a.Facility)
 				.Include(a => a.AppointmentType)
 				.Where(a =>
@@ -259,7 +304,9 @@ namespace SZRST.API.Controllers
 			if (facilityId.HasValue)
 				query = query.Where(a => a.Facility.Id == facilityId);
 
-			var effectiveTenantId = _currentUserService.IsSuperAdmin ? tenantId : _currentUserService.TenantId;
+			var effectiveTenantId = (_currentUserService.IsSuperAdmin || _currentUserService.IsKorisnik)
+				? tenantId
+				: _currentUserService.TenantId;
 			if (effectiveTenantId.HasValue)
 				query = query.Where(a => a.TenantId == effectiveTenantId.Value);
 
@@ -318,6 +365,9 @@ namespace SZRST.API.Controllers
 
 		private async Task<int?> ResolveAppointmentUserIdAsync(int requestedUserId, int tenantId)
 		{
+			if (_currentUserService.IsKorisnik)
+				return _currentUserService.UserId;
+
 			if (requestedUserId <= 0)
 				return null;
 
@@ -325,7 +375,8 @@ namespace SZRST.API.Controllers
 			if (user == null)
 				return null;
 
-			return _currentUserService.CanAccessTenant(user.TenantId) && user.TenantId == tenantId
+			return user.TenantId == tenantId &&
+			       (_currentUserService.IsSuperAdmin || _currentUserService.CanAccessTenant(user.TenantId))
 				? user.Id
 				: null;
 		}

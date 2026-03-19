@@ -90,6 +90,11 @@ namespace SZRST.WebApi
 							return;
 						}
 
+						if (principal.IsInRole(Roles.Korisnik))
+						{
+							return;
+						}
+
 						var tenantClaim = principal.FindFirst("tenantId")?.Value;
 						if (!int.TryParse(tenantClaim, out var tenantId) || tenantId <= 0)
 						{

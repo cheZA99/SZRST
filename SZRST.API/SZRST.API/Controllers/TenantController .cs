@@ -14,29 +14,33 @@ using SZRST.Domain.Entities;
 
 namespace SZRST.API.Controllers
 {
-	[Authorize(Roles = Roles.SuperAdmin)]
+	[Authorize]
 	[Route("api/[controller]")]
 	[ApiController]
 	public class TenantController :ControllerBase
 	{
 		private readonly SZRSTContext _context;
 		private readonly UserManager<User> _userManager;
+		private readonly ICurrentUserService _currentUserService;
 		private readonly IValidator<CreateTenantWithAdminDto> _createValidator;
 		private readonly IValidator<UpdateTenantDto> _updateValidator;
 
 		public TenantController(
 			SZRSTContext context,
 			UserManager<User> userManager,
+			ICurrentUserService currentUserService,
 			IValidator<CreateTenantWithAdminDto> createValidator,
 			IValidator<UpdateTenantDto> updateValidator)
 		{
 			_context = context;
 			_userManager = userManager;
+			_currentUserService = currentUserService;
 			_createValidator = createValidator;
 			_updateValidator = updateValidator;
 		}
 
 		// GET: api/tenant
+		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Korisnik}")]
 		[HttpGet]
 		public async Task<ActionResult<IEnumerable<TenantDto>>> GetAllTenants()
 		{
@@ -53,9 +57,17 @@ namespace SZRST.API.Controllers
 		}
 
 		// GET: api/tenant/{id}
+		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin},{Roles.Uposlenik},{Roles.Korisnik}")]
 		[HttpGet("{id}")]
 		public async Task<ActionResult<TenantDto>> GetTenant(int id)
 		{
+			if (!_currentUserService.IsSuperAdmin &&
+			    !_currentUserService.IsKorisnik &&
+			    _currentUserService.TenantId != id)
+			{
+				return Forbid();
+			}
+
 			var tenant = await _context.Set<Tenant>()
 				.Where(t => t.Id == id)
 				.Select(t => new TenantDto
@@ -73,6 +85,7 @@ namespace SZRST.API.Controllers
 		}
 
 		// POST: api/tenant
+		[Authorize(Roles = Roles.SuperAdmin)]
 		[HttpPost]
 		public async Task<ActionResult<TenantCreationResponse>> CreateTenantWithAdmin([FromBody] CreateTenantWithAdminDto model)
 		{
@@ -161,6 +174,7 @@ namespace SZRST.API.Controllers
 		}
 
 		// PUT: api/tenant/{id}
+		[Authorize(Roles = Roles.SuperAdmin)]
 		[HttpPut("{id}")]
 		public async Task<ActionResult<TenantDto>> UpdateTenant(int id, [FromBody] UpdateTenantDto updateDto)
 		{
@@ -196,6 +210,7 @@ namespace SZRST.API.Controllers
 		}
 
 		// DELETE: api/tenant/{id}
+		[Authorize(Roles = Roles.SuperAdmin)]
 		[HttpDelete("{id}")]
 		public async Task<ActionResult> DeleteTenant(int id)
 		{

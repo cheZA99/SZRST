@@ -66,7 +66,7 @@ export class DashboardComponent implements OnInit {
     const currentUser = this.authService.currentUser();
     this.currentUserTenantId = currentUser?.tenantId || null;
     
-    if ((this.isAdmin || this.isUposlenik || this.isKorisnik) && this.currentUserTenantId) {
+    if ((this.isAdmin || this.isUposlenik) && this.currentUserTenantId) {
       this.loadTenantName();
     }
   }
@@ -92,9 +92,9 @@ export class DashboardComponent implements OnInit {
       next: (facilitiesData) => {
         this.facilities = facilitiesData.items;
 
-        if (this.isSuperAdmin) {
+        if (this.isSuperAdmin || this.isKorisnik) {
           this.loadTenants();
-        } else if (this.isAdmin || this.isUposlenik || this.isKorisnik) {
+        } else if (this.isAdmin || this.isUposlenik) {
           this.filteredFacilities = facilitiesData.items.filter(
             (f) => f.tenantId === this.currentUserTenantId
           );
@@ -131,6 +131,18 @@ export class DashboardComponent implements OnInit {
 
   loadStatistics(): void {
     this.loadingStats = true;
+
+    if (this.isKorisnik) {
+      this.stats = {
+        totalUsers: 0,
+        totalAppointmentsToday: 0,
+        totalTenants: this.tenants.length,
+        totalFacilities: this.facilities.length,
+        activeAppointments: 0,
+      };
+      this.loadingStats = false;
+      return;
+    }
 
     let tenantIdForStats = null;
     
@@ -187,13 +199,13 @@ openFacilityCalendar(facility: any): void {
   let tenantIdForFacility = facility.tenantId;
   let tenantNameForFacility = '';
   
-  if (this.isSuperAdmin) {
+  if (this.isSuperAdmin || this.isKorisnik) {
     const tenant = this.tenants.find(t => t.id === facility.tenantId);
     if (tenant) {
       tenantIdForFacility = tenant.id;
       tenantNameForFacility = tenant.name;
     }
-  } else if (this.isAdmin || this.isUposlenik || this.isKorisnik) {
+  } else if (this.isAdmin || this.isUposlenik) {
     tenantIdForFacility = this.currentUserTenantId;
     tenantNameForFacility = this.currentUserTenantName;
   }
@@ -218,11 +230,11 @@ openFacilityCalendar(facility: any): void {
   }
 
   showOrganizations(): boolean {
-    return this.isSuperAdmin;
+    return this.isSuperAdmin || this.isKorisnik;
   }
 
   showFacilities(): boolean {
-    return this.isAdmin || this.isUposlenik || this.isKorisnik;
+    return this.isAdmin || this.isUposlenik;
   }
 
   getWelcomeMessage(): string {
