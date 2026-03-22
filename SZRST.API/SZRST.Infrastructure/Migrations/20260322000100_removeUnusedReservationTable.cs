@@ -1,10 +1,14 @@
 using System;
+using Infrastructure.Persistance;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace SZRST.Infrastructure.Migrations
 {
+    [DbContext(typeof(SZRSTContext))]
+    [Migration("20260322000100_removeUnusedReservationTable")]
     public partial class removeUnusedReservationTable : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)

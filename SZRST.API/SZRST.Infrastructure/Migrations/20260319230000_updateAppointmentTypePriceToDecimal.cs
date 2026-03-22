@@ -1,9 +1,13 @@
+using Infrastructure.Persistance;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace SZRST.Infrastructure.Migrations
 {
+    [DbContext(typeof(SZRSTContext))]
+    [Migration("20260319230000_updateAppointmentTypePriceToDecimal")]
     public partial class updateAppointmentTypePriceToDecimal : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
