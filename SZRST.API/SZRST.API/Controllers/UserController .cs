@@ -2,11 +2,13 @@
 using FluentValidation;
 using Infrastructure.Persistance;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using SZRST.API.Security;
@@ -20,24 +22,28 @@ namespace SZRST.API.Controllers
 	[ApiController]
 	public class UserController :ControllerBase
 	{
+		private const int MaxProfileImageBytes = 2 * 1024 * 1024;
 		private readonly UserManager<User> _userManager;
 		private readonly SZRSTContext _context;
 		private readonly ICurrentUserService _currentUserService;
 		private readonly IValidator<EmployeeCreateDto> _employeeCreateValidator;
 		private readonly IValidator<EmployeeUpdateDto> _employeeUpdateValidator;
+		private readonly IWebHostEnvironment _environment;
 
 		public UserController(
 			UserManager<User> userManager,
 			SZRSTContext context,
 			ICurrentUserService currentUserService,
 			IValidator<EmployeeCreateDto> employeeCreateValidator,
-			IValidator<EmployeeUpdateDto> employeeUpdateValidator)
+			IValidator<EmployeeUpdateDto> employeeUpdateValidator,
+			IWebHostEnvironment environment)
 		{
 			_userManager = userManager;
 			_context = context;
 			_currentUserService = currentUserService;
 			_employeeCreateValidator = employeeCreateValidator;
 			_employeeUpdateValidator = employeeUpdateValidator;
+			_environment = environment;
 		}
 
 		// GET: api/User
@@ -174,30 +180,28 @@ namespace SZRST.API.Controllers
 
 		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin},{Roles.Uposlenik}")]
 		[HttpGet("for-appointments")]
-		public async Task<ActionResult<IEnumerable<UserListDto>>> GetUsersForAppointments()
+		public async Task<ActionResult<IEnumerable<UserListDto>>> GetUsersForAppointments([FromQuery] int? tenantId = null)
 		{
-			var korisnikRoleId = await _context.Roles
-				.Where(r => r.Name == Roles.Korisnik)
-				.Select(r => r.Id)
-				.FirstOrDefaultAsync();
+			var targetTenantId = tenantId;
 
-			var korisnikUserIds = _context.UserRoles
-				.Where(ur => ur.RoleId == korisnikRoleId)
-				.Select(ur => ur.UserId);
-
-			var usersQuery = _userManager.Users
-				.Where(u => !u.IsDeleted);
-
-			if (!_currentUserService.IsSuperAdmin)
+			if (_currentUserService.IsSuperAdmin)
+			{
+				if (!targetTenantId.HasValue || targetTenantId.Value <= 0)
+					return BadRequest(new { message = "TenantId je obavezan." });
+			}
+			else
 			{
 				if (!_currentUserService.TenantId.HasValue)
 					return Forbid();
 
-				var tenantId = _currentUserService.TenantId.Value;
-				usersQuery = usersQuery.Where(u =>
-					u.TenantId == tenantId ||
-					korisnikUserIds.Contains(u.Id));
+				targetTenantId ??= _currentUserService.TenantId.Value;
+
+				if (targetTenantId != _currentUserService.TenantId.Value)
+					return Forbid();
 			}
+
+			var usersQuery = _userManager.Users
+				.Where(u => !u.IsDeleted && u.Active && u.TenantId == targetTenantId.Value);
 
 			var users = await usersQuery
 				.Select(u => new UserListDto
@@ -223,9 +227,14 @@ namespace SZRST.API.Controllers
 		{
 			var currentUser = await _userManager.FindByIdAsync(_currentUserService.UserId.ToString());
 			var currentUserRoles = await _userManager.GetRolesAsync(currentUser);
+			var employeeRoleId = await _context.Roles
+				.Where(r => r.Name == Roles.Uposlenik)
+				.Select(r => r.Id)
+				.FirstOrDefaultAsync();
 
 			IQueryable<User> query = _userManager.Users
 				.Include(x => x.Tenant)
+				.Where(u => _context.UserRoles.Any(ur => ur.UserId == u.Id && ur.RoleId == employeeRoleId))
 				.OrderBy(x => x.TenantId)
 				.ThenBy(x => x.UserName);
 
@@ -258,27 +267,19 @@ namespace SZRST.API.Controllers
 			var totalCount = await query.CountAsync();
 			var pagedUsers = await query.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
 
-			var employeeDtos = new List<UserListDto>();
-			foreach (var employee in pagedUsers)
+			var employeeDtos = pagedUsers.Select(employee => new UserListDto
 			{
-				var roles = await _userManager.GetRolesAsync(employee);
-				if (roles.Contains(Roles.Uposlenik) && !roles.Contains(Roles.SuperAdmin))
-				{
-					employeeDtos.Add(new UserListDto
-					{
-						Id = employee.Id,
-						UserName = employee.UserName,
-						Email = employee.Email,
-						Active = employee.Active,
-						IsDeleted = employee.IsDeleted,
-						TenantId = employee.TenantId,
-						FirstName = employee.FirstName,
-						LastName = employee.LastName,
-						Roles = roles.ToList(),
-						TenantName = employee.Tenant?.Name
-					});
-				}
-			}
+				Id = employee.Id,
+				UserName = employee.UserName,
+				Email = employee.Email,
+				Active = employee.Active,
+				IsDeleted = employee.IsDeleted,
+				TenantId = employee.TenantId,
+				FirstName = employee.FirstName,
+				LastName = employee.LastName,
+				Roles = new List<string> { Roles.Uposlenik },
+				TenantName = employee.Tenant?.Name
+			}).ToList();
 
 			return Ok(new PagedResult<UserListDto>
 			{
@@ -484,7 +485,10 @@ namespace SZRST.API.Controllers
 				user.AppMember.DateOfBirth = dto.DateOfBirth ?? user.AppMember.DateOfBirth;
 				user.AppMember.Gender = dto.Gender ?? user.AppMember.Gender;
 				user.AppMember.Description = dto.Description;
-				user.AppMember.ImageUrl = dto.ImageUrl;
+				if (dto.ImageUrl != null)
+				{
+					user.AppMember.ImageUrl = dto.ImageUrl;
+				}
 				user.AppMember.CityId = dto.CityId ?? user.AppMember.CityId;
 				user.AppMember.CountryId = dto.CountryId ?? user.AppMember.CountryId;
 				user.AppMember.DateModified = DateTime.UtcNow;
@@ -518,6 +522,9 @@ namespace SZRST.API.Controllers
 		[HttpPost("profile/upload-image")]
 		public async Task<IActionResult> UploadProfileImage([FromBody] ImageUploadDto dto)
 		{
+			if (dto == null)
+				return BadRequest(new { message = "Podaci za upload slike su obavezni." });
+
 			var userId = _currentUserService.UserId;
 			var user = await _userManager.Users
 				.Include(u => u.AppMember)
@@ -525,6 +532,48 @@ namespace SZRST.API.Controllers
 
 			if (user == null)
 				return NotFound();
+
+			if (string.IsNullOrWhiteSpace(dto.Base64Image))
+			{
+				var previousImageUrl = user.AppMember?.ImageUrl;
+
+				if (user.AppMember == null)
+				{
+					user.AppMember = new AppMember
+					{
+						Id = user.Id,
+						DisplayName = user.UserName,
+						DateOfBirth = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-18)),
+						Gender = "Other",
+						ImageUrl = null,
+						DateCreated = DateTime.UtcNow,
+						DateModified = DateTime.UtcNow,
+					};
+					_context.AppMembers.Add(user.AppMember);
+				}
+				else
+				{
+					user.AppMember.ImageUrl = null;
+					user.AppMember.DateModified = DateTime.UtcNow;
+				}
+
+				await _context.SaveChangesAsync();
+				DeleteLocalFile(previousImageUrl);
+				return Ok(new { imageUrl = (string)null });
+			}
+
+			if (!TryParseBase64Image(dto.Base64Image, out var imageBytes, out var extension))
+			{
+				return BadRequest(new { message = "Dozvoljene su samo validne JPG, PNG, GIF ili WEBP slike." });
+			}
+
+			if (imageBytes.Length > MaxProfileImageBytes)
+			{
+				return BadRequest(new { message = "Profilna slika ne smije biti veća od 2MB." });
+			}
+
+			var imageUrl = await SaveProfileImageAsync(imageBytes, extension);
+			var oldImageUrl = user.AppMember?.ImageUrl;
 
 			if (user.AppMember == null)
 			{
@@ -534,7 +583,7 @@ namespace SZRST.API.Controllers
 					DisplayName = user.UserName,
 					DateOfBirth = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-18)),
 					Gender = "Other",
-					ImageUrl = dto.Base64Image,
+					ImageUrl = imageUrl,
 					DateCreated = DateTime.UtcNow,
 					DateModified = DateTime.UtcNow,
 				};
@@ -542,12 +591,87 @@ namespace SZRST.API.Controllers
 			}
 			else
 			{
-				user.AppMember.ImageUrl = dto.Base64Image;
+				user.AppMember.ImageUrl = imageUrl;
 				user.AppMember.DateModified = DateTime.UtcNow;
 			}
 
 			await _context.SaveChangesAsync();
-			return Ok(new { imageUrl = dto.Base64Image });
+			if (!string.Equals(oldImageUrl, imageUrl, StringComparison.OrdinalIgnoreCase))
+			{
+				DeleteLocalFile(oldImageUrl);
+			}
+
+			return Ok(new { imageUrl });
+		}
+
+		private async Task<string> SaveProfileImageAsync(byte[] imageBytes, string extension)
+		{
+			var folder = Path.Combine(_environment.WebRootPath, "profile-images");
+			if (!Directory.Exists(folder))
+			{
+				Directory.CreateDirectory(folder);
+			}
+
+			var fileName = $"{Guid.NewGuid():N}{extension}";
+			var filePath = Path.Combine(folder, fileName);
+			await System.IO.File.WriteAllBytesAsync(filePath, imageBytes);
+			return $"/profile-images/{fileName}";
+		}
+
+		private static bool TryParseBase64Image(string base64Image, out byte[] imageBytes, out string extension)
+		{
+			imageBytes = null;
+			extension = null;
+
+			var separatorIndex = base64Image.IndexOf(";base64,", StringComparison.OrdinalIgnoreCase);
+			if (!base64Image.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase) || separatorIndex <= 0)
+			{
+				return false;
+			}
+
+			var mimeType = base64Image.Substring("data:".Length, separatorIndex - "data:".Length);
+			extension = mimeType.ToLowerInvariant() switch
+			{
+				"image/jpeg" => ".jpeg",
+				"image/jpg" => ".jpg",
+				"image/png" => ".png",
+				"image/gif" => ".gif",
+				"image/webp" => ".webp",
+				_ => null
+			};
+
+			if (extension == null)
+			{
+				return false;
+			}
+
+			var rawBase64 = base64Image.Substring(separatorIndex + ";base64,".Length);
+			try
+			{
+				imageBytes = Convert.FromBase64String(rawBase64);
+			}
+			catch (FormatException)
+			{
+				return false;
+			}
+
+			return FileSignatureValidator.IsValidImage(imageBytes, extension);
+		}
+
+		private void DeleteLocalFile(string imageUrl)
+		{
+			if (string.IsNullOrWhiteSpace(imageUrl) || !imageUrl.StartsWith("/", StringComparison.Ordinal))
+			{
+				return;
+			}
+
+			var relativePath = imageUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+			var fullPath = Path.Combine(_environment.WebRootPath, relativePath);
+
+			if (System.IO.File.Exists(fullPath))
+			{
+				System.IO.File.Delete(fullPath);
+			}
 		}
 	}
 

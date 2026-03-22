@@ -1,6 +1,5 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { AuthService } from './services/auth.service';
-import { ThisReceiver } from '@angular/compiler';
 import { Router } from '@angular/router';
 import { animate, style, transition, trigger } from '@angular/animations';
 

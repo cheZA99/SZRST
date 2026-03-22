@@ -25,13 +25,13 @@ namespace SZRST.API.Controllers
 		[HttpGet]
 		public async Task<ActionResult<IEnumerable<Currency>>> GetCurrencies()
 		{
-			return await _context.Currency.ToListAsync();
+			return await _context.Currency.Where(c => !c.IsDeleted).ToListAsync();
 		}
 
 		[HttpGet("{id}")]
 		public async Task<ActionResult<Currency>> GetCurrency(int id)
 		{
-			var currency = await _context.Currency.FindAsync(id);
+			var currency = await _context.Currency.FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
 
 			if (currency == null)
 			{
@@ -47,7 +47,8 @@ namespace SZRST.API.Controllers
 			var currency = new Currency
 			{
 				Name = currencyDto.Name,
-				ShortName = currencyDto.ShortName
+				ShortName = currencyDto.ShortName,
+				IsDeleted = false
 			};
 
 			_context.Currency.Add(currency);
@@ -94,15 +95,23 @@ namespace SZRST.API.Controllers
 				return NotFound();
 			}
 
-			_context.Currency.Remove(currency);
-			await _context.SaveChangesAsync();
+			currency.IsDeleted = true;
+
+			try
+			{
+				await _context.SaveChangesAsync();
+			}
+			catch (DbUpdateException)
+			{
+				return BadRequest(new { message = "Nije moguće obrisati valutu jer se koristi u postojećim zapisima." });
+			}
 
 			return NoContent();
 		}
 
 		private bool CurrencyExists(int id)
 		{
-			return _context.Currency.Any(e => e.Id == id);
+			return _context.Currency.Any(e => e.Id == id && !e.IsDeleted);
 		}
 
 		public class CurrencyCreateDto

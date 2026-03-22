@@ -4,7 +4,7 @@ using SZRST.Web.Controllers;
 namespace SZRST.Web.Validator
 {
     public class ReservationReportRequestValidator
-        : AbstractValidator<ReservationReportRequest>
+        : AbstractValidator<AppointmentReportRequest>
     {
         public ReservationReportRequestValidator()
         {

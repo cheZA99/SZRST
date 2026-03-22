@@ -6,7 +6,7 @@ namespace Domain.Entities
 	{
 		public string Name { get; set; }
 		public int Duration { get; set; }
-		public float Price { get; set; }
+		public decimal Price { get; set; }
 		public int? CurrencyId { get; set; }
 		public Currency Currency { get; set; }
 		public Tenant Tenant { get; set; }

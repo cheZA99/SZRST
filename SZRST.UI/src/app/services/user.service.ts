@@ -81,8 +81,9 @@ export class UserService {
     return this.http.get<User>(`${this.apiUrl}/${id}`);
   }
 
-  getUsersForAppointments() {
-    return this.http.get<User[]>(`${this.apiUrl}/for-appointments`);
+  getUsersForAppointments(tenantId?: number) {
+    const suffix = tenantId ? `?tenantId=${tenantId}` : '';
+    return this.http.get<User[]>(`${this.apiUrl}/for-appointments${suffix}`);
   }
 
   create(data: UserCreateDto): Observable<any> {

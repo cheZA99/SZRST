@@ -7,11 +7,12 @@ import {
   Validators,
 } from '@angular/forms';
 import { Router } from '@angular/router';
-import { UserService, UserProfile } from '../../services/user.service';
+import { UserService } from '../../services/user.service';
 import { CityService, City } from '../../services/city.service';
 import { CountryService, Country } from '../../services/country.service';
 import { ToastrService } from 'ngx-toastr';
 import { forkJoin } from 'rxjs';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-edit-profile',
@@ -20,6 +21,7 @@ import { forkJoin } from 'rxjs';
   templateUrl: './edit-profile.component.html',
 })
 export class EditProfileComponent implements OnInit {
+  private readonly maxImageSizeBytes = 2 * 1024 * 1024;
   private fb = inject(FormBuilder);
   private userService = inject(UserService);
   private cityService = inject(CityService);
@@ -63,7 +65,6 @@ export class EditProfileComponent implements OnInit {
       }
     );
 
-    // Listen to country changes to filter cities
     this.profileForm.get('countryId')?.valueChanges.subscribe((countryId) => {
       this.onCountryChange(countryId);
     });
@@ -76,6 +77,7 @@ export class EditProfileComponent implements OnInit {
     if (newPassword && confirmPassword && newPassword !== confirmPassword) {
       return { mismatch: true };
     }
+
     return null;
   }
 
@@ -102,19 +104,16 @@ export class EditProfileComponent implements OnInit {
           cityId: profile.cityId || '',
         });
 
-        if (profile.imageUrl) {
-          this.imagePreview = profile.imageUrl;
-        }
+        this.imagePreview = this.resolveImageUrl(profile.imageUrl);
 
-        // Filter cities based on selected country
         if (profile.countryId) {
           this.onCountryChange(profile.countryId);
         }
 
         this.loading = false;
       },
-      error: (error) => {
-        this.toastr.error('Greška pri učitavanju podataka');
+      error: () => {
+        this.toastr.error('Greska pri ucitavanju podataka');
         this.loading = false;
       },
     });
@@ -140,36 +139,43 @@ export class EditProfileComponent implements OnInit {
       this.profileForm.patchValue({ cityId: '' });
     }
   }
-  onFileSelected(event: any) {
-    const file = event.target.files[0];
-    if (file) {
-      if (!file.type.startsWith('image/')) {
-        this.toastr.error('Molimo odaberite sliku');
-        return;
-      }
 
-      if (file.size > 5 * 1024 * 1024) {
-        this.toastr.error('Slika ne smije biti veća od 5MB');
-        return;
-      }
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
 
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64 = reader.result as string;
-        this.imagePreview = base64;
-
-        this.userService.uploadProfileImage(base64).subscribe({
-          next: (response) => {
-            this.toastr.success('Slika uspješno postavljena');
-          },
-          error: (error) => {
-            this.toastr.error('Greška pri postavljanju slike');
-            this.imagePreview = null;
-          },
-        });
-      };
-      reader.readAsDataURL(file);
+    if (!file) {
+      return;
     }
+
+    if (!file.type.startsWith('image/')) {
+      this.toastr.error('Molimo odaberite sliku');
+      return;
+    }
+
+    if (file.size > this.maxImageSizeBytes) {
+      this.toastr.error('Slika ne smije biti veca od 2MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      this.imagePreview = base64;
+
+      this.userService.uploadProfileImage(base64).subscribe({
+        next: (response) => {
+          this.imagePreview = this.resolveImageUrl(response.imageUrl);
+          this.toastr.success('Slika uspjesno postavljena');
+        },
+        error: () => {
+          this.toastr.error('Greska pri postavljanju slike');
+          this.imagePreview = null;
+        },
+      });
+    };
+
+    reader.readAsDataURL(file);
   }
 
   removeImage() {
@@ -179,7 +185,7 @@ export class EditProfileComponent implements OnInit {
         this.toastr.success('Slika uklonjena');
       },
       error: () => {
-        this.toastr.error('Greška pri uklanjanju slike');
+        this.toastr.error('Greska pri uklanjanju slike');
       },
     });
   }
@@ -207,6 +213,7 @@ export class EditProfileComponent implements OnInit {
         this.toastr.error('Unesite trenutnu lozinku');
         return;
       }
+
       if (formValue.newPassword.length < 6) {
         this.toastr.error('Nova lozinka mora imati najmanje 6 karaktera');
         return;
@@ -216,14 +223,13 @@ export class EditProfileComponent implements OnInit {
     this.loading = true;
     const updateData = {
       ...formValue,
-      imageUrl: this.imagePreview,
       countryId: formValue.countryId || null,
       cityId: formValue.cityId || null,
     };
 
     this.userService.updateCurrentUserProfile(updateData).subscribe({
       next: () => {
-        this.toastr.success('Profil uspješno ažuriran');
+        this.toastr.success('Profil uspjesno azuriran');
         this.profileForm.patchValue({
           currentPassword: '',
           newPassword: '',
@@ -233,7 +239,7 @@ export class EditProfileComponent implements OnInit {
       },
       error: (error) => {
         this.toastr.error(
-          error.error?.message || 'Greška pri ažuriranju profila'
+          error.error?.message || 'Greska pri azuriranju profila'
         );
         this.loading = false;
       },
@@ -242,5 +248,21 @@ export class EditProfileComponent implements OnInit {
 
   cancel() {
     this.router.navigate(['/dashboard']);
+  }
+
+  private resolveImageUrl(imageUrl?: string | null): string | null {
+    if (!imageUrl) {
+      return null;
+    }
+
+    if (
+      imageUrl.startsWith('http://') ||
+      imageUrl.startsWith('https://') ||
+      imageUrl.startsWith('data:')
+    ) {
+      return imageUrl;
+    }
+
+    return `${environment.apiUrl}${imageUrl}`;
   }
 }

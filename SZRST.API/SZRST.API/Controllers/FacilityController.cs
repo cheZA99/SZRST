@@ -432,7 +432,7 @@ namespace SZRST.API.Controllers
 
 					facility.ImageUrl = "/images/" + fileName;
 				}
-				else
+				else if (facilityDto.RemoveImage)
 				{
 					facility.ImageUrl = null;
 				}
@@ -452,9 +452,16 @@ namespace SZRST.API.Controllers
 
 			_context.Entry(facility).State = EntityState.Modified;
 
+			var oldImageUrl = facility.ImageUrl;
+
 			try
 			{
 				await _context.SaveChangesAsync();
+
+				if (!string.Equals(oldImageUrl, facility.ImageUrl, StringComparison.OrdinalIgnoreCase))
+				{
+					DeleteLocalFile(oldImageUrl);
+				}
 			}
 			catch (DbUpdateConcurrencyException)
 			{
@@ -486,7 +493,14 @@ namespace SZRST.API.Controllers
 				return Forbid();
 
 			facility.IsDeleted = true;
-			await _context.SaveChangesAsync();
+			try
+			{
+				await _context.SaveChangesAsync();
+			}
+			catch (DbUpdateException)
+			{
+				return BadRequest("Nije moguće obrisati objekat jer se koristi u aktivnim terminima ili izvještajima.");
+			}
 
 			return NoContent();
 		}
@@ -536,6 +550,20 @@ namespace SZRST.API.Controllers
 				}
 			};
 		}
+
+		private void DeleteLocalFile(string imageUrl)
+		{
+			if (string.IsNullOrWhiteSpace(imageUrl))
+				return;
+
+			var relativePath = imageUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+			var fullPath = Path.Combine(_env.WebRootPath, relativePath);
+
+			if (System.IO.File.Exists(fullPath))
+			{
+				System.IO.File.Delete(fullPath);
+			}
+		}
 	}
 
 	public class FacilityCreateDto
@@ -571,6 +599,7 @@ namespace SZRST.API.Controllers
         public int LocationId { get; set; }
         public int TenantId { get; set; }
         public IFormFile File { get; set; }
+		public bool RemoveImage { get; set; }
     }
 
     public class FacilityFilterDto

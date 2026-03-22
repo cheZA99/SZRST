@@ -54,6 +54,7 @@ export interface FacilityLocationCreateDto {
   imageUrl: string;
   locationId: number;
   tenantId: number;
+  removeImage?: boolean;
 }
 
 export interface Tenant {
@@ -176,7 +177,8 @@ export class FacilityService {
   updateWithLocation(
     id: number,
     data: FacilityLocationCreateDto,
-    file: File | null
+    file: File | null,
+    removeImage = false
   ): Observable<FacilityResponse> {
 
     const formData = new FormData();
@@ -193,6 +195,7 @@ export class FacilityService {
     }
 
     formData.append("locationId", data.locationId?.toString());
+    formData.append("removeImage", removeImage.toString());
 
     if (file) {
       formData.append("file", file);

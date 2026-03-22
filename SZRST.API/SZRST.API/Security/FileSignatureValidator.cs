@@ -13,7 +13,8 @@ namespace SZRST.API.Security
 			[".jpg"] = new() { new byte[] { 0xFF, 0xD8, 0xFF } },
 			[".jpeg"] = new() { new byte[] { 0xFF, 0xD8, 0xFF } },
 			[".png"] = new() { new byte[] { 0x89, 0x50, 0x4E, 0x47 } },
-			[".webp"] = new() { new byte[] { 0x52, 0x49, 0x46, 0x46 } }
+			[".webp"] = new() { new byte[] { 0x52, 0x49, 0x46, 0x46 } },
+			[".gif"] = new() { new byte[] { 0x47, 0x49, 0x46, 0x38 } }
 		};
 
 		public static bool IsValidImage(IFormFile file)
@@ -32,6 +33,32 @@ namespace SZRST.API.Security
 			using var stream = file.OpenReadStream();
 			using var reader = new BinaryReader(stream);
 			var headerBytes = reader.ReadBytes(12);
+
+			if (extension.Equals(".webp", StringComparison.OrdinalIgnoreCase))
+			{
+				return headerBytes.Length >= 12 &&
+				       headerBytes.Take(4).SequenceEqual(new byte[] { 0x52, 0x49, 0x46, 0x46 }) &&
+				       headerBytes.Skip(8).Take(4).SequenceEqual(new byte[] { 0x57, 0x45, 0x42, 0x50 });
+			}
+
+			return signatures.Any(signature =>
+				headerBytes.Length >= signature.Length &&
+				headerBytes.Take(signature.Length).SequenceEqual(signature));
+		}
+
+		public static bool IsValidImage(byte[] fileBytes, string extension)
+		{
+			if (fileBytes == null || fileBytes.Length == 0)
+			{
+				return false;
+			}
+
+			if (string.IsNullOrWhiteSpace(extension) || !Signatures.TryGetValue(extension, out var signatures))
+			{
+				return false;
+			}
+
+			var headerBytes = fileBytes.Take(12).ToArray();
 
 			if (extension.Equals(".webp", StringComparison.OrdinalIgnoreCase))
 			{

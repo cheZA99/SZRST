@@ -5,6 +5,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { UserService } from 'src/app/services/user.service';
 import { Subscription } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-layout',
@@ -45,7 +46,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
     if (this.authService.currentUser()) {
       this.userService.getCurrentUserProfile().subscribe({
         next: (profile) => {
-          this.userProfileImage = profile.imageUrl || null;
+          this.userProfileImage = this.resolveImageUrl(profile.imageUrl);
         },
         error: (error) => {
           console.error('Error loading profile image:', error);
@@ -74,5 +75,17 @@ export class LayoutComponent implements OnInit, OnDestroy {
   switchLanguage(lang: string) {
     this.translate.use(lang);
     localStorage.setItem('lang', lang);
+  }
+
+  private resolveImageUrl(imageUrl?: string | null): string | null {
+    if (!imageUrl) {
+      return null;
+    }
+
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://') || imageUrl.startsWith('data:')) {
+      return imageUrl;
+    }
+
+    return `${environment.apiUrl}${imageUrl}`;
   }
 }

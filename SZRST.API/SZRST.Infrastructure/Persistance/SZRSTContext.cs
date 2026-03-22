@@ -33,6 +33,9 @@ namespace Infrastructure.Persistance
 			modelBuilder.ApplyConfigurationsFromAssembly(typeof(UserConfiguration).Assembly);
 			modelBuilder.ApplyConfigurationsFromAssembly(typeof(RoleClaimConfiguration).Assembly);
 			modelBuilder.ApplyConfigurationsFromAssembly(typeof(RefreshTokenConfiguration).Assembly);
+			modelBuilder.Entity<AppointmentType>()
+				.Property(x => x.Price)
+				.HasColumnType("decimal(18,2)");
 
 			foreach (var entityType in modelBuilder.Model.GetEntityTypes())
 			{
@@ -54,8 +57,7 @@ namespace Infrastructure.Persistance
 						continue;
 					}
 
-					if (entityType.ClrType == typeof(Reservation) ||
-					    entityType.ClrType == typeof(Facility) ||
+					if (entityType.ClrType == typeof(Facility) ||
 					    entityType.ClrType == typeof(Location) ||
                         entityType.ClrType == typeof(ReservationReport))
 					{
@@ -101,11 +103,11 @@ namespace Infrastructure.Persistance
 				{
 					if (entry.State == EntityState.Added)
 					{
-						entity.DateCreated = DateTime.Now;
+						entity.DateCreated = DateTime.UtcNow;
 					}
 					else if (entry.State == EntityState.Modified)
 					{
-						entity.DateModified = DateTime.Now;
+						entity.DateModified = DateTime.UtcNow;
 					}
 				}
 			}
@@ -142,7 +144,6 @@ namespace Infrastructure.Persistance
 		public DbSet<FacilityType> FacilityType { get; set; }
 		public DbSet<Appointment> Appointment { get; set; }
 		public DbSet<AppointmentType> AppointmentType { get; set; }
-		public DbSet<Reservation> Reservation { get; set; }
         public DbSet<ReservationReport> ReservationReport { get; set; }
         public DbSet<Review> Review { get; set; }
 		public DbSet<Worker> Worker { get; set; }

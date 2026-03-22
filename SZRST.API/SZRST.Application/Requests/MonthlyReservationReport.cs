@@ -11,7 +11,7 @@ namespace SZRST.Application.Requests
         public int Year { get; set; }
         public int Month { get; set; }
         public int TotalReservations { get; set; }
-        public float Profit { get; set; }
+        public decimal Profit { get; set; }
 
         public string FacilityName { get; set; }
     }

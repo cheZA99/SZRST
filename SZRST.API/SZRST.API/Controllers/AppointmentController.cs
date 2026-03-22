@@ -342,7 +342,7 @@ namespace SZRST.API.Controllers
 		[HttpGet("dashboard-stats")]
 		public async Task<ActionResult<DashboardStatsDto>> GetDashboardStats([FromQuery] int? tenantId = null)
 		{
-			var today = DateTime.Today;
+			var today = DateTime.UtcNow.Date;
 			var effectiveTenantId = _currentUserService.IsSuperAdmin ? tenantId : _currentUserService.TenantId;
 
 			var query = _userManager.Users.AsQueryable();
@@ -363,7 +363,7 @@ namespace SZRST.API.Controllers
 				  .Where(f => !effectiveTenantId.HasValue || f.TenantId == effectiveTenantId.Value)
 				  .CountAsync(),
 				ActiveAppointments = await _context.Appointment
-				  .Where(a => a.AppointmentDateTime >= DateTime.Now &&
+				  .Where(a => a.AppointmentDateTime >= DateTime.UtcNow &&
 						   !a.IsDeleted &&
 						   (!effectiveTenantId.HasValue || a.TenantId == effectiveTenantId.Value))
 				  .CountAsync()

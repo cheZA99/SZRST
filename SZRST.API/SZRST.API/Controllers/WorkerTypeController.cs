@@ -26,14 +26,14 @@ namespace SZRST.API.Controllers
 		[HttpGet]
 		public async Task<ActionResult<IEnumerable<WorkerType>>> GetWorkerTypes()
 		{
-			return await _context.WorkerType.ToListAsync();
+			return await _context.WorkerType.Where(wt => !wt.IsDeleted).ToListAsync();
 		}
 
 		// GET: api/WorkerType/{id}
 		[HttpGet("{id}")]
 		public async Task<ActionResult<WorkerType>> GetWorkerType(int id)
 		{
-			var workerType = await _context.WorkerType.FindAsync(id);
+			var workerType = await _context.WorkerType.FirstOrDefaultAsync(wt => wt.Id == id && !wt.IsDeleted);
 
 			if (workerType == null)
 			{
@@ -50,7 +50,8 @@ namespace SZRST.API.Controllers
 			var workerType = new WorkerType
 			{
 				Name = workerTypeDto.Name,
-				Description = workerTypeDto.Description
+				Description = workerTypeDto.Description,
+				IsDeleted = false
 			};
 
 			_context.WorkerType.Add(workerType);
@@ -103,15 +104,23 @@ namespace SZRST.API.Controllers
 				return NotFound();
 			}
 
-			_context.WorkerType.Remove(workerType);
-			await _context.SaveChangesAsync();
+			workerType.IsDeleted = true;
+
+			try
+			{
+				await _context.SaveChangesAsync();
+			}
+			catch (DbUpdateException)
+			{
+				return BadRequest(new { message = "Nije moguće obrisati tip radnika jer se koristi u postojećim zapisima." });
+			}
 
 			return NoContent();
 		}
 
 		private bool WorkerTypeExists(int id)
 		{
-			return _context.WorkerType.Any(e => e.Id == id);
+			return _context.WorkerType.Any(e => e.Id == id && !e.IsDeleted);
 		}
 	}
 

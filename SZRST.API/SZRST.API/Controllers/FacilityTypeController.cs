@@ -27,6 +27,7 @@ namespace SZRST.API.Controllers
 		public async Task<ActionResult<IEnumerable<FacilityType>>> GetFacilityTypes()
 		{
 			return await _context.FacilityType
+							 .Where(ft => !ft.IsDeleted)
 							 .ToListAsync();
 		}
 
@@ -35,7 +36,7 @@ namespace SZRST.API.Controllers
 		public async Task<ActionResult<FacilityType>> GetFacilityType(int id)
 		{
 			var facilityType = await _context.FacilityType
-									    .FirstOrDefaultAsync(ft => ft.Id == id);
+									    .FirstOrDefaultAsync(ft => ft.Id == id && !ft.IsDeleted);
 
 			if (facilityType == null)
 			{
@@ -106,15 +107,23 @@ namespace SZRST.API.Controllers
 				return NotFound();
 			}
 
-			_context.FacilityType.Remove(facilityType);
-			await _context.SaveChangesAsync();
+			facilityType.IsDeleted = true;
+
+			try
+			{
+				await _context.SaveChangesAsync();
+			}
+			catch (DbUpdateException)
+			{
+				return BadRequest(new { message = "Nije moguće obrisati tip objekta jer se koristi u postojećim zapisima." });
+			}
 
 			return NoContent();
 		}
 
 		private bool FacilityTypeExists(int id)
 		{
-			return _context.FacilityType.Any(e => e.Id == id);
+			return _context.FacilityType.Any(e => e.Id == id && !e.IsDeleted);
 		}
 	}
 

@@ -19,20 +19,20 @@ namespace SZRST.Web.Controllers
     [Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}")]
     [Route("api/[controller]")]
     [ApiController]
-    public class ReservationReportController : ControllerBase
+    public class AppointmentReportController : ControllerBase
     {
-        private readonly IReservationReportService _reportService;
+        private readonly IAppointmentReportService _reportService;
         private readonly ICurrentUserService _currentUserService;
 
 
-        public ReservationReportController(IReservationReportService reportService, ICurrentUserService currentUserService)
+        public AppointmentReportController(IAppointmentReportService reportService, ICurrentUserService currentUserService) 
         {
             _reportService = reportService;
             _currentUserService = currentUserService;
         }
 
     [HttpPost("generate")]
-    public async Task<IActionResult> GenerateReport([FromBody] ReservationReportRequest request)
+    public async Task<IActionResult> GenerateReport([FromBody] AppointmentReportRequest request)
         {
             if (!_currentUserService.IsSuperAdmin && !_currentUserService.CanAccessTenant(request.TenantId))
                 return Forbid();
@@ -83,19 +83,19 @@ namespace SZRST.Web.Controllers
         }
     }
 
-    public class ReservationReportRequest
+    public class AppointmentReportRequest
     {
         public DateTime DateFrom { get; set; }
         public DateTime DateTo { get; set; }
         public int TenantId { get; set; }
     }
 
-    public class MonthlyReservationReport
+    public class MonthlyAppointmentReport
     {
         public int Year { get; set; }
         public int Month { get; set; }
-        public int TotalReservations { get; set; }
-        public float Profit { get; set; }
+        public int TotalAppointments { get; set; }
+        public decimal Profit { get; set; }
 
         public string FacilityName { get; set; }
     }
