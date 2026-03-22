@@ -284,8 +284,6 @@ namespace SZRST.API.Controllers
 			await _context.SaveChangesAsync();
 			var imageUrl = "";
 
-			var oldImageUrl = facility.ImageUrl;
-
 			try
 			{
 				if (facilityDto.File != null)
@@ -453,6 +451,8 @@ namespace SZRST.API.Controllers
 				return BadRequest("TenantId mora biti validan.");
 
 			_context.Entry(facility).State = EntityState.Modified;
+
+			var oldImageUrl = facility.ImageUrl;
 
 			try
 			{
