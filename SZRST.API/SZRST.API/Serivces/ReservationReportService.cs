@@ -26,11 +26,11 @@ namespace SZRST.Web.Serivces
                 .IgnoreQueryFilters()
                 .Include(a => a.AppointmentType)
                 .Include(a => a.Facility)
-                .Include(a => a.Tenant)
                 .Where(a =>
                     a.AppointmentDateTime >= dateFrom &&
                     a.AppointmentDateTime <= dateTo &&
                     !a.IsDeleted &&
+                    !a.IsFree &&
                     a.TenantId == tenantId)
                 .GroupBy(a => new
                 {
@@ -60,7 +60,7 @@ namespace SZRST.Web.Serivces
             {
                 DateFrom = dateFrom,
                 DateTo = dateTo,
-                FileName = $"reservation_report_{DateTime.Now:yyyyMMddHHmmss}.pdf",
+                FileName = $"reservation_report_{DateTime.UtcNow:yyyyMMddHHmmss}.pdf",
                 PdfData = pdfBytes,
                 CreatedAt = DateTime.UtcNow,
                 TenantId = tenantId
@@ -72,21 +72,41 @@ namespace SZRST.Web.Serivces
             return report.Id;
         }
 
-        public async Task<List<ReservationReport>> GetReports()
+        public async Task<List<ReservationReportListDto>> GetReports()
         {
             return await _context.ReservationReport
                 .IgnoreQueryFilters()
                 .Where(x => !x.IsDeleted)
                 .OrderByDescending(x => x.CreatedAt)
+                .Select(x => new ReservationReportListDto
+                {
+                    Id = x.Id,
+                    DateFrom = x.DateFrom,
+                    DateTo = x.DateTo,
+                    CreatedAt = x.CreatedAt,
+                    FileName = x.FileName,
+                    TenantId = x.TenantId,
+                    FileSizeBytes = x.PdfData != null ? x.PdfData.Length : 0
+                })
                 .ToListAsync();
         }
 
-        public async Task<List<ReservationReport>> GetReportsByTenantId(int tenantId)
+        public async Task<List<ReservationReportListDto>> GetReportsByTenantId(int tenantId)
         {
             return await _context.ReservationReport
                 .IgnoreQueryFilters()
                 .Where(x => x.TenantId == tenantId && !x.IsDeleted)
                 .OrderByDescending(x => x.CreatedAt)
+                .Select(x => new ReservationReportListDto
+                {
+                    Id = x.Id,
+                    DateFrom = x.DateFrom,
+                    DateTo = x.DateTo,
+                    CreatedAt = x.CreatedAt,
+                    FileName = x.FileName,
+                    TenantId = x.TenantId,
+                    FileSizeBytes = x.PdfData != null ? x.PdfData.Length : 0
+                })
                 .ToListAsync();
         }
 
@@ -117,7 +137,7 @@ namespace SZRST.Web.Serivces
              }
         }
 
-        public byte[] GeneratePdf(List<MonthlyReservationReport> data, DateTime from, DateTime to, int totalReservations, float totalProfit)
+        public byte[] GeneratePdf(List<MonthlyReservationReport> data, DateTime from, DateTime to, int totalReservations, decimal totalProfit)
         {
             var pdf = Document.Create(container =>
             {
@@ -155,7 +175,7 @@ namespace SZRST.Web.Serivces
                                 table.Cell().Text($"{row.Month}/{row.Year}");
                                 table.Cell().Text(row.FacilityName);
                                 table.Cell().Text(row.TotalReservations.ToString());
-                                table.Cell().Text($"{row.Profit} KM");
+                                table.Cell().Text($"{row.Profit:0.00} KM");
                             }
                         });
 
@@ -166,7 +186,7 @@ namespace SZRST.Web.Serivces
                             row.RelativeItem().Text($"Total reservations: {totalReservations}").Bold();
 
                             row.RelativeItem().AlignRight()
-                                .Text($"Total profit: {totalProfit} KM")
+                                .Text($"Total profit: {totalProfit:0.00} KM")
                                 .Bold();
                         });
                     });

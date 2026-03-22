@@ -57,8 +57,7 @@ namespace Infrastructure.Persistance
 						continue;
 					}
 
-					if (entityType.ClrType == typeof(Reservation) ||
-					    entityType.ClrType == typeof(Facility) ||
+					if (entityType.ClrType == typeof(Facility) ||
 					    entityType.ClrType == typeof(Location) ||
                         entityType.ClrType == typeof(ReservationReport))
 					{
@@ -145,7 +144,6 @@ namespace Infrastructure.Persistance
 		public DbSet<FacilityType> FacilityType { get; set; }
 		public DbSet<Appointment> Appointment { get; set; }
 		public DbSet<AppointmentType> AppointmentType { get; set; }
-		public DbSet<Reservation> Reservation { get; set; }
         public DbSet<ReservationReport> ReservationReport { get; set; }
         public DbSet<Review> Review { get; set; }
 		public DbSet<Worker> Worker { get; set; }
