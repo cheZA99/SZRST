@@ -3,7 +3,9 @@ using FluentAssertions;
 using FluentValidation;
 using Infrastructure.Persistance;
 using Microsoft.AspNetCore.Mvc;
+using Moq;
 using SZRST.API.Controllers;
+using SZRST.API.Security;
 using SZRST.Domain.Entities;
 using SZRST.Tests.Helpers;
 
@@ -42,7 +44,8 @@ namespace SZRST.Tests.Controllers
 		{
 			IValidator<CreateTenantWithAdminDto> createValidator = new CreateTenantWithAdminDtoValidator();
 			IValidator<UpdateTenantDto> updateValidator = new UpdateTenantDtoValidator();
-			return new TenantController(context, userManager, createValidator, updateValidator);
+			var currentUserMock = new Mock<ICurrentUserService>();
+			return new TenantController(context, userManager, currentUserMock.Object, createValidator, updateValidator);
 		}
 
 
