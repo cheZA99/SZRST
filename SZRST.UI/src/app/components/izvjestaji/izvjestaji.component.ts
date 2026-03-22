@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
 import { AuthService } from 'src/app/services/auth.service';
-import { ReservationReport, ReservationReportService } from 'src/app/services/reservation-report.service';
+import { AppointmentReport, AppointmentReportService } from 'src/app/services/reservation-report.service';
 import { Tenant, TenantService } from 'src/app/services/tenant.service';
 
 @Component({
@@ -13,8 +13,8 @@ import { Tenant, TenantService } from 'src/app/services/tenant.service';
 export class IzvjestajiComponent implements OnInit {
 
   tenants: Tenant[] = [];
-  reports: ReservationReport[] = [];
-  filteredReports: ReservationReport[] = [];
+  reports: AppointmentReport[] = [];
+  filteredReports: AppointmentReport[] = [];
 
   loading = false;
   loadingTenants = false;
@@ -43,7 +43,7 @@ export class IzvjestajiComponent implements OnInit {
   }
 
   constructor(
-    private reservationReportService: ReservationReportService,
+    private AppointmentReportService: AppointmentReportService,
     private toastr: ToastrService,
     private tenantService: TenantService,
     public authService: AuthService,
@@ -148,7 +148,7 @@ export class IzvjestajiComponent implements OnInit {
 
     console.log(dto);
 
-    this.reservationReportService.generateReport(dto).subscribe((response) => {
+    this.AppointmentReportService.generateReport(dto).subscribe((response) => {
       this.closeModal();
       this.loadReports();
 
@@ -161,7 +161,7 @@ export class IzvjestajiComponent implements OnInit {
   loadReports() {
     this.loading = true;
     if (this.isSuperAdmin) {
-      this.reservationReportService.getReports().subscribe({
+      this.AppointmentReportService.getReports().subscribe({
         next: (data) => {
           this.reports = data;
           this.applyTenantFilter();
@@ -176,7 +176,7 @@ export class IzvjestajiComponent implements OnInit {
     } else if (this.isAdmin) {
       console.log(this.currentUserTenantId)
       if (this.currentUserTenantId) {
-        this.reservationReportService.getReportsByTenantId(this.currentUserTenantId).subscribe({
+        this.AppointmentReportService.getReportsByTenantId(this.currentUserTenantId).subscribe({
           next: (data) => {
             this.reports = data;
             this.filteredReports= data;
@@ -200,7 +200,7 @@ export class IzvjestajiComponent implements OnInit {
   }
 
   private openReport(id: number, fileName?: string) {
-    this.reservationReportService.downloadReport(id).subscribe(blob => {
+    this.AppointmentReportService.downloadReport(id).subscribe(blob => {
       const url = window.URL.createObjectURL(blob);
       const openedWindow = window.open(url, '_blank');
 
@@ -221,7 +221,7 @@ export class IzvjestajiComponent implements OnInit {
     return d.toLocaleDateString('bs-BA');
   }
 
-  get displayReservationReports(): ReservationReport[] {
+  get displayAppointmentReports(): AppointmentReport[] {
     return this.isSuperAdmin ? this.filteredReports : this.reports;
   }
 

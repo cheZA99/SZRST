@@ -1,125 +1,142 @@
 <div class="container mx-auto p-6">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold">Izvještaji</h1>
-        <button (click)="openCreateModal()" class="btn btn-primary" *ngIf="isAdmin || isSuperAdmin">
-            + Novi Izvještaj
-        </button>
-    </div>
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold">Izvještaji</h1>
+    <button
+      (click)="openCreateModal()"
+      class="btn btn-primary"
+      *ngIf="isAdmin || isSuperAdmin"
+    >
+      + Novi Izvještaj
+    </button>
+  </div>
 
-    <!-- Filter section za SuperAdmin -->
-    <div *ngIf="isSuperAdmin" class="mb-6">
-        <div class="card-body p-4">
-            <div class="flex flex-col md:flex-row md:items-center gap-4">
-                <div class="flex-1">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Filtriraj po organizaciji
-                    </label>
-                    <div class="flex gap-3 items-center">
-                        <select class="select select-bordered w-full max-w-xs" [value]="selectedTenantFilter ?? ''"
-                            (change)="onTenantFilterChange($event)">
-                            <option value="">Sve organizacije</option>
-                            <option *ngFor="let tenant of tenants" [value]="tenant.id">
-                                {{ tenant.name }}
-                            </option>
-                        </select>
-                    </div>
-                </div>
+  <!-- Filter section za SuperAdmin -->
+  <div *ngIf="isSuperAdmin" class="mb-6">
+    <div class="card-body p-4">
+      <div class="flex flex-col md:flex-row md:items-center gap-4">
+        <div class="flex-1">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            Filtriraj po organizaciji
+          </label>
+          <div class="flex gap-3 items-center">
+            <select
+              class="select select-bordered w-full max-w-xs"
+              [value]="selectedTenantFilter ?? ''"
+              (change)="onTenantFilterChange($event)"
+            >
+              <option value="">Sve organizacije</option>
+              <option *ngFor="let tenant of tenants" [value]="tenant.id">
+                {{ tenant.name }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="flex justify-center items-center h-64">
+    <span class="loading loading-spinner loading-lg"></span>
+  </div>
+
+  <div *ngIf="!loading" class="overflow-x-auto">
+    <table class="table w-full">
+      <thead>
+        <tr>
+          <th>Datum od</th>
+          <th>Datum do</th>
+          <th>File</th>
+          <th *ngIf="isSuperAdmin">Organizacija</th>
+          <th>Datum kreiranja</th>
+          <th>Akcija</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let report of filteredReports">
+          <td>
+            <div class="font-semibold">{{ formatDate(report.dateFrom) }}</div>
+          </td>
+          <td>
+            <div class="font-semibold">
+              {{ formatDate(report.dateTo) }}
             </div>
-        </div>
-    </div>
+          </td>
+          <td>
+            <span class="font-medium">
+              {{ report.fileName }}
+            </span>
+          </td>
+          <td *ngIf="isSuperAdmin">
+            <span *ngIf="report.tenantId" class="badge badge-info">
+              {{ getTenantName(report.tenantId) }}
+            </span>
+          </td>
+          <td>
+            <span class="text-sm text-gray-500">
+              {{ formatDate(report.createdAt) }}
+            </span>
+          </td>
+          <td *ngIf="isAdmin || isSuperAdmin">
+            <div class="flex gap-2">
+              <button
+                (click)="download(report.id, report.fileName)"
+                class="btn btn-sm btn-warning"
+              >
+                Preuzmi
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
 
-    <div *ngIf="loading" class="flex justify-center items-center h-64">
-        <span class="loading loading-spinner loading-lg"></span>
+    <div
+      *ngIf="displayAppointmentReports.length === 0"
+      class="text-center py-8"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-12 w-12 mx-auto text-gray-400"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="1"
+          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+        />
+      </svg>
+      <h3 class="mt-2 text-lg font-medium text-gray-900">Nema resursa</h3>
+      <p class="mt-1 text-sm text-gray-500">
+        <span *ngIf="selectedTenantFilter">
+          Nema izvještaja za organizaciju "{{
+            getTenantName(selectedTenantFilter)
+          }}".
+        </span>
+        <span *ngIf="!selectedTenantFilter">
+          Trenutno nema dostupnih izvještaja.
+        </span>
+        <span *ngIf="isAdmin || isSuperAdmin">
+          Kliknite na "Novi izvještaj" da kreirate prvi.
+        </span>
+      </p>
     </div>
-
-    <div *ngIf="!loading" class="overflow-x-auto">
-        <table class="table w-full">
-            <thead>
-                <tr>
-                    <th>Datum od</th>
-                    <th>Datum do</th>
-                    <th>File</th>
-                    <th *ngIf="isSuperAdmin">Organizacija</th>
-                    <th>Datum kreiranja</th>
-                    <th>Akcija</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr *ngFor="let report of filteredReports">
-                    <td>
-                        <div class="font-semibold">{{ formatDate(report.dateFrom) }}</div>
-                    </td>
-                    <td>
-                       <div class="font-semibold">
-                            {{ formatDate(report.dateTo) }}
-                       </div>
-                    </td>
-                    <td>
-                        <span class="font-medium">
-                            {{ report.fileName }}
-                        </span>
-                    </td>
-                    <td *ngIf="isSuperAdmin">
-                        <span *ngIf="report.tenantId" class="badge badge-info">
-                            {{ getTenantName(report.tenantId) }}
-                        </span>
-                    </td>
-                    <td>
-                        <span class="text-sm text-gray-500">
-                            {{ formatDate(report.createdAt) }}
-                        </span>
-                    </td>
-                    <td *ngIf="isAdmin || isSuperAdmin">
-                        <div class="flex gap-2">
-                            <button (click)="download(report.id,report.fileName)" class="btn btn-sm btn-warning">
-                                Preuzmi
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-
-        <div *ngIf="displayReservationReports.length === 0" class="text-center py-8">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400" fill="none"
-                viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            <h3 class="mt-2 text-lg font-medium text-gray-900">Nema resursa</h3>
-            <p class="mt-1 text-sm text-gray-500">
-                <span *ngIf="selectedTenantFilter">
-                    Nema izvještaja za organizaciju "{{
-                    getTenantName(selectedTenantFilter)
-                    }}".
-                </span>
-                <span *ngIf="!selectedTenantFilter">
-                    Trenutno nema dostupnih izvještaja.
-                </span>
-                <span *ngIf="isAdmin || isSuperAdmin">
-                    Kliknite na "Novi izvještaj" da kreirate prvi.
-                </span>
-            </p>
-        </div>
-    </div>
+  </div>
 </div>
 
 <div *ngIf="showModal" class="modal modal-open">
   <div class="modal-box max-w-xl">
-
     <!-- HEADER -->
     <div class="flex justify-between items-center mb-4">
-      <h3 class="font-bold text-lg">
-        Generiši izvještaj rezervacija
-      </h3>
+      <h3 class="font-bold text-lg">Generiši izvještaj rezervacija</h3>
       <button (click)="closeModal()" class="btn btn-sm btn-circle">✕</button>
     </div>
 
     <!-- FORM -->
     <form [formGroup]="reportForm" (ngSubmit)="generateReport()">
-
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
         <!-- DATE FROM -->
         <div class="form-control w-full">
           <label class="label">
@@ -149,7 +166,6 @@
           </label>
         </div>
 
-
         <!-- DATE TO -->
         <div class="form-control w-full">
           <label class="label">
@@ -178,13 +194,10 @@
             </span>
           </label>
         </div>
-
       </div>
-
 
       <!-- ORGANIZATION (SuperAdmin only) -->
       <div *ngIf="isSuperAdmin" class="form-control w-full mt-4">
-
         <label class="label">
           <span class="label-text">Organizacija *</span>
         </label>
@@ -204,7 +217,6 @@
           <option *ngFor="let tenant of tenants" [ngValue]="tenant.id">
             {{ tenant.name }}
           </option>
-
         </select>
 
         <label
@@ -218,9 +230,7 @@
             Morate odabrati organizaciju
           </span>
         </label>
-
       </div>
-
 
       <!-- DATE RANGE ERROR -->
       <div
@@ -230,15 +240,9 @@
         Datum "od" mora biti manji od datuma "do".
       </div>
 
-
       <!-- ACTION BUTTONS -->
       <div class="modal-action">
-
-        <button
-          type="button"
-          (click)="closeModal()"
-          class="btn btn-ghost"
-        >
+        <button type="button" (click)="closeModal()" class="btn btn-ghost">
           Odustani
         </button>
 
@@ -249,10 +253,7 @@
         >
           Generiši PDF
         </button>
-
       </div>
-
     </form>
-
   </div>
 </div>

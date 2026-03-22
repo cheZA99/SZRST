@@ -4,7 +4,7 @@ import { Observable } from "rxjs";
 import { environment } from 'src/environments/environment';
 
 
-export interface ReservationReport {
+export interface AppointmentReport {
     id: number;
     dateFrom: string;
     dateTo: string;
@@ -13,27 +13,27 @@ export interface ReservationReport {
     tenantId: number;
 }
 
-export interface ReservationReportRequest {
+export interface AppointmentReportRequest {
     dateFrom: string;
     dateTo: string;
     tenantId: number;
 }
 
 @Injectable({ providedIn: 'root' })
-export class ReservationReportService {
-    private readonly apiUrl = `${environment.apiUrl}/api/reservationReport`;
+export class AppointmentReportService {
+    private readonly apiUrl = `${environment.apiUrl}/api/appointmentReport`;
 
     constructor(private http: HttpClient) { }
 
-    getReports(): Observable<ReservationReport[]> {
-        return this.http.get<ReservationReport[]>(`${this.apiUrl}`);
+    getReports(): Observable<AppointmentReport[]> {
+        return this.http.get<AppointmentReport[]>(`${this.apiUrl}`);
     }
 
-    getReportsByTenantId(tenantId: number): Observable<ReservationReport[]> {
-        return this.http.get<ReservationReport[]>(`${this.apiUrl}/${tenantId}`);
+    getReportsByTenantId(tenantId: number): Observable<AppointmentReport[]> {
+        return this.http.get<AppointmentReport[]>(`${this.apiUrl}/${tenantId}`);
     }
 
-    generateReport(data: ReservationReportRequest): Observable<any> {
+    generateReport(data: AppointmentReportRequest): Observable<any> {
         return this.http.post(`${this.apiUrl}/generate`, data);
     }
 
