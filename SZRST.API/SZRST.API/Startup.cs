@@ -194,7 +194,7 @@ namespace SZRST.WebApi
 			services.AddTransient<FacilityController>();
 			services.AddTransient<LocationController>();
 
-			services.AddScoped<IReservationReportService, ReservationReportService>();
+			services.AddScoped<IAppointmentReportService, AppointmentReportService>();
 			services.AddScoped<ReportService>();
 
 			#endregion Binding

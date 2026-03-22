@@ -11,11 +11,11 @@ using SZRST.Web.Controllers;
 
 namespace SZRST.Web.Serivces
 {
-    public class ReservationReportService : IReservationReportService
+    public class AppointmentReportService : IAppointmentReportService
     {
         private readonly SZRSTContext _context;
 
-        public ReservationReportService(SZRSTContext context)
+        public AppointmentReportService(SZRSTContext context)
         {
             _context = context;
         }
@@ -30,7 +30,6 @@ namespace SZRST.Web.Serivces
                     a.AppointmentDateTime >= dateFrom &&
                     a.AppointmentDateTime <= dateTo &&
                     !a.IsDeleted &&
-                    !a.IsFree &&
                     a.TenantId == tenantId)
                 .GroupBy(a => new
                 {
@@ -38,12 +37,12 @@ namespace SZRST.Web.Serivces
                     a.AppointmentDateTime.Month,
                     FacilityName = a.Facility.Name
                 })
-                .Select(g => new MonthlyReservationReport
+                .Select(g => new MonthlyAppointmentReport
                 {
                     Year = g.Key.Year,
                     Month = g.Key.Month,
                     FacilityName = g.Key.FacilityName,
-                    TotalReservations = g.Count(),
+                    TotalAppointments = g.Count(),
                     Profit = g.Sum(x => x.AppointmentType.Price)
                 })
                 .OrderBy(x => x.Year)
@@ -51,16 +50,16 @@ namespace SZRST.Web.Serivces
                 .ThenBy(x => x.FacilityName)
                 .ToListAsync();
 
-            var totalReservations = reportData.Sum(x => x.TotalReservations);
+            var totalAppointments = reportData.Sum(x => x.TotalAppointments);
             var totalProfit = reportData.Sum(x => x.Profit);
 
-            var pdfBytes = GeneratePdf(reportData, dateFrom, dateTo, totalReservations, totalProfit);
+            var pdfBytes = GeneratePdf(reportData, dateFrom, dateTo, totalAppointments, totalProfit);
 
             var report = new ReservationReport
             {
                 DateFrom = dateFrom,
                 DateTo = dateTo,
-                FileName = $"reservation_report_{DateTime.UtcNow:yyyyMMddHHmmss}.pdf",
+                FileName = $"appointment_report_{DateTime.UtcNow:yyyyMMddHHmmss}.pdf",
                 PdfData = pdfBytes,
                 CreatedAt = DateTime.UtcNow,
                 TenantId = tenantId
@@ -72,13 +71,13 @@ namespace SZRST.Web.Serivces
             return report.Id;
         }
 
-        public async Task<List<ReservationReportListDto>> GetReports()
+        public async Task<List<AppointmentReportListDto>> GetReports()
         {
             return await _context.ReservationReport
                 .IgnoreQueryFilters()
                 .Where(x => !x.IsDeleted)
                 .OrderByDescending(x => x.CreatedAt)
-                .Select(x => new ReservationReportListDto
+                .Select(x => new AppointmentReportListDto
                 {
                     Id = x.Id,
                     DateFrom = x.DateFrom,
@@ -91,13 +90,13 @@ namespace SZRST.Web.Serivces
                 .ToListAsync();
         }
 
-        public async Task<List<ReservationReportListDto>> GetReportsByTenantId(int tenantId)
+        public async Task<List<AppointmentReportListDto>> GetReportsByTenantId(int tenantId)
         {
             return await _context.ReservationReport
                 .IgnoreQueryFilters()
                 .Where(x => x.TenantId == tenantId && !x.IsDeleted)
                 .OrderByDescending(x => x.CreatedAt)
-                .Select(x => new ReservationReportListDto
+                .Select(x => new AppointmentReportListDto
                 {
                     Id = x.Id,
                     DateFrom = x.DateFrom,
@@ -137,7 +136,7 @@ namespace SZRST.Web.Serivces
              }
         }
 
-        public byte[] GeneratePdf(List<MonthlyReservationReport> data, DateTime from, DateTime to, int totalReservations, decimal totalProfit)
+        public byte[] GeneratePdf(List<MonthlyAppointmentReport> data, DateTime from, DateTime to, int totalAppointments, decimal totalProfit)
         {
             var pdf = Document.Create(container =>
             {
@@ -146,7 +145,7 @@ namespace SZRST.Web.Serivces
                     page.Margin(30);
 
                     page.Header()
-                        .Text($"Reservation Report ({from:dd.MM.yyyy} - {to:dd.MM.yyyy})")
+                        .Text($"Appointment Report ({from:dd.MM.yyyy} - {to:dd.MM.yyyy})")
                         .FontSize(20)
                         .Bold();
 
@@ -166,7 +165,7 @@ namespace SZRST.Web.Serivces
                             {
                                 header.Cell().Text("Month");
                                 header.Cell().Text("Facility");
-                                header.Cell().Text("Reservations");
+                                header.Cell().Text("Appointments");
                                 header.Cell().Text("Profit");
                             });
 
@@ -174,7 +173,7 @@ namespace SZRST.Web.Serivces
                             {
                                 table.Cell().Text($"{row.Month}/{row.Year}");
                                 table.Cell().Text(row.FacilityName);
-                                table.Cell().Text(row.TotalReservations.ToString());
+                                table.Cell().Text(row.TotalAppointments.ToString());
                                 table.Cell().Text($"{row.Profit:0.00} KM");
                             }
                         });
@@ -183,7 +182,7 @@ namespace SZRST.Web.Serivces
 
                         col.Item().Row(row =>
                         {
-                            row.RelativeItem().Text($"Total reservations: {totalReservations}").Bold();
+                            row.RelativeItem().Text($"Total appointments: {totalAppointments}").Bold();
 
                             row.RelativeItem().AlignRight()
                                 .Text($"Total profit: {totalProfit:0.00} KM")

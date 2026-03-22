@@ -6,20 +6,20 @@ using SZRST.Web.Controllers;
 
 namespace SZRST.Web.Serivces
 {
-    public interface IReservationReportService
+    public interface IAppointmentReportService
     {
         Task<int> GenerateReport(DateTime dateFrom, DateTime dateTo, int tenantId);
 
-        Task<List<ReservationReportListDto>> GetReports();
+        Task<List<AppointmentReportListDto>> GetReports();
 
-        Task<List<ReservationReportListDto>> GetReportsByTenantId(int tenantId);
+        Task<List<AppointmentReportListDto>> GetReportsByTenantId(int tenantId);
 
         Task<ReservationReport> GetReport(int id);
 
         Task GenerateMonthlyReports();
     }
 
-    public class ReservationReportListDto
+    public class AppointmentReportListDto
     {
         public int Id { get; set; }
         public DateTime DateFrom { get; set; }

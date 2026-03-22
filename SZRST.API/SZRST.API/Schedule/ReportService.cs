@@ -8,17 +8,17 @@ namespace SZRST.Web.Schedule
 {
     public class ReportService
     {
-        private readonly IReservationReportService _reservationsReportService;
+        private readonly IAppointmentReportService _appointmentsReportService;
 
-        public ReportService(IReservationReportService reservationsReportService)
+        public ReportService(IAppointmentReportService appointmentsReportService)
         {
-            _reservationsReportService = reservationsReportService;
+            _appointmentsReportService = appointmentsReportService;
         }
 
         public async Task GenerateMonthlyReports()
         {
             Console.WriteLine("Pokrenuo se scheduler");
-            await _reservationsReportService.GenerateMonthlyReports();
+            await _appointmentsReportService.GenerateMonthlyReports();
         }
     }
 }

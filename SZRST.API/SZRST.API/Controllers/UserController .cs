@@ -180,30 +180,28 @@ namespace SZRST.API.Controllers
 
 		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin},{Roles.Uposlenik}")]
 		[HttpGet("for-appointments")]
-		public async Task<ActionResult<IEnumerable<UserListDto>>> GetUsersForAppointments()
+		public async Task<ActionResult<IEnumerable<UserListDto>>> GetUsersForAppointments([FromQuery] int? tenantId = null)
 		{
-			var korisnikRoleId = await _context.Roles
-				.Where(r => r.Name == Roles.Korisnik)
-				.Select(r => r.Id)
-				.FirstOrDefaultAsync();
+			var targetTenantId = tenantId;
 
-			var korisnikUserIds = _context.UserRoles
-				.Where(ur => ur.RoleId == korisnikRoleId)
-				.Select(ur => ur.UserId);
-
-			var usersQuery = _userManager.Users
-				.Where(u => !u.IsDeleted);
-
-			if (!_currentUserService.IsSuperAdmin)
+			if (_currentUserService.IsSuperAdmin)
+			{
+				if (!targetTenantId.HasValue || targetTenantId.Value <= 0)
+					return BadRequest(new { message = "TenantId je obavezan." });
+			}
+			else
 			{
 				if (!_currentUserService.TenantId.HasValue)
 					return Forbid();
 
-				var tenantId = _currentUserService.TenantId.Value;
-				usersQuery = usersQuery.Where(u =>
-					u.TenantId == tenantId ||
-					korisnikUserIds.Contains(u.Id));
+				targetTenantId ??= _currentUserService.TenantId.Value;
+
+				if (targetTenantId != _currentUserService.TenantId.Value)
+					return Forbid();
 			}
+
+			var usersQuery = _userManager.Users
+				.Where(u => !u.IsDeleted && u.Active && u.TenantId == targetTenantId.Value);
 
 			var users = await usersQuery
 				.Select(u => new UserListDto

@@ -568,8 +568,8 @@ updateUrlWithSelectedFilters(): void {
       appointmentTypes: this.appointmentTypeService.getAll(),
     };
 
-    if (this.canSelectUserInModal) {
-      requests.users = this.userService.getUsersForAppointments();
+    if (this.canSelectUserInModal && this.selectedTenantId) {
+      requests.users = this.userService.getUsersForAppointments(this.selectedTenantId);
     }
 
     forkJoin(requests).subscribe({
@@ -672,8 +672,12 @@ updateUrlWithSelectedFilters(): void {
       appointmentTypes: this.appointmentTypeService.getAll(),
     };
 
-    if (this.canSelectUserInModal) {
-      requests.users = this.userService.getUsersForAppointments();
+    const appointmentTenantId = appointmentData['tenantId']
+      ? Number(appointmentData['tenantId'])
+      : this.selectedTenantId;
+
+    if (this.canSelectUserInModal && appointmentTenantId) {
+      requests.users = this.userService.getUsersForAppointments(appointmentTenantId);
     }
 
     forkJoin(requests).subscribe({
@@ -702,7 +706,7 @@ updateUrlWithSelectedFilters(): void {
             users: data.users || [],
             canSelectUser: this.canSelectUserInModal,
             currentUserId: this.currentUserId,
-            tenantId: this.selectedTenantId,
+            tenantId: appointmentTenantId,
           },
         });
 
