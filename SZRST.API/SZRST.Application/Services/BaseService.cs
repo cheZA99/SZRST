@@ -47,7 +47,6 @@ namespace Application.Services
         {
             var set = _context.Set<TDb>();
             TDb entity = _mapper.Map<TDb>(request);
-            entity.DateCreated = DateTime.Now;
             set.Add(entity);
             await _context.SaveChangesAsync();
             return _mapper.Map<T>(entity);
@@ -57,7 +56,6 @@ namespace Application.Services
             var set = _context.Set<TDb>();
             var entity = await set.FindAsync(id);
             _mapper.Map(request, entity);
-            entity.DateModified = DateTime.Now;
             await _context.SaveChangesAsync();
             return _mapper.Map<T>(entity);
         }

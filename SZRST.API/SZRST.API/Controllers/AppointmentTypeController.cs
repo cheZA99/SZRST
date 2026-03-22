@@ -252,7 +252,7 @@ namespace SZRST.API.Controllers
 	{
 		public string Name { get; set; }
 		public int Duration { get; set; }
-		public float Price { get; set; }
+		public decimal Price { get; set; }
 		public int? CurrencyId { get; set; }
 		public int TenantId { get; set; }
 	}
@@ -262,7 +262,7 @@ namespace SZRST.API.Controllers
 		public int Id { get; set; }
 		public string Name { get; set; }
 		public int Duration { get; set; }
-		public float Price { get; set; }
+		public decimal Price { get; set; }
 		public int? CurrencyId { get; set; }
 		public string CurrencyName { get; set; }
 		public int TenantId { get; set; }

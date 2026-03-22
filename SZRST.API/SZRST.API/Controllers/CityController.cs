@@ -27,6 +27,7 @@ namespace SZRST.API.Controllers
 		public async Task<ActionResult<IEnumerable<CityDto>>> GetCities()
 		{
 			return Ok(await _context.City
+							 .Where(c => !c.IsDeleted)
 							 .Include(c => c.Country)
 							 .Select(c => new CityDto
 							 {
@@ -50,6 +51,7 @@ namespace SZRST.API.Controllers
 		public async Task<ActionResult<CityDto>> GetCity(int id)
 		{
 			var city = await _context.City
+								 .Where(c => !c.IsDeleted)
 								 .Include(c => c.Country)
 								 .Where(c => c.Id == id)
 								 .Select(c => new CityDto
@@ -90,7 +92,7 @@ namespace SZRST.API.Controllers
 			{
 				Name = cityDto.Name,
 				Country = country,
-				IsDeleted = cityDto.IsDeleted
+				IsDeleted = false
 			};
 
 			_context.City.Add(city);
@@ -150,15 +152,23 @@ namespace SZRST.API.Controllers
 				return NotFound();
 			}
 
-			_context.City.Remove(city);
-			await _context.SaveChangesAsync();
+			city.IsDeleted = true;
+
+			try
+			{
+				await _context.SaveChangesAsync();
+			}
+			catch (DbUpdateException)
+			{
+				return BadRequest(new { message = "Nije moguće obrisati grad jer se koristi u postojećim zapisima." });
+			}
 
 			return NoContent();
 		}
 
 		private bool CityExists(int id)
 		{
-			return _context.City.Any(e => e.Id == id);
+			return _context.City.Any(e => e.Id == id && !e.IsDeleted);
 		}
 	}
 

@@ -188,7 +188,14 @@ namespace SZRST.API.Controllers
 				return Forbid();
 
 			review.IsDeleted = true;
-			await _context.SaveChangesAsync();
+			try
+			{
+				await _context.SaveChangesAsync();
+			}
+			catch (DbUpdateException)
+			{
+				return BadRequest("Nije moguće obrisati recenziju jer se koristi u povezanim podacima.");
+			}
 
 			return NoContent();
 		}

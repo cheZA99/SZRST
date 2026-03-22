@@ -33,6 +33,9 @@ namespace Infrastructure.Persistance
 			modelBuilder.ApplyConfigurationsFromAssembly(typeof(UserConfiguration).Assembly);
 			modelBuilder.ApplyConfigurationsFromAssembly(typeof(RoleClaimConfiguration).Assembly);
 			modelBuilder.ApplyConfigurationsFromAssembly(typeof(RefreshTokenConfiguration).Assembly);
+			modelBuilder.Entity<AppointmentType>()
+				.Property(x => x.Price)
+				.HasColumnType("decimal(18,2)");
 
 			foreach (var entityType in modelBuilder.Model.GetEntityTypes())
 			{
@@ -101,11 +104,11 @@ namespace Infrastructure.Persistance
 				{
 					if (entry.State == EntityState.Added)
 					{
-						entity.DateCreated = DateTime.Now;
+						entity.DateCreated = DateTime.UtcNow;
 					}
 					else if (entry.State == EntityState.Modified)
 					{
-						entity.DateModified = DateTime.Now;
+						entity.DateModified = DateTime.UtcNow;
 					}
 				}
 			}

@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using SZRST.API.Security;
 using SZRST.Domain.Constants;
 
 namespace SZRST.API.Controllers
@@ -17,10 +18,12 @@ namespace SZRST.API.Controllers
 	public class WorkerController :ControllerBase
 	{
 		private readonly SZRSTContext _context;
+		private readonly ICurrentUserService _currentUserService;
 
-		public WorkerController(SZRSTContext context)
+		public WorkerController(SZRSTContext context, ICurrentUserService currentUserService)
 		{
 			_context = context;
+			_currentUserService = currentUserService;
 		}
 
 		// GET: api/Worker
@@ -31,7 +34,8 @@ namespace SZRST.API.Controllers
 							 .Include(w => w.User)
 							 .Include(w => w.WorkerType)
 							 .Include(w => w.Facility)
-							 .Where(w => !w.IsDeleted)
+							 .Where(w => !w.IsDeleted &&
+								 (_currentUserService.IsSuperAdmin || w.TenantId == _currentUserService.TenantId))
 							 .Select(w => new WorkerDto
 							 {
 								 Id = w.Id,
@@ -56,7 +60,7 @@ namespace SZRST.API.Controllers
 								  .Include(w => w.User)
 								  .Include(w => w.WorkerType)
 								  .Include(w => w.Facility)
-								  .Where(w => w.Id == id)
+								  .Where(w => w.Id == id && !w.IsDeleted)
 								  .Select(w => new WorkerDto
 								  {
 									  Id = w.Id,
@@ -76,6 +80,11 @@ namespace SZRST.API.Controllers
 				return NotFound();
 			}
 
+			if (!_currentUserService.IsSuperAdmin && !_currentUserService.CanAccessTenant(worker.TenantId))
+			{
+				return Forbid();
+			}
+
 			return worker;
 		}
 
@@ -83,6 +92,9 @@ namespace SZRST.API.Controllers
 		[HttpPost]
 		public async Task<ActionResult<Worker>> CreateWorker([FromBody] WorkerCreateDto workerDto)
 		{
+			if (!_currentUserService.HasValidTenant)
+				return Forbid();
+
 			var user = await _context.Users.FindAsync(workerDto.UserId);
 			if (user == null)
 			{
@@ -101,13 +113,27 @@ namespace SZRST.API.Controllers
 				return BadRequest("Invalid FacilityId");
 			}
 
+			if (!_currentUserService.IsSuperAdmin &&
+			    (user.TenantId != _currentUserService.TenantId ||
+			     workerType.TenantId != _currentUserService.TenantId ||
+			     facility.TenantId != _currentUserService.TenantId))
+			{
+				return Forbid();
+			}
+
+			if (user.TenantId != facility.TenantId || workerType.TenantId != facility.TenantId)
+			{
+				return BadRequest("Korisnik, tip radnika i objekat moraju pripadati istoj organizaciji.");
+			}
+
 			var worker = new Worker
 			{
 				DateOfEmployment = workerDto.DateOfEmployment,
 				User = user,
 				WorkerType = workerType,
 				Facility = facility,
-				IsDeleted = false
+				IsDeleted = false,
+				TenantId = facility.TenantId
 			};
 
 			_context.Worker.Add(worker);
@@ -120,10 +146,18 @@ namespace SZRST.API.Controllers
 		[HttpPut("{id}")]
 		public async Task<IActionResult> UpdateWorker(int id, [FromBody] WorkerCreateDto workerDto)
 		{
+			if (!_currentUserService.HasValidTenant)
+				return Forbid();
+
 			var worker = await _context.Worker.FindAsync(id);
 			if (worker == null)
 			{
 				return NotFound();
+			}
+
+			if (!_currentUserService.IsSuperAdmin && !_currentUserService.CanAccessTenant(worker.TenantId))
+			{
+				return Forbid();
 			}
 
 			var user = await _context.Users.FindAsync(workerDto.UserId);
@@ -144,10 +178,24 @@ namespace SZRST.API.Controllers
 				return BadRequest("Invalid FacilityId");
 			}
 
+			if (!_currentUserService.IsSuperAdmin &&
+			    (user.TenantId != _currentUserService.TenantId ||
+			     workerType.TenantId != _currentUserService.TenantId ||
+			     facility.TenantId != _currentUserService.TenantId))
+			{
+				return Forbid();
+			}
+
+			if (user.TenantId != facility.TenantId || workerType.TenantId != facility.TenantId)
+			{
+				return BadRequest("Korisnik, tip radnika i objekat moraju pripadati istoj organizaciji.");
+			}
+
 			worker.DateOfEmployment = workerDto.DateOfEmployment;
 			worker.User = user;
 			worker.WorkerType = workerType;
 			worker.Facility = facility;
+			worker.TenantId = facility.TenantId;
 
 			_context.Entry(worker).State = EntityState.Modified;
 
@@ -180,15 +228,28 @@ namespace SZRST.API.Controllers
 				return NotFound();
 			}
 
-			_context.Worker.Remove(worker);
-			await _context.SaveChangesAsync();
+			if (!_currentUserService.IsSuperAdmin && !_currentUserService.CanAccessTenant(worker.TenantId))
+			{
+				return Forbid();
+			}
+
+			worker.IsDeleted = true;
+
+			try
+			{
+				await _context.SaveChangesAsync();
+			}
+			catch (DbUpdateException)
+			{
+				return BadRequest(new { message = "Nije moguće obrisati radnika jer se koristi u postojećim zapisima." });
+			}
 
 			return NoContent();
 		}
 
 		private bool WorkerExists(int id)
 		{
-			return _context.Worker.Any(e => e.Id == id);
+			return _context.Worker.Any(e => e.Id == id && !e.IsDeleted);
 		}
 	}
 

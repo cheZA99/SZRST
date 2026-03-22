@@ -28,6 +28,7 @@ namespace SZRST.API.Controllers
 		public async Task<ActionResult<IEnumerable<Location>>> GetLocations()
 		{
 			return await _context.Location
+							 .Where(l => !l.IsDeleted)
 							 .Include(l => l.Country)
 							 .Include(l => l.City)
 							 .ToListAsync();
@@ -40,7 +41,7 @@ namespace SZRST.API.Controllers
 			var location = await _context.Location
 									.Include(l => l.Country)
 									.Include(l => l.City)
-									.FirstOrDefaultAsync(l => l.Id == id);
+									.FirstOrDefaultAsync(l => l.Id == id && !l.IsDeleted);
 
 			if (location == null)
 			{
@@ -121,15 +122,23 @@ namespace SZRST.API.Controllers
 				return NotFound();
 			}
 
-			_context.Location.Remove(location);
-			await _context.SaveChangesAsync();
+			location.IsDeleted = true;
+
+			try
+			{
+				await _context.SaveChangesAsync();
+			}
+			catch (DbUpdateException)
+			{
+				return BadRequest(new { message = "Nije moguće obrisati lokaciju jer se koristi u postojećim zapisima." });
+			}
 
 			return NoContent();
 		}
 
 		private bool LocationExists(int id)
 		{
-			return _context.Location.Any(e => e.Id == id);
+			return _context.Location.Any(e => e.Id == id && !e.IsDeleted);
 		}
 	}
 }

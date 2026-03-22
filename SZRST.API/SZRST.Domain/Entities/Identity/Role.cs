@@ -7,7 +7,7 @@ namespace Domain.Entities
     public class Role : IdentityRole<int>, IBaseEntity<int>
     {
         
-        public DateTime DateCreated { get; set; } = DateTime.Now;
+        public DateTime DateCreated { get; set; } = DateTime.UtcNow;
         public DateTime? DateModified { get; set; }
         public bool IsDeleted { get; set; }
 

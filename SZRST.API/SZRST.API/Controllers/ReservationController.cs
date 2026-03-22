@@ -190,7 +190,14 @@ namespace SZRST.API.Controllers
 				return Forbid();
 
 			reservation.IsDeleted = true;
-			await _context.SaveChangesAsync();
+			try
+			{
+				await _context.SaveChangesAsync();
+			}
+			catch (DbUpdateException)
+			{
+				return BadRequest("Nije moguće obrisati rezervaciju jer se koristi u povezanim izvještajima.");
+			}
 
 			return NoContent();
 		}

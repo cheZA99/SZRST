@@ -141,8 +141,16 @@ namespace SZRST.API.Controllers
 				return NotFound();
 			}
 
-			_context.Country.Remove(country);
-			await _context.SaveChangesAsync();
+			country.IsDeleted = true;
+
+			try
+			{
+				await _context.SaveChangesAsync();
+			}
+			catch (DbUpdateException)
+			{
+				return BadRequest(new { message = "Nije moguće obrisati državu jer se koristi u postojećim zapisima." });
+			}
 
 			return NoContent();
 		}

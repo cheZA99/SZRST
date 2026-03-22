@@ -5,7 +5,7 @@ namespace Domain.Entities
 { 
     public class UserClaim : IdentityUserClaim<int>, IBaseEntity<int>
     {
-        public DateTime DateCreated { get; set; } = DateTime.Now;
+        public DateTime DateCreated { get; set; } = DateTime.UtcNow;
         public DateTime? DateModified { get; set; }
         public bool IsDeleted { get; set; }
 

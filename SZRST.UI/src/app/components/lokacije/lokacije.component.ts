@@ -51,7 +51,7 @@ import {
 })
 export class LokacijeComponent implements OnInit {
 
-  private translate = inject(TranslateService);
+  private translate: TranslateService = inject(TranslateService);
 
   facilities: FacilityResponse[] = [];
   filteredFacilities: FacilityResponse[] = [];
@@ -342,6 +342,9 @@ export class LokacijeComponent implements OnInit {
   openCreateModal(): void {
     this.isEditMode = false;
     this.selectedFacility = null;
+    this.selectedFile = null;
+    this.imagePreview = null;
+    this.removeCurrentImage = false;
 
     if (this.isSuperAdmin) {
       this.facilityForm.reset({
@@ -361,6 +364,8 @@ export class LokacijeComponent implements OnInit {
 
   openEditModal(facility: FacilityResponse): void {
     this.filteredCities = this.cities.filter(x => x.country.id === facility.location.city.country.id);
+    this.selectedFile = null;
+    this.removeCurrentImage = false;
 
     this.imagePreview = facility.imageUrl
       ? `${environment.apiUrl}${facility.imageUrl}`
@@ -453,6 +458,7 @@ export class LokacijeComponent implements OnInit {
 
     this.selectedFile = null;
     this.imagePreview = null;
+    this.removeCurrentImage = false;
   }
 
   onSubmit(): void {
@@ -491,7 +497,7 @@ confirmDeleteFacility(id: number) {
     confirmButtonText: confirmBtn,
     cancelButtonText: cancelBtn,
     confirmButtonColor: '#d33'
-  }).then((result) => {
+  }).then((result: any) => {
     if (result.isConfirmed) {
       this.deleteFacility(id);
     }
@@ -564,6 +570,7 @@ confirmDeleteFacility(id: number) {
     const file = input.files[0];
 
     this.selectedFile = file;
+    this.removeCurrentImage = false;
 
     if (this.imagePreview) {
       URL.revokeObjectURL(this.imagePreview);
@@ -609,7 +616,7 @@ confirmDeleteFacility(id: number) {
       data.tenantId = this.selectedFacility?.tenantId;
     }
 
-    this.facilityService.updateWithLocation(id, data, this.selectedFile).subscribe({
+    this.facilityService.updateWithLocation(id, data, this.selectedFile, this.removeCurrentImage).subscribe({
       next: () => {
         this.toastr.success('Lokacija uspješno ažurirana');
         this.loadFacilities();
