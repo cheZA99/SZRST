@@ -9,19 +9,35 @@ namespace SZRST.Tests.Helpers
 {
 	public class DummyTenantProvider :ITenantProvider
 	{
-		public int TenantId => 0;
-		public bool IsSuperAdminOrUser { get; set; } = true;
+		public DummyTenantProvider(int tenantId = 0, bool isSuperAdminOrUser = true)
+		{
+			TenantId = tenantId;
+			IsSuperAdminOrUser = isSuperAdminOrUser;
+		}
+
+		public int TenantId { get; }
+		public bool IsSuperAdminOrUser { get; set; }
 	}
 
 	public static class TestDbContextFactory
 	{
 		public static SZRSTContext Create(string dbName)
 		{
+			return Create(dbName, new DummyTenantProvider());
+		}
+
+		public static SZRSTContext Create(string dbName, int tenantId, bool isSuperAdminOrUser = false)
+		{
+			return Create(dbName, new DummyTenantProvider(tenantId, isSuperAdminOrUser));
+		}
+
+		public static SZRSTContext Create(string dbName, ITenantProvider tenantProvider)
+		{
 			var options = new DbContextOptionsBuilder<SZRSTContext>()
 			    .UseInMemoryDatabase(databaseName: dbName)
 			    .Options;
 
-			var context = new SZRSTContext(options, new DummyTenantProvider());
+			var context = new SZRSTContext(options, tenantProvider);
 			context.Database.EnsureCreated();
 			return context;
 		}
