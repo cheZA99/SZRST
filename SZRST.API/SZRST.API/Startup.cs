@@ -63,11 +63,6 @@ namespace SZRST.WebApi
 			}).AddEntityFrameworkStores<SZRSTContext>()
 			.AddDefaultTokenProviders();
 			services.AddScoped<IAuthService, AuthService>();
-			services.AddDbContext<SZRSTContext>((sp, options) =>
-			{
-				var tenantProvider = sp.GetRequiredService<ITenantProvider>();
-				options.UseSqlServer(Configuration.GetConnectionString("SZRST"));
-			});
 			services.AddAuthentication(options =>
 			{
 				options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -219,8 +214,8 @@ namespace SZRST.WebApi
 			{
 				Authorization = new[] { new AdminDashboardAuthorizationFilter() }
 			});
-			app.UseHttpsRedirection();
 			app.UseMiddleware<ExceptionMiddleware>();
+			app.UseHttpsRedirection();
 			app.UseCors("MyPolicy");
 			app.UseRouting();
 			app.UseAuthentication();

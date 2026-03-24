@@ -12,8 +12,7 @@ namespace Infrastructure
         {
             services.AddDbContext<SZRSTContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("SZRST"),
-                b => b.MigrationsAssembly("SZRST.Infrastructure")), ServiceLifetime.Transient);
-                //   b => b.MigrationsAssembly(typeof(SZRSTContext).Assembly.FullName)), ServiceLifetime.Transient);
+                b => b.MigrationsAssembly("SZRST.Infrastructure")));
 
             services.AddScoped<ISZRSTContext>(provider => provider.GetService<SZRSTContext>());
             return services;

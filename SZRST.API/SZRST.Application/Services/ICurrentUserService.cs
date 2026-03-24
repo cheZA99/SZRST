@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
+using System.Linq;
 using System.Security.Claims;
 
 public interface ICurrentUserService
@@ -11,9 +12,10 @@ public interface ICurrentUserService
 	bool IsSuperAdmin { get; }
 	bool IsKorisnik { get; }
 	bool HasValidTenant { get; }
+	bool HasRole(string role);
 }
 
-public class CurrentUserService :ICurrentUserService
+public class CurrentUserService : ICurrentUserService
 {
 	private readonly IHttpContextAccessor _httpContextAccessor;
 
@@ -56,9 +58,20 @@ public class CurrentUserService :ICurrentUserService
 
 	public bool IsAuthenticated => _httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated ?? false;
 
-	public bool IsSuperAdmin => _httpContextAccessor.HttpContext?.User?.IsInRole(SZRST.Domain.Constants.Roles.SuperAdmin) ?? false;
+	public bool IsSuperAdmin => HasRole(SZRST.Domain.Constants.Roles.SuperAdmin);
 
-	public bool IsKorisnik => _httpContextAccessor.HttpContext?.User?.IsInRole(SZRST.Domain.Constants.Roles.Korisnik) ?? false;
+	public bool IsKorisnik => HasRole(SZRST.Domain.Constants.Roles.Korisnik);
 
 	public bool HasValidTenant => IsSuperAdmin || TenantId.HasValue;
+
+	public bool HasRole(string role)
+	{
+		if (string.IsNullOrWhiteSpace(role))
+		{
+			return false;
+		}
+
+		return _httpContextAccessor.HttpContext?.User?.Claims
+			.Any(c => c.Type == ClaimTypes.Role && c.Value == role) ?? false;
+	}
 }

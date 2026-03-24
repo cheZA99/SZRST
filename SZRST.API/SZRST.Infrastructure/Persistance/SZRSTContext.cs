@@ -131,11 +131,6 @@ namespace Infrastructure.Persistance
 				   (_tenantProvider.TenantId > 0 && e.TenantId == _tenantProvider.TenantId));
 		}
 
-		public override DbSet<TDb> Set<TDb>() where TDb : class
-		{
-			return base.Set<TDb>();
-		}
-
 		public DbSet<Currency> Currency { get; set; }
 		public DbSet<Country> Country { get; set; }
 		public DbSet<City> City { get; set; }
