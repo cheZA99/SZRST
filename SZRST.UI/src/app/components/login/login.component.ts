@@ -41,20 +41,14 @@ export class LoginComponent implements OnInit {
       // Check if email follows a valid format
       if (!/^\S+@\S+\.\S+$/.test(this.loginForm.value.email)) {
         this.toastr.error(
-          "Molimo unesite ispravnu e-poštu. Trebala bi slijediti format 'ime@primjer.com'."
+          "Molimo unesite ispravnu e-po�tu. Trebala bi slijediti format 'ime@primjer.com'."
         );
         return;
       }
-      // Check if the password length is less than 5 characters
-      /*if (this.loginForm.value.password.length < 5) {
-        this.toastr.error(
-          'Vaša lozinka mora biti dugačka minimalno 5 karaktera.'
-        );
-        return;
-      }*/
+
       this.authService.login(this.loginForm.value).subscribe({
         next: () => {
-          logger.log("login success");
+          logger.log('login success');
           this.loginForm.reset();
           this.router.navigate(['dashboard']);
         },

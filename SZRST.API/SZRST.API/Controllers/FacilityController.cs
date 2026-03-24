@@ -47,49 +47,6 @@ namespace SZRST.API.Controllers
 			_userManager = userManager;
 		}
 
-		// GET: api/Facility
-		[HttpGet]
-        /*public async Task<ActionResult<IEnumerable<FacilityResponse>>> GetFacilities([FromQuery] string filter, [FromQuery] string value)
-		{
-			var query = _context.Facility
-							 .Include(f => f.FacilityType)  // Include related FacilityType
-							 .Include(f => f.Location)      // Include related Location
-							 .ThenInclude(f => f.City)
-							 .ThenInclude(f => f.Country);
-
-			if (filter == null || value == null)
-			{
-				return _mapper.Map<List<FacilityResponse>>(await query.OrderByDescending(x => x.Id).ToListAsync());
-			}
-
-			if (filter == "FacilityType")
-			{
-				return _mapper.Map<List<FacilityResponse>>(await query.Where(q => q.FacilityType.Name.Contains(value)).OrderByDescending(x => x.Id).ToListAsync());
-			}
-
-			if (filter == "Facility")
-			{
-				return _mapper.Map<List<FacilityResponse>>(await query.Where(q => q.Name.Contains(value)).OrderByDescending(x => x.Id).ToListAsync());
-			}
-
-			if (filter == "Address")
-			{
-				return _mapper.Map<List<FacilityResponse>>(await query.Where(q => q.Location.Address.Contains(value)).OrderByDescending(x => x.Id).ToListAsync());
-			}
-
-			if (filter == "City")
-			{
-				return _mapper.Map<List<FacilityResponse>>(await query.Where(q => q.Location.City.Name.Contains(value)).OrderByDescending(x => x.Id).ToListAsync());
-			}
-
-			if (filter == "Country")
-			{
-				return _mapper.Map<List<FacilityResponse>>(await query.Where(q => q.Location.Country.Name.Contains(value)).OrderByDescending(x => x.Id).ToListAsync());
-			}
-
-			return _mapper.Map<List<FacilityResponse>>(await query.OrderByDescending(x => x.Id).ToListAsync());
-		}*/
-
         // GET: api/Facility
 		[HttpGet]
 		public async Task<ActionResult<PagedResult<FacilityResponse>>> GetFacilities([FromQuery] FacilityFilterDto filter)

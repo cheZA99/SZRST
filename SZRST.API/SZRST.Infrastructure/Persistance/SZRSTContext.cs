@@ -80,17 +80,6 @@ namespace Infrastructure.Persistance
 		public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
 		{
 			ModifyTimestamps();
-
-			foreach (var entry in ChangeTracker.Entries<ITenantEntity>())
-			{
-				//if (entry.State == EntityState.Added)
-				//{
-				//	// Ako TenantProvider nema TenantId (npr. SuperAdmin), postavi na 1 (core tenant)
-				//	entry.Entity.TenantId = _tenantProvider.TenantId == 0 || _tenantProvider.TenantId == null
-				//	    ? 1
-				//	    : _tenantProvider.TenantId;
-				//}
-			}
 			return base.SaveChangesAsync(cancellationToken);
 		}
 
