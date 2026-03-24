@@ -5,6 +5,7 @@ import { AppointmentTypeService, AppointmentType, AppointmentTypeCreateDto } fro
 import { CurrencyService, Currency } from '../../services/currency.service';
 import { TenantService, Tenant } from 'src/app/services/tenant.service';
 import { AuthService } from '../../services/auth.service';
+import { ConfirmDialogService } from 'src/app/services/confirm-dialog.service';
 import { logger } from 'src/app/utils/logger';
 
 @Component({
@@ -42,7 +43,8 @@ export class ResursiComponent implements OnInit {
     private tenantService: TenantService,
     public authService: AuthService,
     private fb: FormBuilder,
-    private toastr: ToastrService
+    private toastr: ToastrService,
+    private confirmDialog: ConfirmDialogService
   ) {
     this.appointmentTypeForm = this.createForm();
   }
@@ -103,8 +105,8 @@ export class ResursiComponent implements OnInit {
           this.loading = false;
         },
         error: (error) => {
-          logger.error('Greška pri učitavanju resursa:', error);
-          this.toastr.error('Greška pri učitavanju resursa');
+          logger.error('GreÃƒâ€¦Ã‚Â¡ka pri uÃƒâ€žÃ‚Âitavanju resursa:', error);
+          this.toastr.error('GreÃƒâ€¦Ã‚Â¡ka pri uÃƒâ€žÃ‚Âitavanju resursa');
           this.loading = false;
         }
       });
@@ -117,14 +119,14 @@ export class ResursiComponent implements OnInit {
             this.loading = false;
           },
           error: (error) => {
-            logger.error('Greška pri učitavanju resursa:', error);
-            this.toastr.error('Greška pri učitavanju resursa');
+            logger.error('GreÃƒâ€¦Ã‚Â¡ka pri uÃƒâ€žÃ‚Âitavanju resursa:', error);
+            this.toastr.error('GreÃƒâ€¦Ã‚Â¡ka pri uÃƒâ€žÃ‚Âitavanju resursa');
             this.loading = false;
           }
         });
       } else {
         this.loading = false;
-        this.toastr.error('Nije pronađena organizacija korisnika');
+        this.toastr.error('Nije pronaÃƒâ€žÃ¢â‚¬Ëœena organizacija korisnika');
       }
     }
   }
@@ -137,8 +139,8 @@ export class ResursiComponent implements OnInit {
         this.loadingCurrencies = false;
       },
       error: (error) => {
-        logger.error('Greška pri učitavanju valuta:', error);
-        this.toastr.error('Greška pri učitavanju valuta');
+        logger.error('GreÃƒâ€¦Ã‚Â¡ka pri uÃƒâ€žÃ‚Âitavanju valuta:', error);
+        this.toastr.error('GreÃƒâ€¦Ã‚Â¡ka pri uÃƒâ€žÃ‚Âitavanju valuta');
         this.loadingCurrencies = false;
       }
     });
@@ -152,8 +154,8 @@ export class ResursiComponent implements OnInit {
         this.loadingTenants = false;
       },
       error: (error) => {
-        logger.error('Greška pri učitavanju organizacija:', error);
-        this.toastr.error('Greška pri učitavanju organizacija');
+        logger.error('GreÃƒâ€¦Ã‚Â¡ka pri uÃƒâ€žÃ‚Âitavanju organizacija:', error);
+        this.toastr.error('GreÃƒâ€¦Ã‚Â¡ka pri uÃƒâ€žÃ‚Âitavanju organizacija');
         this.loadingTenants = false;
       }
     });
@@ -238,7 +240,7 @@ export class ResursiComponent implements OnInit {
       Object.keys(this.appointmentTypeForm.controls).forEach((key) => {
         this.appointmentTypeForm.get(key)?.markAsTouched();
       });
-      this.toastr.error('Molimo ispravite greške u formi');
+      this.toastr.error('Molimo ispravite greÃƒâ€¦Ã‚Â¡ke u formi');
       return;
     }
 
@@ -262,18 +264,18 @@ export class ResursiComponent implements OnInit {
     }
 
     if (this.isAdmin && !this.isSuperAdmin && !data.tenantId) {
-      this.toastr.error('Nije pronađena organizacija');
+      this.toastr.error('Nije pronaÃƒâ€žÃ¢â‚¬Ëœena organizacija');
       return;
     }
 
     this.appointmentTypeService.create(data).subscribe({
       next: () => {
-        this.toastr.success('Resurs uspješno kreiran');
+        this.toastr.success('Resurs uspjeÃƒâ€¦Ã‚Â¡no kreiran');
         this.loadAppointmentTypes();
         this.closeModal();
       },
       error: (error) => {
-        logger.error('Greška pri kreiranju resursa:', error);
+        logger.error('GreÃƒâ€¦Ã‚Â¡ka pri kreiranju resursa:', error);
         if (error.error?.message) {
           this.toastr.error(error.error.message);
         } else if (error.error?.errors) {
@@ -281,7 +283,7 @@ export class ResursiComponent implements OnInit {
             this.toastr.error(err);
           });
         } else {
-          this.toastr.error('Greška pri kreiranju resursa');
+          this.toastr.error('GreÃƒâ€¦Ã‚Â¡ka pri kreiranju resursa');
         }
       }
     });
@@ -294,12 +296,12 @@ export class ResursiComponent implements OnInit {
 
     this.appointmentTypeService.update(id, data).subscribe({
       next: () => {
-        this.toastr.success('Resurs uspješno ažuriran');
+        this.toastr.success('Resurs uspjeÃƒâ€¦Ã‚Â¡no aÃƒâ€¦Ã‚Â¾uriran');
         this.loadAppointmentTypes();
         this.closeModal();
       },
       error: (error) => {
-        logger.error('Greška pri ažuriranju resursa:', error);
+        logger.error('GreÃƒâ€¦Ã‚Â¡ka pri aÃƒâ€¦Ã‚Â¾uriranju resursa:', error);
         if (error.error?.message) {
           this.toastr.error(error.error.message);
         } else if (error.error?.errors) {
@@ -307,25 +309,32 @@ export class ResursiComponent implements OnInit {
             this.toastr.error(err);
           });
         } else {
-          this.toastr.error('Greška pri ažuriranju resursa');
+          this.toastr.error('GreÃƒâ€¦Ã‚Â¡ka pri aÃƒâ€¦Ã‚Â¾uriranju resursa');
         }
       }
     });
-  }
+  }  async deleteAppointmentType(id: number): Promise<void> {
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Potvrda brisanja',
+      text: 'Da li ste sigurni da Å¾elite obrisati ovaj resurs?',
+      confirmButtonText: 'ObriÅ¡i',
+      cancelButtonText: 'OtkaÅ¾i'
+    });
 
-  deleteAppointmentType(id: number): void {
-    if (confirm('Da li ste sigurni da želite obrisati ovaj resurs?')) {
-      this.appointmentTypeService.delete(id).subscribe({
-        next: () => {
-          this.toastr.success('Resurs uspješno obrisan');
-          this.loadAppointmentTypes();
-        },
-        error: (error) => {
-          logger.error('Greška pri brisanju resursa:', error);
-          this.toastr.error('Greška pri brisanju resursa');
-        }
-      });
+    if (!confirmed) {
+      return;
     }
+
+    this.appointmentTypeService.delete(id).subscribe({
+      next: () => {
+        this.toastr.success('Resurs uspjeÅ¡no obrisan');
+        this.loadAppointmentTypes();
+      },
+      error: (error) => {
+        logger.error('GreÅ¡ka pri brisanju resursa:', error);
+        this.toastr.error('GreÅ¡ka pri brisanju resursa');
+      }
+    });
   }
 
   formatDuration(minutes: number): string {

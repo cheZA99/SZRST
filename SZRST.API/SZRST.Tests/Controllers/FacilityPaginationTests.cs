@@ -10,6 +10,7 @@ using Moq;
 using SZRST.API.Controllers;
 using SZRST.API.Services;
 using SZRST.Domain.Entities;
+using SZRST.Shared.response;
 using SZRST.Tests.Helpers;
 
 namespace SZRST.Tests.Controllers

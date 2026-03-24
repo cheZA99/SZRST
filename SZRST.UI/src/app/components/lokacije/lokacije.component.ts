@@ -12,9 +12,9 @@ import { FacilityTypeService } from 'src/app/services/facility-type.service'
 import { FacilityType } from 'src/app/services/facility-type.service';
 import { Country, CountryService } from 'src/app/services/country.service';
 import { City, CityService } from 'src/app/services/city.service';
+import { ConfirmDialogService } from 'src/app/services/confirm-dialog.service';
 import { environment } from 'src/environments/environment';
 import { TranslateService } from '@ngx-translate/core';
-import Swal from 'sweetalert2';
 import { logger } from 'src/app/utils/logger';
 
 import {
@@ -101,7 +101,8 @@ export class LokacijeComponent implements OnInit {
     private cityService: CityService,
     public authService: AuthService,
     private fb: FormBuilder,
-    private toastr: ToastrService
+    private toastr: ToastrService,
+    private confirmDialog: ConfirmDialogService
   ) {
     this.facilityForm = this.createForm();
   }
@@ -230,8 +231,8 @@ export class LokacijeComponent implements OnInit {
           this.loading = false;
         },
         error: (error) => {
-          logger.error('Greška pri učitavanju objekata:', error);
-          this.toastr.error('Greška pri učitavanju objekata');
+          logger.error('GreÅ¡ka pri uÄitavanju objekata:', error);
+          this.toastr.error('GreÅ¡ka pri uÄitavanju objekata');
           this.loading = false;
         },
       });
@@ -245,8 +246,8 @@ export class LokacijeComponent implements OnInit {
         this.loadingTenants = false;
       },
       error: (error) => {
-        logger.error('Greška pri učitavanju organizacija:', error);
-        this.toastr.error('Greška pri učitavanju organizacija');
+        logger.error('GreÅ¡ka pri uÄitavanju organizacija:', error);
+        this.toastr.error('GreÅ¡ka pri uÄitavanju organizacija');
         this.loadingTenants = false;
       },
     });
@@ -258,8 +259,8 @@ export class LokacijeComponent implements OnInit {
         this.facilityTypes = data;
       },
       error: (error) => {
-        logger.error('Greška pri učitavanju facility types:', error);
-        this.toastr.error('Greška pri učitavanju facility types');
+        logger.error('GreÅ¡ka pri uÄitavanju facility types:', error);
+        this.toastr.error('GreÅ¡ka pri uÄitavanju facility types');
         this.loadingTenants = false;
       }
     })
@@ -303,8 +304,8 @@ export class LokacijeComponent implements OnInit {
         this.cities = data;
       },
       error: (error) => {
-        logger.error('Greška pri učitavanju gradova:', error);
-        this.toastr.error('Greška pri učitavanju gradova');
+        logger.error('GreÅ¡ka pri uÄitavanju gradova:', error);
+        this.toastr.error('GreÅ¡ka pri uÄitavanju gradova');
         this.loadingTenants = false;
       }
     })
@@ -316,8 +317,8 @@ export class LokacijeComponent implements OnInit {
         this.countries = data;
       },
       error: (error) => {
-        logger.error('Greška pri učitavanju država:', error);
-        this.toastr.error('Greška pri učitavanju država');
+        logger.error('GreÅ¡ka pri uÄitavanju drÅ¾ava:', error);
+        this.toastr.error('GreÅ¡ka pri uÄitavanju drÅ¾ava');
         this.loadingTenants = false;
       }
     })
@@ -483,37 +484,35 @@ export class LokacijeComponent implements OnInit {
     }
   }
 
-confirmDeleteFacility(id: number) {
+async confirmDeleteFacility(id: number) {
 
   const title = this.translate.instant('FACILITY.DELETE_CONFIRM_TITLE');
   const text = this.translate.instant('FACILITY.DELETE_CONFIRM_TEXT');
   const confirmBtn = this.translate.instant('FACILITY.DELETE_CONFIRM_BUTTON');
   const cancelBtn = this.translate.instant('FACILITY.CANCEL');
 
-  Swal.fire({
+  const confirmed = await this.confirmDialog.confirm({
     title: title,
     text: text,
-    icon: 'warning',
-    showCancelButton: true,
     confirmButtonText: confirmBtn,
     cancelButtonText: cancelBtn,
     confirmButtonColor: '#d33'
-  }).then((result: any) => {
-    if (result.isConfirmed) {
-      this.deleteFacility(id);
-    }
   });
+
+  if (confirmed) {
+    this.deleteFacility(id);
+  }
 }
 
   deleteFacility(id: number) {
     this.facilityService.delete(id).subscribe({
       next: (response) => {
-        this.toastr.success('Facility uspješno izbrisan');
+        this.toastr.success('Facility uspjeÅ¡no izbrisan');
         this.loadFacilities();
         this.closeModal();
       },
       error: (error) => {
-        logger.error('Greška pri brisanju facilitija:', error);
+        logger.error('GreÅ¡ka pri brisanju facilitija:', error);
         if (error.error?.message) {
           this.toastr.error(error.error.message);
         } else if (error.error?.errors) {
@@ -521,7 +520,7 @@ confirmDeleteFacility(id: number) {
             this.toastr.error(err);
           });
         } else {
-          this.toastr.error('Greška pri brisanju facilitija');
+          this.toastr.error('GreÅ¡ka pri brisanju facilitija');
         }
       },
     })
@@ -540,12 +539,12 @@ confirmDeleteFacility(id: number) {
 
     this.facilityService.createWithLocation(data, this.selectedFile).subscribe({
       next: (response) => {
-        this.toastr.success('Facility uspješno kreiran');
+        this.toastr.success('Facility uspjeÅ¡no kreiran');
         this.loadFacilities();
         this.closeModal();
       },
       error: (error) => {
-        logger.error('Greška pri kreiranju facilitija:', error);
+        logger.error('GreÅ¡ka pri kreiranju facilitija:', error);
         if (error.error?.message) {
           this.toastr.error(error.error.message);
         } else if (error.error?.errors) {
@@ -553,7 +552,7 @@ confirmDeleteFacility(id: number) {
             this.toastr.error(err);
           });
         } else {
-          this.toastr.error('Greška pri kreiranju facilitija');
+          this.toastr.error('GreÅ¡ka pri kreiranju facilitija');
         }
       },
     });
@@ -619,12 +618,12 @@ confirmDeleteFacility(id: number) {
 
     this.facilityService.updateWithLocation(id, data, this.selectedFile, this.removeCurrentImage).subscribe({
       next: () => {
-        this.toastr.success('Lokacija uspješno ažurirana');
+        this.toastr.success('Lokacija uspjeÅ¡no aÅ¾urirana');
         this.loadFacilities();
         this.closeModal();
       },
       error: (error) => {
-        logger.error('Greška pri ažuriranju lokacije:', error);
+        logger.error('GreÅ¡ka pri aÅ¾uriranju lokacije:', error);
         if (error.error?.message) {
           this.toastr.error(error.error.message);
         } else if (error.error?.errors) {
@@ -632,7 +631,7 @@ confirmDeleteFacility(id: number) {
             this.toastr.error(err);
           });
         } else {
-          this.toastr.error('Greška pri ažuriranju lokacije');
+          this.toastr.error('GreÅ¡ka pri aÅ¾uriranju lokacije');
         }
       },
     });
