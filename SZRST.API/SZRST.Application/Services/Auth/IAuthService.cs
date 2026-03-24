@@ -83,11 +83,17 @@ namespace Application.Services
 				var encodedEmailToken = Encoding.UTF8.GetBytes(confirmEmailToken);
 				var validEmailToken = WebEncoders.Base64UrlEncode(encodedEmailToken);
 
-				string url = $"{_configuration["AppUrl"]}/api/auth/confirmemail?userid={user.Id}&token={validEmailToken}";
+				string url = $"{GetRequiredAppUrl()}/api/auth/confirmemail?userid={user.Id}&token={validEmailToken}";
+
+				await _mailService.SendEmailAsync(
+					user.Email,
+					"Potvrda email adrese",
+					"<h1>Dobrodosli!</h1>" +
+					$"<p>Za aktivaciju naloga kliknite <a href='{url}'>ovdje</a>.</p>");
 
 				return new UserManagerResponse
 				{
-					Message = "Korisnik uspješno kreiran",
+					Message = "Korisnik uspjesno kreiran. Link za potvrdu email adrese je poslan.",
 					IsSuccess = true,
 				};
 			}
@@ -165,6 +171,16 @@ namespace Application.Services
 				{
 					IsSuccess = false,
 					Message = "Invalid email or password"
+				};
+			}
+
+			var authGuardMessage = GetUserAuthenticationBlockReason(user);
+			if (authGuardMessage != null)
+			{
+				return new AuthResponseDto
+				{
+					IsSuccess = false,
+					Message = authGuardMessage
 				};
 			}
 
@@ -249,7 +265,7 @@ namespace Application.Services
 			var encodedToken = Encoding.UTF8.GetBytes(token);
 			var validToken = WebEncoders.Base64UrlEncode(encodedToken);
 
-			string url = $"{_configuration["AppUrl"]}/ResetPassword?email={email}&token={validToken}";
+			string url = $"{GetRequiredAppUrl()}/ResetPassword?email={email}&token={validToken}";
 
 			await _mailService.SendEmailAsync(email, "Reset Password", "<h1>Follow the instructions to reset your password</h1>" +
 			    $"<p>To reset your password <a href='{url}'>Click here</a></p>");
@@ -342,6 +358,9 @@ namespace Application.Services
 			if (user == null)
 				return null;
 
+			if (GetUserAuthenticationBlockReason(user) != null)
+				return null;
+
 			var roles = await _userManager.GetRolesAsync(user);
 			if (RequiresTenantAssignment(user, roles))
 				return null;
@@ -373,6 +392,37 @@ namespace Application.Services
 			return !roles.Contains(Roles.SuperAdmin) &&
 			       !roles.Contains(Roles.Korisnik) &&
 			       (!user.TenantId.HasValue || user.TenantId.Value <= 0);
+		}
+
+		private string GetRequiredAppUrl()
+		{
+			var appUrl = _configuration["AppUrl"];
+			if (string.IsNullOrWhiteSpace(appUrl))
+			{
+				throw new InvalidOperationException("Konfiguracija 'AppUrl' nije podesena.");
+			}
+
+			return appUrl.TrimEnd('/');
+		}
+
+		private static string GetUserAuthenticationBlockReason(User user)
+		{
+			if (user.IsDeleted)
+			{
+				return "Korisnicki nalog je obrisan i pristup je onemogucen.";
+			}
+
+			if (!user.Active)
+			{
+				return "Korisnicki nalog nije aktivan.";
+			}
+
+			if (!user.EmailConfirmed)
+			{
+				return "Potvrdite email adresu prije prijave.";
+			}
+
+			return null;
 		}
 	}
 
