@@ -14,6 +14,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using SZRST.API.Security;
+using SZRST.API.Services;
 using SZRST.Domain.Constants;
 using SZRST.Shared.response;
 
@@ -26,20 +27,20 @@ namespace SZRST.API.Controllers
 	{
 		private const long MaxUploadSizeBytes = 5 * 1024 * 1024;
 		private readonly SZRSTContext _context;
-		private readonly LocationController _locationController;
+		private readonly ILocationService _locationService;
 		private readonly IMapper _mapper;
         private readonly IWebHostEnvironment _env;
         private readonly UserManager<User> _userManager;
         private readonly ICurrentUserService _currentUserService;
 
         public FacilityController(SZRSTContext context, 
-			LocationController locationController, 
+			ILocationService locationService, 
 			IMapper mapper, IWebHostEnvironment env,
             UserManager<User> userManager,
             ICurrentUserService currentUserService)
 		{
 			_context = context;
-			_locationController = locationController;
+			_locationService = locationService;
 			_mapper = mapper;
 			_env = env;
 			_currentUserService = currentUserService;
@@ -271,17 +272,17 @@ namespace SZRST.API.Controllers
 				return BadRequest("Invalid CountryId, CityId, or FacilityTypeId");
 			}
 
-			// Create Location
-			var location = new Location
+			var locationResult = await _locationService.CreateLocationAsync(new SZRST.Shared.LocationCreateDto
 			{
 				Address = facilityDto.Address,
 				AddressNumber = facilityDto.AddressNumber,
-				Country = country,
-				City = city
-			};
-
-			_context.Location.Add(location);
-			await _context.SaveChangesAsync();
+				CountryId = facilityDto.CountryId,
+				CityId = facilityDto.CityId
+			});
+			if (!locationResult.IsSuccess)
+			{
+				return BadRequest(locationResult.ErrorMessage);
+			}
 			var imageUrl = "";
 
 			try
@@ -326,7 +327,7 @@ namespace SZRST.API.Controllers
 			{
 				Name = facilityDto.Name,
 				FacilityType = facilityType,
-				Location = location,
+				Location = locationResult.Location,
 				ImageUrl = imageUrl,
 				TenantId = _currentUserService.IsSuperAdmin ? facilityDto.TenantId : _currentUserService.TenantId!.Value
 			};
@@ -373,34 +374,22 @@ namespace SZRST.API.Controllers
 				location.Address != facilityDto.Address ||
 				location.AddressNumber != facilityDto.AddressNumber)
 			{
-                var existingLocation = await _context.Location
-					.Include(x => x.Country)
-					.Include(x => x.City)
-                    .FirstOrDefaultAsync(x =>
-					x.Country.Id == facilityDto.CountryId &&
-					x.City.Id == facilityDto.CityId &&
-					x.Address == facilityDto.Address &&
-					x.AddressNumber == facilityDto.AddressNumber);
+				var locationResult = await _locationService.CreateLocationAsync(
+					new SZRST.Shared.LocationCreateDto
+					{
+						Address = facilityDto.Address,
+						AddressNumber = facilityDto.AddressNumber,
+						CountryId = facilityDto.CountryId,
+						CityId = facilityDto.CityId
+					},
+					reuseExisting: true);
 
-                if (existingLocation != null)
-                {
-                    facility.Location = existingLocation;
-                } else
+				if (!locationResult.IsSuccess)
 				{
-                    var country = await _context.Country.FindAsync(facilityDto.CountryId);
-                    var city = await _context.City.FindAsync(facilityDto.CityId);
-                    // Create Location
-                    var newLocation = new Location
-                    {
-                        Address = facilityDto.Address,
-                        AddressNumber = facilityDto.AddressNumber,
-                        Country = country,
-                        City = city
-                    };
-                    _context.Location.Add(newLocation);
-                    await _context.SaveChangesAsync();
-                    facility.Location = newLocation;
-                }
+					return BadRequest(locationResult.ErrorMessage);
+				}
+
+				facility.Location = locationResult.Location;
             }
 			try
 			{

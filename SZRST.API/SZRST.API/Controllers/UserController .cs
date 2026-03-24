@@ -200,8 +200,20 @@ namespace SZRST.API.Controllers
 					return Forbid();
 			}
 
+			var korisnikRoleId = await _context.Roles
+				.Where(r => r.Name == Roles.Korisnik)
+				.Select(r => r.Id)
+				.FirstOrDefaultAsync();
+
 			var usersQuery = _userManager.Users
-				.Where(u => !u.IsDeleted && u.Active && u.TenantId == targetTenantId.Value);
+				.Where(u =>
+					!u.IsDeleted &&
+					u.Active &&
+					(
+						u.TenantId == targetTenantId.Value ||
+						(u.TenantId == null &&
+						 _context.UserRoles.Any(ur => ur.UserId == u.Id && ur.RoleId == korisnikRoleId))
+					));
 
 			var users = await usersQuery
 				.Select(u => new UserListDto

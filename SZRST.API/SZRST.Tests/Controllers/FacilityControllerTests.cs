@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Moq;
 using System.Threading.Tasks;
 using SZRST.API.Controllers;
+using SZRST.API.Services;
 using SZRST.Domain.Entities;
 using SZRST.Shared.response;
 using SZRST.Tests.Helpers;
@@ -101,10 +102,11 @@ namespace SZRST.Tests.Controllers
             var envMock = new Mock<IWebHostEnvironment>();
             var userManagerMock = MockUserManager();
             var currentUserMock = new Mock<ICurrentUserService>();
+            var locationServiceMock = new Mock<ILocationService>();
 
             var controller = new FacilityController(
                 context,
-                null,
+                locationServiceMock.Object,
                 mapperMock.Object,
                 envMock.Object,
                 userManagerMock.Object,
@@ -149,10 +151,11 @@ namespace SZRST.Tests.Controllers
             var envMock = new Mock<IWebHostEnvironment>();
             var userManagerMock = MockUserManager();
             var currentUserMock = new Mock<ICurrentUserService>();
+            var locationServiceMock = new Mock<ILocationService>();
 
             var controller = new FacilityController(
                 context,
-                null,
+                locationServiceMock.Object,
                 mapperMock.Object,
                 envMock.Object,
                 userManagerMock.Object,
@@ -185,10 +188,11 @@ namespace SZRST.Tests.Controllers
             var envMock = new Mock<IWebHostEnvironment>();
             var userManagerMock = MockUserManager();
             var currentUserMock = new Mock<ICurrentUserService>();
+            var locationServiceMock = new Mock<ILocationService>();
 
             var controller = new FacilityController(
                 context,
-                null,
+                locationServiceMock.Object,
                 mapperMock.Object,
                 envMock.Object,
                 userManagerMock.Object,
@@ -209,10 +213,11 @@ namespace SZRST.Tests.Controllers
             var envMock = new Mock<IWebHostEnvironment>();
             var userManagerMock = MockUserManager();
             var currentUserMock = new Mock<ICurrentUserService>();
+            var locationServiceMock = new Mock<ILocationService>();
 
             var controller = new FacilityController(
                 context,
-                null,
+                locationServiceMock.Object,
                 mapperMock.Object,
                 envMock.Object,
                 userManagerMock.Object,
@@ -236,10 +241,11 @@ namespace SZRST.Tests.Controllers
             var envMock = new Mock<IWebHostEnvironment>();
             var userManagerMock = MockUserManager();
             var currentUserMock = new Mock<ICurrentUserService>();
+            var locationServiceMock = new Mock<ILocationService>();
 
             var controller = new FacilityController(
                 context,
-                null,
+                locationServiceMock.Object,
                 mapperMock.Object,
                 envMock.Object,
                 userManagerMock.Object,

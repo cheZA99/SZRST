@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using SZRST.API.Services;
 using SZRST.Domain.Constants;
 using SZRST.Shared;
 
@@ -17,10 +18,12 @@ namespace SZRST.API.Controllers
 	public class LocationController :ControllerBase
 	{
 		private readonly SZRSTContext _context;
+		private readonly ILocationService _locationService;
 
-		public LocationController(SZRSTContext context)
+		public LocationController(SZRSTContext context, ILocationService locationService)
 		{
 			_context = context;
+			_locationService = locationService;
 		}
 
 		// GET: api/Location
@@ -55,31 +58,13 @@ namespace SZRST.API.Controllers
 		[HttpPost]
 		public async Task<ActionResult<Location>> CreateLocation([FromBody] LocationCreateDto locationDto)
 		{
-			var country = await _context.Country.FindAsync(locationDto.CountryId);
-			if (country == null)
+			var locationResult = await _locationService.CreateLocationAsync(locationDto);
+			if (!locationResult.IsSuccess)
 			{
-				return BadRequest("Invalid CountryId");
+				return BadRequest(locationResult.ErrorMessage);
 			}
 
-			var city = await _context.City.FindAsync(locationDto.CityId);
-			if (city == null)
-			{
-				return BadRequest("Invalid CityId");
-			}
-
-			var location = new Location
-			{
-				Address = locationDto.Address,
-				AddressNumber = locationDto.AddressNumber,
-				Country = country,
-				City = city,
-				IsDeleted = false
-			};
-
-			_context.Location.Add(location);
-			await _context.SaveChangesAsync();
-
-			return CreatedAtAction(nameof(GetLocation), new { id = location.Id }, location);
+			return CreatedAtAction(nameof(GetLocation), new { id = locationResult.Location.Id }, locationResult.Location);
 		}
 
 		// PUT: api/Location/{id}
