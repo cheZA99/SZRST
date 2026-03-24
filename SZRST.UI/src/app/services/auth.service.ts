@@ -5,6 +5,12 @@ import { tap } from 'rxjs';
 import { Router } from '@angular/router';
 import { environment } from 'src/environments/environment';
 
+export interface UserManagerResponse {
+  isSuccess: boolean;
+  message: string;
+  errors?: string[];
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -139,11 +145,13 @@ export class AuthService {
   }
 
   signUp(userObj: any) {
-    return this.http.post<any>(`${this.baseUrl}register`, userObj).pipe(
-      tap((user) => {
-        if (user?.accessToken) this.setCurrentUser(user);
-      }),
-    );
+    return this.http.post<UserManagerResponse>(`${this.baseUrl}register`, userObj);
+  }
+
+  forgotPassword(email: string) {
+    return this.http.post<UserManagerResponse>(`${this.baseUrl}ForgetPassword`, null, {
+      params: { email },
+    });
   }
 
   getDecodedToken(): any | null {

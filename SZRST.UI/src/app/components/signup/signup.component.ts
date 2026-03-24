@@ -61,12 +61,21 @@ export class SignupComponent implements OnInit {
 
       this.authService.signUp(this.signUpForm.value).subscribe({
         next: (res) => {
-          this.toastr.success(res.message);
-          this.signUpForm.reset();
-          this.router.navigate(['login']);
+          if (res.isSuccess) {
+            this.toastr.success(
+              res.message || 'Registracija uspjesna. Provjerite email i prijavite se.'
+            );
+            this.signUpForm.reset();
+            this.router.navigate(['login']);
+            return;
+          }
+
+          this.toastr.error(res.message || 'Registracija nije uspjela.');
         },
         error: (err) => {
-          this.toastr.error(err?.error.message);
+          this.toastr.error(
+            err?.error?.message || 'Registracija nije uspjela.'
+          );
         },
       });
     }

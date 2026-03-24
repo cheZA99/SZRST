@@ -151,6 +151,7 @@ namespace SZRST.WebApi
 			services.AddHangfireServer();
 
 			services.AddControllers();
+			services.AddRazorPages();
 			services.AddFluentValidationAutoValidation();
 			services.AddValidatorsFromAssemblyContaining<RegisterViewModelValidator>();
 			services.AddAutoMapper(typeof(MapperProfile));
@@ -229,6 +230,7 @@ namespace SZRST.WebApi
 			app.UseEndpoints(endpoints =>
 			{
 				endpoints.MapControllers();
+				endpoints.MapRazorPages();
 			});
 
 			RecurringJob.AddOrUpdate<ReportService>(
