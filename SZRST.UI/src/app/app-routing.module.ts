@@ -16,11 +16,13 @@ import { NotFoundComponent } from './components/not-found/not-found.component';
 import { roleGuard } from './guards/role.guard';
 import { OrganizacijeComponent } from './components/organizacije/organizacije.component';
 import { EditProfileComponent } from './components/edit-profile/edit-profile.component';
+import { ForgotPasswordComponent } from './components/forgot-password/forgot-password.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
   { path: 'login', component: LoginComponent },
   { path: 'signup', component: SignupComponent },
+  { path: 'forgot-password', component: ForgotPasswordComponent },
 
   {
     path: '',
