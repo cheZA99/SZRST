@@ -101,7 +101,7 @@ export class AppointmentDialogComponent implements OnInit {
           (t) => t.tenantId === this.selectedTenantId
         );
         this.users = this.users.filter(
-          (u) => u.tenantId === this.selectedTenantId
+          (u) => u.tenantId === this.selectedTenantId || u.tenantId == null
         );
       }
     } else {
@@ -118,7 +118,7 @@ export class AppointmentDialogComponent implements OnInit {
           (t) => t.tenantId === this.selectedTenantId
         );
         this.users = this.users.filter(
-          (u) => u.tenantId === this.selectedTenantId
+          (u) => u.tenantId === this.selectedTenantId || u.tenantId == null
         );
       }
     }

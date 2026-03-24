@@ -26,6 +26,7 @@ using System.Text;
 using System.Threading.Tasks;
 using SZRST.API.Controllers;
 using SZRST.API.Security;
+using SZRST.API.Services;
 using SZRST.Application.Services.MailService;
 using SZRST.Domain.Constants;
 using SZRST.Shared.Middleware;
@@ -191,9 +192,7 @@ namespace SZRST.WebApi
 
 			services.AddSingleton<ProblemDetailsFactory, UserManagmentProblemDetailsFactory>();
 			services.AddTransient<IMailService, SendGridMailService>();
-
-			services.AddTransient<FacilityController>();
-			services.AddTransient<LocationController>();
+			services.AddScoped<ILocationService, LocationService>();
 
 			services.AddScoped<IAppointmentReportService, AppointmentReportService>();
 			services.AddScoped<ReportService>();
