@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { TenantService, Tenant } from 'src/app/services/tenant.service';
@@ -6,13 +6,17 @@ import { FacilityService } from 'src/app/services/facility.service';
 import { AuthService } from 'src/app/services/auth.service';
 import { AppointmentService } from 'src/app/services/appointment.service';
 import { environment } from 'src/environments/environment';
+import { Subject, interval } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css'],
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
+  private readonly destroy$ = new Subject<void>();
+  private readonly statsRefreshMs = 10000;
   isSuperAdmin = false;
   isAdmin = false;
   isUposlenik = false;
@@ -55,6 +59,12 @@ export class DashboardComponent implements OnInit {
     this.checkPermissions();
     this.loadDashboardData();
     this.loadStatistics();
+    this.startAutoRefresh();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   checkPermissions(): void {
@@ -180,6 +190,14 @@ export class DashboardComponent implements OnInit {
         this.loadingStats = false;
       },
     });
+  }
+
+  private startAutoRefresh(): void {
+    interval(this.statsRefreshMs)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.loadStatistics();
+      });
   }
 
 selectTenant(tenant: Tenant): void {

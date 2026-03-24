@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using System.Linq;
 using System.Threading.Tasks;
 using SZRST.Application.Services.MailService;
 using SZRST.Shared;
@@ -20,23 +19,17 @@ namespace SZRST.API.Controllers
 		private readonly IMailService _mailService;
 		private readonly IConfiguration _configuration;
 		private readonly SZRSTContext _context;
-		private readonly IValidator<RegisterViewModel> _registerValidator;
-		private readonly IValidator<LoginViewModel> _loginValidator;
 
 		public AuthController(
 			IAuthService authService,
 			IMailService mailService,
 			IConfiguration configuration,
-			SZRSTContext context,
-			IValidator<RegisterViewModel> registerValidator,
-			IValidator<LoginViewModel> loginValidator)
+			SZRSTContext context)
 		{
 			_authService = authService;
 			_mailService = mailService;
 			_configuration = configuration;
 			_context = context;
-			_registerValidator = registerValidator;
-			_loginValidator = loginValidator;
 		}
 
 		// /api/auth/register
@@ -44,10 +37,6 @@ namespace SZRST.API.Controllers
 		[HttpPost("register")]
 		public async Task<IActionResult> Register([FromBody] RegisterViewModel model)
 		{
-			var validation = await _registerValidator.ValidateAsync(model);
-			if (!validation.IsValid)
-				return BadRequest(validation.Errors.Select(e => e.ErrorMessage));
-
 			var result = await _authService.RegisterUserAsync(model);
 			if (result.IsSuccess)
 				return Ok(result);
@@ -60,10 +49,6 @@ namespace SZRST.API.Controllers
 		[HttpPost("login")]
 		public async Task<IActionResult> LoginAsync([FromBody] LoginViewModel model)
 		{
-			var validation = await _loginValidator.ValidateAsync(model);
-			if (!validation.IsValid)
-				return BadRequest(validation.Errors.Select(e => e.ErrorMessage));
-
 			var ipAddress = GetIpAddress();
 			var result = await _authService.LoginUserAsync(model, ipAddress);
 
