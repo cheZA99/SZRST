@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using SZRST.Domain.Entities;
 using SZRST.Web.Controllers;
 
-namespace SZRST.Web.Serivces
+namespace SZRST.Web.Services
 {
     public interface IAppointmentReportService
     {

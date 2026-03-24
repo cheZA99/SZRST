@@ -31,7 +31,7 @@ using SZRST.Application.Services.MailService;
 using SZRST.Domain.Constants;
 using SZRST.Shared.Middleware;
 using SZRST.Web.Schedule;
-using SZRST.Web.Serivces;
+using SZRST.Web.Services;
 using WebApi.Error;
 
 namespace SZRST.WebApi

@@ -1,6 +1,7 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { User } from 'src/app/services/user.service';
+import { logger } from 'src/app/utils/logger';
 
 @Component({
   selector: 'app-appointment-dialog',
@@ -215,7 +216,7 @@ export class AppointmentDialogComponent implements OnInit {
 
   save() {
     if (!this.isFormValid()) {
-      console.error('Form invalid:', {
+      logger.error('Form invalid:', {
         date: this.selectedDate,
         time: this.selectedTime,
         facilityId: this.selectedFacilityId,

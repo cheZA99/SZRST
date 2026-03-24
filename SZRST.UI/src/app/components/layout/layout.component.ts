@@ -6,6 +6,7 @@ import { UserService } from 'src/app/services/user.service';
 import { Subscription } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { environment } from 'src/environments/environment';
+import { logger } from 'src/app/utils/logger';
 
 @Component({
   selector: 'app-layout',
@@ -49,7 +50,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
           this.userProfileImage = this.resolveImageUrl(profile.imageUrl);
         },
         error: (error) => {
-          console.error('Error loading profile image:', error);
+          logger.error('Error loading profile image:', error);
         }
       });
     }

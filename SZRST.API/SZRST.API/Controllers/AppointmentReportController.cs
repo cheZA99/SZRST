@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 using SZRST.API.Security;
 using SZRST.Domain.Constants;
 using SZRST.Domain.Entities;
-using SZRST.Web.Serivces;
+using SZRST.Web.Services;
 
 namespace SZRST.Web.Controllers
 {
