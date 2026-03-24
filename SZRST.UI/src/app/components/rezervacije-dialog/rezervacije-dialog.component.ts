@@ -1,5 +1,6 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { ConfirmDialogService } from 'src/app/services/confirm-dialog.service';
 import { User } from 'src/app/services/user.service';
 import { logger } from 'src/app/utils/logger';
 
@@ -29,6 +30,7 @@ export class AppointmentDialogComponent implements OnInit {
 
   constructor(
     private dialogRef: MatDialogRef<AppointmentDialogComponent>,
+    private confirmDialog: ConfirmDialogService,
     @Inject(MAT_DIALOG_DATA)
     public data: {
       appointment?: any;
@@ -255,15 +257,24 @@ export class AppointmentDialogComponent implements OnInit {
     this.dialogRef.close({ action: 'save', payload });
   }
 
-  delete() {
+    async delete() {
     if (!this.data?.appointment?.id) return;
 
-    if (confirm('Da li ste sigurni da želite obrisati ovu rezervaciju?')) {
-      this.dialogRef.close({
-        action: 'delete',
-        id: this.data.appointment.id,
-      });
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Potvrda brisanja',
+      text: 'Da li ste sigurni da želite obrisati ovu rezervaciju?',
+      confirmButtonText: 'Obriši',
+      cancelButtonText: 'Otkaži'
+    });
+
+    if (!confirmed) {
+      return;
     }
+
+    this.dialogRef.close({
+      action: 'delete',
+      id: this.data.appointment.id,
+    });
   }
 
   cancel() {
