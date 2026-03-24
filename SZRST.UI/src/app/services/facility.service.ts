@@ -91,17 +91,6 @@ export class FacilityService {
 
   constructor(private http: HttpClient) { }
 
-  /*getAll(filter?: string, value?: string): Observable<FacilityResponse[]> {
-    let params = new HttpParams();
-
-    if (filter && value) {
-      params = params.set('filter', filter);
-      params = params.set('value', value);
-    }
-
-    return this.http.get<FacilityResponse[]>(this.apiUrl, { params });
-  }*/
-
   getAll(
     filters: FacilityFilterParams = {},
   ): Observable<PagedResult<FacilityResponse>> {
@@ -169,12 +158,6 @@ export class FacilityService {
     return this.http.post<FacilityResponse>(`${this.apiUrl}/AddFacility`, formData);
   }
 
-  /*createWithLocation(
-    data: FacilityLocationCreateDto
-  ): Observable<FacilityResponse> {
-    return this.http.post<FacilityResponse>(`${this.apiUrl}/AddFacility`, data);
-  }*/
-
   updateWithLocation(
     id: number,
     data: FacilityLocationCreateDto,
@@ -204,12 +187,6 @@ export class FacilityService {
 
     return this.http.put<FacilityResponse>(`${this.apiUrl}/${id}`, formData);
   }
-
-  /*updateWithLocation(id: number,
-  data: FacilityLocationCreateDto
-): Observable<FacilityResponse> {
-  return this.http.put<FacilityResponse>(`${this.apiUrl}/${id}`, data);
-}*/
 
   update(id: number, data: FacilityCreateDto): Observable<void> {
     return this.http.put<void>(`${this.apiUrl}/${id}`, data);

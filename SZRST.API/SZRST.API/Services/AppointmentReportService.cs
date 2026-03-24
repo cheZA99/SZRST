@@ -124,8 +124,6 @@ namespace SZRST.Web.Services
              var firstDayLastMonth = firstDayThisMonth.AddMonths(-1);
              var lastDayLastMonth = firstDayThisMonth.AddDays(-1);
 
-            //var tenants = await _context.Tenant.ToListAsync();
-
             var tenantIds = await _context.Database
                 .SqlQuery<int>($"SELECT Id FROM Tenant")
                 .ToListAsync();
