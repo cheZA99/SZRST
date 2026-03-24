@@ -5,6 +5,7 @@ import { CityService } from 'src/app/services/city.service';
 import { CountryService } from 'src/app/services/country.service';
 import { CurrencyService } from 'src/app/services/currency.service';
 import { FacilityTypeService } from 'src/app/services/facility-type.service';
+import { logger } from 'src/app/utils/logger';
 
 @Component({
   selector: 'app-kategorije',
@@ -59,10 +60,10 @@ export class KategorijeComponent implements OnInit {
     this.cityService.getCities().subscribe({
       next: (data) => {
         this.cities = data;
-        console.log(this.cities)
+        logger.log(this.cities)
       },
       error: (error) => {
-        console.error('Greška pri učitavanju gradova:', error);
+        logger.error('Greška pri učitavanju gradova:', error);
         this.toastr.error('Greška pri učitavanju gradova');
         this.loading = false;
       }
@@ -75,7 +76,7 @@ export class KategorijeComponent implements OnInit {
         this.currencies = data;
       },
       error: (error) => {
-        console.error('Greška pri učitavanju valuta:', error);
+        logger.error('Greška pri učitavanju valuta:', error);
         this.toastr.error('Greška pri učitavanju valuta');
         this.loading = false;
       }
@@ -88,7 +89,7 @@ export class KategorijeComponent implements OnInit {
         this.facilityTypes = data;
       },
       error: (error) => {
-        console.error('Greška pri učitavanju tipova objekata:', error);
+        logger.error('Greška pri učitavanju tipova objekata:', error);
         this.toastr.error('Greška pri učitavanju tipova objekata');
         this.loading = false;
       }
@@ -99,10 +100,10 @@ export class KategorijeComponent implements OnInit {
     this.countryService.getCountries().subscribe({
       next: (data) => {
         this.countries = data;
-        console.log(this.cities)
+        logger.log(this.cities)
       },
       error: (error) => {
-        console.error('Greška pri učitavanju država:', error);
+        logger.error('Greška pri učitavanju država:', error);
         this.toastr.error('Greška pri učitavanju država');
         this.loading = false;
       }
@@ -148,7 +149,7 @@ export class KategorijeComponent implements OnInit {
         this.closeCityModal();
       },
       error: (error: any) => {
-        console.error('Greška pri kreiranju grada:', error);
+        logger.error('Greška pri kreiranju grada:', error);
         this.toastr.error('Greška pri kreiranju grada');
         this.loading = false;
       }
@@ -164,7 +165,7 @@ export class KategorijeComponent implements OnInit {
         this.closeFacilityTypeModal();
       },
       error: (error: any) => {
-        console.error('Greška pri kreiranju tipa objekta:', error);
+        logger.error('Greška pri kreiranju tipa objekta:', error);
         this.toastr.error('Greška pri kreiranju tipa objekta');
         this.loading = false;
       }
@@ -179,7 +180,7 @@ export class KategorijeComponent implements OnInit {
         this.closeCurrencyModal();
       },
       error: (error: any) => {
-        console.error('Greška pri kreiranju valute:', error);
+        logger.error('Greška pri kreiranju valute:', error);
         this.toastr.error('Greška pri kreiranju valute');
         this.loading = false;
       }
@@ -194,7 +195,7 @@ export class KategorijeComponent implements OnInit {
         this.closeCountryModal();
       },
       error: (error) => {
-        console.error('Greška pri kreiranju države:', error);
+        logger.error('Greška pri kreiranju države:', error);
         this.toastr.error('Greška pri kreiranju države');
         this.loading = false;
       }

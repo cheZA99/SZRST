@@ -9,7 +9,7 @@ using System.Linq;
 using QuestPDF.Fluent;
 using SZRST.Web.Controllers;
 
-namespace SZRST.Web.Serivces
+namespace SZRST.Web.Services
 {
     public class AppointmentReportService : IAppointmentReportService
     {

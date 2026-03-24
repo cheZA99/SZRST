@@ -18,6 +18,7 @@ import { UserService, User } from 'src/app/services/user.service';
 import { AuthService } from 'src/app/services/auth.service';
 import { ToastrService } from 'ngx-toastr';
 import { ActivatedRoute, Router } from '@angular/router';
+import { logger } from 'src/app/utils/logger';
 
 @Component({
   selector: 'app-rezervacije',
@@ -171,7 +172,7 @@ ngOnInit() {
   this.initializeUserData();
   
   const params = this.route.snapshot.queryParams;
-  console.log('Initial query params:', params);
+  logger.log('Initial query params:', params);
   
   this.fromDashboard = params['fromDashboard'] === 'true';
   
@@ -213,7 +214,7 @@ loadAllData(): void {
       this.tenants = data.tenants;
       this.facilities = data.facilities.items;
       
-      console.log('Data loaded:', {
+      logger.log('Data loaded:', {
         tenants: this.tenants.length,
         facilities: this.facilities.length,
         selectedTenantId: this.selectedTenantId,
@@ -251,18 +252,18 @@ loadAllData(): void {
       
       if (!this.selectedFacilityId && this.filteredFacilities.length > 0) {
         this.selectedFacilityId = this.filteredFacilities[0].id;
-        console.log('Setting facility to first:', this.selectedFacilityId);
+        logger.log('Setting facility to first:', this.selectedFacilityId);
       }
       
       if (this.selectedFacilityId) {
-        console.log('Ready to show calendar. Tenant:', this.selectedTenantId, 'Facility:', this.selectedFacilityId);
+        logger.log('Ready to show calendar. Tenant:', this.selectedTenantId, 'Facility:', this.selectedFacilityId);
         setTimeout(() => this.refreshCalendar(), 300);
       }
       
       this.initialLoadComplete = true;
     },
     error: (err) => {
-      console.error('Failed to load data:', err);
+      logger.error('Failed to load data:', err);
       this.toastr.error('Failed to load data', 'Error');
     }
   });
@@ -314,7 +315,7 @@ applyQueryParams(): void {
         this.selectedTenantName = tenant.name;
       },
       error: (err) => {
-        console.error('Error loading tenant name:', err);
+        logger.error('Error loading tenant name:', err);
       }
     });
   }
@@ -365,7 +366,7 @@ applyQueryParams(): void {
         }
       },
       error: (err) => {
-        console.error('Failed to load facilities:', err);
+        logger.error('Failed to load facilities:', err);
         this.toastr.error('Failed to load facilities', 'Error');
       },
     });
@@ -390,23 +391,23 @@ applyQueryParams(): void {
         }
       },
       error: (err) => {
-        console.error('Failed to load organizations:', err);
+        logger.error('Failed to load organizations:', err);
         this.toastr.error('Failed to load organizations', 'Error');
       },
     });
   }
 
 applyFacilityFilter() {
-  console.log('Applying facility filter for tenant:', this.selectedTenantId);
+  logger.log('Applying facility filter for tenant:', this.selectedTenantId);
   
   if (this.selectedTenantId) {
     this.filteredFacilities = this.facilities.filter(
       (f) => f.tenantId === this.selectedTenantId
     );
-    console.log('Filtered facilities for tenant', this.selectedTenantId, ':', this.filteredFacilities.length);
+    logger.log('Filtered facilities for tenant', this.selectedTenantId, ':', this.filteredFacilities.length);
   } else {
     this.filteredFacilities = [];
-    console.log('No tenant selected, filtered facilities cleared');
+    logger.log('No tenant selected, filtered facilities cleared');
   }
 }
   loadAppointments(
@@ -445,7 +446,7 @@ applyFacilityFilter() {
           successCallback(events);
         },
         error: (err) => {
-          console.error('Failed to load appointments:', err);
+          logger.error('Failed to load appointments:', err);
           this.toastr.error('Failed to load appointments', 'Error');
           failureCallback(err);
         },
@@ -460,7 +461,7 @@ onFacilityFilterChange(event: Event) {
   const select = event.target as HTMLSelectElement;
   const value = select.value;
   this.selectedFacilityId = value ? parseInt(value, 10) : null;
-  console.log('Facility changed to:', this.selectedFacilityId);
+  logger.log('Facility changed to:', this.selectedFacilityId);
   
   this.updateUrlWithSelectedFilters();
   
@@ -473,7 +474,7 @@ onTenantFilterChange(event: Event) {
   const value = select.value;
   this.selectedTenantId = value ? parseInt(value, 10) : null;
   
-  console.log('Tenant changed to:', this.selectedTenantId);
+  logger.log('Tenant changed to:', this.selectedTenantId);
   
   if (this.selectedTenantId) {
     const selectedTenant = this.tenants.find(t => t.id === this.selectedTenantId);
@@ -519,7 +520,7 @@ updateUrlWithSelectedFilters(): void {
     }
   }
 
-  console.log('Updating URL with params:', queryParams);
+  logger.log('Updating URL with params:', queryParams);
   
   this.router.navigate([], {
     relativeTo: this.route,
@@ -638,7 +639,7 @@ updateUrlWithSelectedFilters(): void {
                 this.refreshCalendar();
               },
               error: (err) => {
-                console.error('❌ Create error:', err);
+                logger.error('❌ Create error:', err);
                 const errorMsg =
                   err.error?.message ||
                   err.error ||
@@ -735,7 +736,7 @@ updateUrlWithSelectedFilters(): void {
                   setTimeout(() => this.refreshCalendar(), 100);
                 },
                 error: (err) => {
-                  console.error('❌ Update error:', err);
+                  logger.error('❌ Update error:', err);
                   const errorMsg =
                     err.error?.message ||
                     err.error ||

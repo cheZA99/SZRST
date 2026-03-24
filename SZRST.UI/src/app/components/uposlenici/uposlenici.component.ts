@@ -8,6 +8,7 @@ import {
 } from '../../services/uposlenici.service';
 import { AuthService } from '../../services/auth.service';
 import { TenantService } from 'src/app/services/tenant.service';
+import { logger } from 'src/app/utils/logger';
 
 @Component({
   selector: 'app-uposlenici',
@@ -122,7 +123,7 @@ export class UposleniciComponent implements OnInit {
           this.loading = false;
         },
         error: (error) => {
-          console.error('Greška pri učitavanju uposlenika:', error);
+          logger.error('Greška pri učitavanju uposlenika:', error);
           this.toastr.error('Greška pri učitavanju uposlenika');
           this.loading = false;
         },

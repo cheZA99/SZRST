@@ -15,6 +15,7 @@ import { City, CityService } from 'src/app/services/city.service';
 import { environment } from 'src/environments/environment';
 import { TranslateService } from '@ngx-translate/core';
 import Swal from 'sweetalert2';
+import { logger } from 'src/app/utils/logger';
 
 import {
   trigger,
@@ -221,7 +222,7 @@ export class LokacijeComponent implements OnInit {
       })
       .subscribe({
         next: (result) => {
-          console.log(result.items)
+          logger.log(result.items)
           this.facilities = result.items;
           this.totalCount = result.totalCount;
           this.totalPages = result.totalPages;
@@ -229,7 +230,7 @@ export class LokacijeComponent implements OnInit {
           this.loading = false;
         },
         error: (error) => {
-          console.error('Greška pri učitavanju objekata:', error);
+          logger.error('Greška pri učitavanju objekata:', error);
           this.toastr.error('Greška pri učitavanju objekata');
           this.loading = false;
         },
@@ -244,7 +245,7 @@ export class LokacijeComponent implements OnInit {
         this.loadingTenants = false;
       },
       error: (error) => {
-        console.error('Greška pri učitavanju organizacija:', error);
+        logger.error('Greška pri učitavanju organizacija:', error);
         this.toastr.error('Greška pri učitavanju organizacija');
         this.loadingTenants = false;
       },
@@ -257,7 +258,7 @@ export class LokacijeComponent implements OnInit {
         this.facilityTypes = data;
       },
       error: (error) => {
-        console.error('Greška pri učitavanju facility types:', error);
+        logger.error('Greška pri učitavanju facility types:', error);
         this.toastr.error('Greška pri učitavanju facility types');
         this.loadingTenants = false;
       }
@@ -302,7 +303,7 @@ export class LokacijeComponent implements OnInit {
         this.cities = data;
       },
       error: (error) => {
-        console.error('Greška pri učitavanju gradova:', error);
+        logger.error('Greška pri učitavanju gradova:', error);
         this.toastr.error('Greška pri učitavanju gradova');
         this.loadingTenants = false;
       }
@@ -315,7 +316,7 @@ export class LokacijeComponent implements OnInit {
         this.countries = data;
       },
       error: (error) => {
-        console.error('Greška pri učitavanju država:', error);
+        logger.error('Greška pri učitavanju država:', error);
         this.toastr.error('Greška pri učitavanju država');
         this.loadingTenants = false;
       }
@@ -512,7 +513,7 @@ confirmDeleteFacility(id: number) {
         this.closeModal();
       },
       error: (error) => {
-        console.error('Greška pri brisanju facilitija:', error);
+        logger.error('Greška pri brisanju facilitija:', error);
         if (error.error?.message) {
           this.toastr.error(error.error.message);
         } else if (error.error?.errors) {
@@ -527,7 +528,7 @@ confirmDeleteFacility(id: number) {
   }
 
   createFacility(data: any): void {
-    console.log("Dataa--->", data);
+    logger.log("Dataa--->", data);
     if (this.isSuperAdmin && !data.tenantId) {
       this.toastr.error('Morate odabrati organizaciju');
       return;
@@ -544,7 +545,7 @@ confirmDeleteFacility(id: number) {
         this.closeModal();
       },
       error: (error) => {
-        console.error('Greška pri kreiranju facilitija:', error);
+        logger.error('Greška pri kreiranju facilitija:', error);
         if (error.error?.message) {
           this.toastr.error(error.error.message);
         } else if (error.error?.errors) {
@@ -598,7 +599,7 @@ confirmDeleteFacility(id: number) {
 
     this.filteredCities = this.cities.filter(x => x.country.id === countryId);
 
-    console.log(this.filteredCities);
+    logger.log(this.filteredCities);
   }
 
   filterCitiesSearch(): void {
@@ -623,7 +624,7 @@ confirmDeleteFacility(id: number) {
         this.closeModal();
       },
       error: (error) => {
-        console.error('Greška pri ažuriranju lokacije:', error);
+        logger.error('Greška pri ažuriranju lokacije:', error);
         if (error.error?.message) {
           this.toastr.error(error.error.message);
         } else if (error.error?.errors) {

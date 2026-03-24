@@ -8,6 +8,7 @@ import { AppointmentService } from 'src/app/services/appointment.service';
 import { environment } from 'src/environments/environment';
 import { Subject, interval } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { logger } from 'src/app/utils/logger';
 
 @Component({
   selector: 'app-dashboard',
@@ -89,7 +90,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.currentUserTenantName = tenant.name;
       },
       error: (error) => {
-        console.error('Greška pri učitavanju organizacije:', error);
+        logger.error('Greška pri učitavanju organizacije:', error);
         this.currentUserTenantName = '';
       }
     });
@@ -113,7 +114,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         }
       },
       error: (error) => {
-        console.error('Greška pri učitavanju facilitija:', error);
+        logger.error('Greška pri učitavanju facilitija:', error);
         this.toastr.error('Greška pri učitavanju facilitija');
         this.loading = false;
       },
@@ -132,7 +133,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.loading = false;
       },
       error: (error) => {
-        console.error('Greška pri učitavanju organizacija:', error);
+        logger.error('Greška pri učitavanju organizacija:', error);
         this.toastr.error('Greška pri učitavanju organizacija');
         this.loading = false;
       },
@@ -177,7 +178,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.loadingStats = false;
       },
       error: (error) => {
-        console.error('Greška pri učitavanju statistika:', error);
+        logger.error('Greška pri učitavanju statistika:', error);
         this.stats = {
           totalUsers: 0,
           totalAppointmentsToday: 0,
@@ -237,7 +238,7 @@ openFacilityCalendar(facility: any): void {
     fromDashboard: 'true'
   };
 
-  console.log('Navigating to reservations with:', queryParams);
+  logger.log('Navigating to reservations with:', queryParams);
   
   this.router.navigate(['/rezervacije'], { queryParams });
 }

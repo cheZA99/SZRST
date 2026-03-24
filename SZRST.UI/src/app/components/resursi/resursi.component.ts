@@ -5,6 +5,7 @@ import { AppointmentTypeService, AppointmentType, AppointmentTypeCreateDto } fro
 import { CurrencyService, Currency } from '../../services/currency.service';
 import { TenantService, Tenant } from 'src/app/services/tenant.service';
 import { AuthService } from '../../services/auth.service';
+import { logger } from 'src/app/utils/logger';
 
 @Component({
   selector: 'app-resursi',
@@ -102,7 +103,7 @@ export class ResursiComponent implements OnInit {
           this.loading = false;
         },
         error: (error) => {
-          console.error('Greška pri učitavanju resursa:', error);
+          logger.error('Greška pri učitavanju resursa:', error);
           this.toastr.error('Greška pri učitavanju resursa');
           this.loading = false;
         }
@@ -116,7 +117,7 @@ export class ResursiComponent implements OnInit {
             this.loading = false;
           },
           error: (error) => {
-            console.error('Greška pri učitavanju resursa:', error);
+            logger.error('Greška pri učitavanju resursa:', error);
             this.toastr.error('Greška pri učitavanju resursa');
             this.loading = false;
           }
@@ -136,7 +137,7 @@ export class ResursiComponent implements OnInit {
         this.loadingCurrencies = false;
       },
       error: (error) => {
-        console.error('Greška pri učitavanju valuta:', error);
+        logger.error('Greška pri učitavanju valuta:', error);
         this.toastr.error('Greška pri učitavanju valuta');
         this.loadingCurrencies = false;
       }
@@ -151,7 +152,7 @@ export class ResursiComponent implements OnInit {
         this.loadingTenants = false;
       },
       error: (error) => {
-        console.error('Greška pri učitavanju organizacija:', error);
+        logger.error('Greška pri učitavanju organizacija:', error);
         this.toastr.error('Greška pri učitavanju organizacija');
         this.loadingTenants = false;
       }
@@ -272,7 +273,7 @@ export class ResursiComponent implements OnInit {
         this.closeModal();
       },
       error: (error) => {
-        console.error('Greška pri kreiranju resursa:', error);
+        logger.error('Greška pri kreiranju resursa:', error);
         if (error.error?.message) {
           this.toastr.error(error.error.message);
         } else if (error.error?.errors) {
@@ -298,7 +299,7 @@ export class ResursiComponent implements OnInit {
         this.closeModal();
       },
       error: (error) => {
-        console.error('Greška pri ažuriranju resursa:', error);
+        logger.error('Greška pri ažuriranju resursa:', error);
         if (error.error?.message) {
           this.toastr.error(error.error.message);
         } else if (error.error?.errors) {
@@ -320,7 +321,7 @@ export class ResursiComponent implements OnInit {
           this.loadAppointmentTypes();
         },
         error: (error) => {
-          console.error('Greška pri brisanju resursa:', error);
+          logger.error('Greška pri brisanju resursa:', error);
           this.toastr.error('Greška pri brisanju resursa');
         }
       });

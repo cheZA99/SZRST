@@ -4,6 +4,7 @@ import { User } from '../types/user';
 import { tap } from 'rxjs';
 import { Router } from '@angular/router';
 import { environment } from 'src/environments/environment';
+import { logger } from 'src/app/utils/logger';
 
 export interface UserManagerResponse {
   isSuccess: boolean;
@@ -56,7 +57,7 @@ export class AuthService {
     const decoded = this.decodeToken(user.accessToken);
 
     if (!decoded) {
-      console.error('Ne mogu dekodirati token');
+      logger.error('Ne mogu dekodirati token');
       return;
     }
 
@@ -86,7 +87,7 @@ export class AuthService {
       const payload = token.split('.')[1];
       return JSON.parse(atob(payload));
     } catch (e) {
-      console.error('Greška pri dekodiranju tokena:', e);
+      logger.error('Greška pri dekodiranju tokena:', e);
       return null;
     }
   }
@@ -162,7 +163,7 @@ export class AuthService {
       const payload = token.split('.')[1];
       return JSON.parse(atob(payload));
     } catch (e) {
-      console.error('Greška pri dekodiranju tokena:', e);
+      logger.error('Greška pri dekodiranju tokena:', e);
       return null;
     }
   }

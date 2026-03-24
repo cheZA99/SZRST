@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import ValidateForm from 'src/app/helpers/ValidateForm';
 import { AuthService } from 'src/app/services/auth.service';
 import { ToastrService } from 'ngx-toastr';
+import { logger } from 'src/app/utils/logger';
 @Component({
   selector: 'app-login',
   templateUrl: './login.component.html',
@@ -53,7 +54,7 @@ export class LoginComponent implements OnInit {
       }*/
       this.authService.login(this.loginForm.value).subscribe({
         next: () => {
-          console.log("login success");
+          logger.log("login success");
           this.loginForm.reset();
           this.router.navigate(['dashboard']);
         },

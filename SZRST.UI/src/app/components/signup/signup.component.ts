@@ -32,23 +32,7 @@ export class SignupComponent implements OnInit {
       email: ['', [Validators.required, Validators.email]],
     });
 
-    //this.loadTenants();
   }
-
-  // loadTenants(): void {
-  //   this.isLoadingTenants = true;
-  //   this.tenantService.getAllTenants().subscribe({
-  //     next: (tenants) => {
-  //       this.tenants = tenants;
-  //       this.isLoadingTenants = false;
-  //     },
-  //     error: (err) => {
-  //       this.toastr.error('Greška pri učitavanju tenant-a');
-  //       this.isLoadingTenants = false;
-  //       console.error(err);
-  //     },
-  //   });
-  // }
 
   onSignUp() {
     if (this.signUpForm.valid) {

@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
+import { logger } from 'src/app/utils/logger';
 
 export interface Facility {
   id: number;
@@ -128,7 +129,7 @@ export class FacilityService {
     if (filters.sortDirection?.trim())
       params = params.set('sortDirection', filters.sortDirection.trim());
 
-    console.log("Params--->", params)
+    logger.log("Params--->", params)
 
     return this.http.get<PagedResult<FacilityResponse>>(`${this.apiUrl}`, {
       params,
@@ -162,8 +163,8 @@ export class FacilityService {
       formData.append("file", file);
     }
 
-    console.log("Data-->", data);
-    console.log("FormData-->", formData);
+    logger.log("Data-->", data);
+    logger.log("FormData-->", formData);
 
     return this.http.post<FacilityResponse>(`${this.apiUrl}/AddFacility`, formData);
   }

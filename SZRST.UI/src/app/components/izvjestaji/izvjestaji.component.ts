@@ -4,6 +4,7 @@ import { ToastrService } from 'ngx-toastr';
 import { AuthService } from 'src/app/services/auth.service';
 import { AppointmentReport, AppointmentReportService } from 'src/app/services/reservation-report.service';
 import { Tenant, TenantService } from 'src/app/services/tenant.service';
+import { logger } from 'src/app/utils/logger';
 
 @Component({
   selector: 'app-izvjestaji',
@@ -129,7 +130,7 @@ export class IzvjestajiComponent implements OnInit {
         this.loadingTenants = false;
       },
       error: (error) => {
-        console.error('Greška pri učitavanju organizacija:', error);
+        logger.error('Greška pri učitavanju organizacija:', error);
         this.toastr.error('Greška pri učitavanju organizacija');
         this.loadingTenants = false;
       }
@@ -146,7 +147,7 @@ export class IzvjestajiComponent implements OnInit {
       dto.tenantId=this.currentUserTenantId;
     }
 
-    console.log(dto);
+    logger.log(dto);
 
     this.AppointmentReportService.generateReport(dto).subscribe((response) => {
       this.closeModal();
@@ -168,13 +169,13 @@ export class IzvjestajiComponent implements OnInit {
           this.loading = false;
         },
         error: (error) => {
-          console.error('Greška pri učitavanju izvještaja:', error);
+          logger.error('Greška pri učitavanju izvještaja:', error);
           this.toastr.error('Greška pri učitavanju izvještaja');
           this.loading = false;
         }
       });
     } else if (this.isAdmin) {
-      console.log(this.currentUserTenantId)
+      logger.log(this.currentUserTenantId)
       if (this.currentUserTenantId) {
         this.AppointmentReportService.getReportsByTenantId(this.currentUserTenantId).subscribe({
           next: (data) => {
@@ -183,7 +184,7 @@ export class IzvjestajiComponent implements OnInit {
             this.loading = false;
           },
           error: (error) => {
-            console.error('Greška pri učitavanju izvještaja:', error);
+            logger.error('Greška pri učitavanju izvještaja:', error);
             this.toastr.error('Greška pri učitavanju izvještaja');
             this.loading = false;
           }
