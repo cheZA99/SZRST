@@ -5,3 +5,7 @@
 @tailwind components;
 @tailwind utilities;
 
+.swal-over-modal {
+  z-index: 2000 !important;
+}
+
