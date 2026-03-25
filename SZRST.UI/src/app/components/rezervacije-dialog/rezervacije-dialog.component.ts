@@ -145,9 +145,11 @@ export class AppointmentDialogComponent implements OnInit {
   }
 
   formatTime(date: Date): string {
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    return `${hours}:${minutes}`;
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const roundedMinutes = minutes < 15 ? 0 : minutes < 45 ? 30 : 0;
+    const roundedHours = minutes >= 45 ? hours + 1 : hours;
+    return `${roundedHours.toString().padStart(2, '0')}:${roundedMinutes.toString().padStart(2, '0')}`;
   }
 
   onDateInput(event: Event) {

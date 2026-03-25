@@ -68,7 +68,7 @@ namespace SZRST.API.Controllers
 
 		// POST: api/Country
 		[HttpPost]
-		public async Task<ActionResult<Country>> CreateCountry([FromBody] CountryCreateDto countryDto)
+		public async Task<ActionResult<CountryDto>> CreateCountry([FromBody] CountryCreateDto countryDto)
 		{
 			var currency = await _context.Currency.FindAsync(countryDto.CurrencyId);
 			if (countryDto.CurrencyId.HasValue && currency == null)
@@ -87,7 +87,16 @@ namespace SZRST.API.Controllers
 			_context.Country.Add(country);
 			await _context.SaveChangesAsync();
 
-			return CreatedAtAction(nameof(GetCountry), new { id = country.Id }, country);
+			var countryResponse = new CountryDto
+			{
+				Id = country.Id,
+				Name = country.Name,
+				ShortName = country.ShortName,
+				CurrencyId = currency?.Id,
+				CurrencyShortName = currency?.ShortName
+			};
+
+			return CreatedAtAction(nameof(GetCountry), new { id = country.Id }, countryResponse);
 		}
 
 		// PUT: api/Country/{id}

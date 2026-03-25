@@ -20,7 +20,11 @@ export class ConfirmDialogService {
       showCancelButton: true,
       confirmButtonText: options.confirmButtonText ?? 'Potvrdi',
       cancelButtonText: options.cancelButtonText ?? 'Otkaži',
-      confirmButtonColor: options.confirmButtonColor ?? '#d33'
+      confirmButtonColor: options.confirmButtonColor ?? '#d33',
+      heightAuto: false,
+      customClass: {
+        container: 'swal-over-modal'
+      }
     });
 
     return result.isConfirmed;

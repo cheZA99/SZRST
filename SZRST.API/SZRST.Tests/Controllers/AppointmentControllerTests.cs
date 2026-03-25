@@ -54,7 +54,9 @@ namespace SZRST.Tests.Controllers
 			mock.SetupGet(x => x.HasValidTenant).Returns(isSuperAdmin || tenantId.HasValue);
 			mock.SetupGet(x => x.IsAuthenticated).Returns(true);
 			mock.SetupGet(x => x.Username).Returns("test-user");
+			#pragma warning disable CS0618
 			mock.SetupGet(x => x.Role).Returns(isSuperAdmin ? Roles.SuperAdmin : isKorisnik ? Roles.Korisnik : Roles.Admin);
+			#pragma warning restore CS0618
 			mock.Setup(x => x.HasRole(It.IsAny<string>())).Returns<string>(role =>
 				(isSuperAdmin && role == Roles.SuperAdmin) ||
 				(isKorisnik && role == Roles.Korisnik) ||
@@ -79,7 +81,7 @@ namespace SZRST.Tests.Controllers
 		{
 			var dbName = $"TenantScope_{Guid.NewGuid()}";
 
-			await using (var seedContext = TestDbContextFactory.Create(dbName))
+			await using (var seedContext = TestDbContextFactory.CreateSuperAdmin(dbName))
 			{
 				seedContext.Set<Tenant>().AddRange(
 					new Tenant { Id = 1, Name = "Tenant A" },
@@ -141,7 +143,7 @@ namespace SZRST.Tests.Controllers
 		public async Task GetAppointment_ReturnsForbid_WhenAdminFromTenantBRequestsTenantAAppointment()
 		{
 			var dbName = $"AppointmentTenant_{Guid.NewGuid()}";
-			await using var context = TestDbContextFactory.Create(dbName);
+			await using var context = TestDbContextFactory.CreateSuperAdmin(dbName);
 			var userManager = TestUserManagerFactory.Create(context);
 			await SeedRoles(context);
 
@@ -220,7 +222,7 @@ namespace SZRST.Tests.Controllers
 		public async Task DeleteAppointment_SetsIsDeletedInsteadOfRemovingRow()
 		{
 			var dbName = $"AppointmentDelete_{Guid.NewGuid()}";
-			await using var context = TestDbContextFactory.Create(dbName);
+			await using var context = TestDbContextFactory.CreateSuperAdmin(dbName);
 			var userManager = TestUserManagerFactory.Create(context);
 			await SeedRoles(context);
 
@@ -304,7 +306,7 @@ namespace SZRST.Tests.Controllers
 		public async Task CreateAppointment_ReturnsBadRequest_WhenRequestedUserCannotBeAssigned()
 		{
 			var dbName = $"AppointmentInvalidUser_{Guid.NewGuid()}";
-			await using var context = TestDbContextFactory.Create(dbName);
+			await using var context = TestDbContextFactory.CreateSuperAdmin(dbName);
 			var userManager = TestUserManagerFactory.Create(context);
 			await SeedRoles(context);
 
@@ -374,6 +376,106 @@ namespace SZRST.Tests.Controllers
 
 			var badRequest = result.Result.Should().BeOfType<BadRequestObjectResult>().Subject;
 			badRequest.Value.Should().Be("Invalid UserId");
+		}
+
+		[Fact]
+		public async Task TenantIsolation_TenantB_CannotSeeTenantA_Facilities()
+		{
+			var dbName = $"TenantIsolation_{Guid.NewGuid()}";
+
+			await using (var seedContext = TestDbContextFactory.CreateSuperAdmin(dbName))
+			{
+				seedContext.Set<Tenant>().AddRange(
+					new Tenant { Id = 1, Name = "Tenant A" },
+					new Tenant { Id = 2, Name = "Tenant B" });
+
+				seedContext.Facility.AddRange(
+					new Facility
+					{
+						Id = 1, Name = "Facility A", TenantId = 1,
+						FacilityType = new FacilityType { Id = 1, Name = "Padel" },
+						Location = new Location
+						{
+							Id = 1, Address = "A", AddressNumber = "1",
+							City = new City { Id = 1, Name = "Sarajevo", Country = new Country { Id = 1, Name = "BiH" } }
+						}
+					},
+					new Facility
+					{
+						Id = 2, Name = "Facility B", TenantId = 2,
+						FacilityType = new FacilityType { Id = 2, Name = "Tennis" },
+						Location = new Location
+						{
+							Id = 2, Address = "B", AddressNumber = "2",
+							City = new City { Id = 2, Name = "Mostar", Country = new Country { Id = 2, Name = "BiH2" } }
+						}
+					});
+
+				await seedContext.SaveChangesAsync();
+			}
+
+			await using var tenantBContext = TestDbContextFactory.Create(dbName, tenantId: 2, isSuperAdminOrUser: false);
+			var facilities = await tenantBContext.Facility.ToListAsync();
+
+			facilities.Should().HaveCount(1);
+			facilities[0].TenantId.Should().Be(2);
+			facilities[0].Name.Should().Be("Facility B");
+		}
+
+		[Fact]
+		public async Task TenantIsolation_TenantA_CannotSeeTenantB_Appointments()
+		{
+			var dbName = $"TenantIsolationAppt_{Guid.NewGuid()}";
+
+			await using (var seedContext = TestDbContextFactory.CreateSuperAdmin(dbName))
+			{
+				var tenantA = new Tenant { Id = 1, Name = "Tenant A" };
+				var tenantB = new Tenant { Id = 2, Name = "Tenant B" };
+
+				seedContext.Set<Tenant>().AddRange(tenantA, tenantB);
+
+				seedContext.Appointment.AddRange(
+					new Appointment
+					{
+						Id = 1, AppointmentDateTime = DateTime.UtcNow, TenantId = 1, UserId = 1,
+						Tenant = tenantA,
+						Facility = new Facility
+						{
+							Id = 10, Name = "F-A", TenantId = 1, Tenant = tenantA,
+							FacilityType = new FacilityType { Id = 10, Name = "Type" },
+							Location = new Location
+							{
+								Id = 10, Address = "A", AddressNumber = "1",
+								City = new City { Id = 10, Name = "City", Country = new Country { Id = 10, Name = "C" } }
+							}
+						},
+						AppointmentType = new AppointmentType { Id = 10, Name = "Std", Duration = 60, Price = 10, TenantId = 1, Tenant = tenantA }
+					},
+					new Appointment
+					{
+						Id = 2, AppointmentDateTime = DateTime.UtcNow, TenantId = 2, UserId = 2,
+						Tenant = tenantB,
+						Facility = new Facility
+						{
+							Id = 20, Name = "F-B", TenantId = 2, Tenant = tenantB,
+							FacilityType = new FacilityType { Id = 20, Name = "Type2" },
+							Location = new Location
+							{
+								Id = 20, Address = "B", AddressNumber = "2",
+								City = new City { Id = 20, Name = "City2", Country = new Country { Id = 20, Name = "C2" } }
+							}
+						},
+						AppointmentType = new AppointmentType { Id = 20, Name = "Std2", Duration = 60, Price = 10, TenantId = 2, Tenant = tenantB }
+					});
+
+				await seedContext.SaveChangesAsync();
+			}
+
+			await using var tenantAContext = TestDbContextFactory.Create(dbName, tenantId: 1, isSuperAdminOrUser: false);
+			var appointments = await tenantAContext.Appointment.ToListAsync();
+
+			appointments.Should().HaveCount(1);
+			appointments[0].TenantId.Should().Be(1);
 		}
 	}
 }

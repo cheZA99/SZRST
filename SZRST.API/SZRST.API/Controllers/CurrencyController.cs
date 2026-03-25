@@ -23,13 +23,23 @@ namespace SZRST.API.Controllers
 		}
 
 		[HttpGet]
-		public async Task<ActionResult<IEnumerable<Currency>>> GetCurrencies()
+		public async Task<ActionResult<IEnumerable<CurrencyResponseDto>>> GetCurrencies()
 		{
-			return await _context.Currency.Where(c => !c.IsDeleted).ToListAsync();
+			var currencies = await _context.Currency
+				.Where(c => !c.IsDeleted)
+				.Select(c => new CurrencyResponseDto
+				{
+					Id = c.Id,
+					Name = c.Name,
+					ShortName = c.ShortName
+				})
+				.ToListAsync();
+
+			return Ok(currencies);
 		}
 
 		[HttpGet("{id}")]
-		public async Task<ActionResult<Currency>> GetCurrency(int id)
+		public async Task<ActionResult<CurrencyResponseDto>> GetCurrency(int id)
 		{
 			var currency = await _context.Currency.FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
 
@@ -38,11 +48,16 @@ namespace SZRST.API.Controllers
 				return NotFound();
 			}
 
-			return currency;
+			return new CurrencyResponseDto
+			{
+				Id = currency.Id,
+				Name = currency.Name,
+				ShortName = currency.ShortName
+			};
 		}
 
 		[HttpPost]
-		public async Task<ActionResult<Currency>> PostCurrency(CurrencyCreateDto currencyDto)
+		public async Task<ActionResult<CurrencyResponseDto>> PostCurrency(CurrencyCreateDto currencyDto)
 		{
 			var currency = new Currency
 			{
@@ -54,7 +69,12 @@ namespace SZRST.API.Controllers
 			_context.Currency.Add(currency);
 			await _context.SaveChangesAsync();
 
-			return CreatedAtAction(nameof(GetCurrencies), new { id = currency.Id }, currency);
+			return CreatedAtAction(nameof(GetCurrencies), new { id = currency.Id }, new CurrencyResponseDto
+			{
+				Id = currency.Id,
+				Name = currency.Name,
+				ShortName = currency.ShortName
+			});
 		}
 
 		[HttpPut("{id}")]
@@ -116,6 +136,13 @@ namespace SZRST.API.Controllers
 
 		public class CurrencyCreateDto
 		{
+			public string Name { get; set; }
+			public string ShortName { get; set; }
+		}
+
+		public class CurrencyResponseDto
+		{
+			public int Id { get; set; }
 			public string Name { get; set; }
 			public string ShortName { get; set; }
 		}

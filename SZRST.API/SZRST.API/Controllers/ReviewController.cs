@@ -11,7 +11,6 @@ using SZRST.Domain.Constants;
 
 namespace SZRST.API.Controllers
 {
-	[Authorize]
 	[Route("api/[controller]")]
 	[ApiController]
 	public class ReviewController :ControllerBase
@@ -117,13 +116,16 @@ namespace SZRST.API.Controllers
 		[HttpPut("{id}")]
 		public async Task<IActionResult> UpdateReview(int id, [FromBody] ReviewCreateDto reviewDto)
 		{
-			var review = await _context.Review.FindAsync(id);
+			var review = await _context.Review.Include(r => r.User).FirstOrDefaultAsync(r => r.Id == id);
 			if (review == null)
 			{
 				return NotFound();
 			}
 
 			if (!_currentUserService.CanAccessTenant(review.TenantId))
+				return Forbid();
+
+			if (_currentUserService.IsKorisnik && review.User.Id != _currentUserService.UserId)
 				return Forbid();
 
 			var userId = _currentUserService.IsSuperAdmin ? reviewDto.UserId : _currentUserService.UserId;
@@ -178,13 +180,16 @@ namespace SZRST.API.Controllers
 		[HttpDelete("{id}")]
 		public async Task<IActionResult> DeleteReview(int id)
 		{
-			var review = await _context.Review.FindAsync(id);
+			var review = await _context.Review.Include(r => r.User).FirstOrDefaultAsync(r => r.Id == id);
 			if (review == null)
 			{
 				return NotFound();
 			}
 
 			if (!_currentUserService.CanAccessTenant(review.TenantId))
+				return Forbid();
+
+			if (_currentUserService.IsKorisnik && review.User.Id != _currentUserService.UserId)
 				return Forbid();
 
 			review.IsDeleted = true;

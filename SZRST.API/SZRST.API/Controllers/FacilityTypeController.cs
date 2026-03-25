@@ -24,16 +24,24 @@ namespace SZRST.API.Controllers
 
 		// GET: api/FacilityType
 		[HttpGet]
-		public async Task<ActionResult<IEnumerable<FacilityType>>> GetFacilityTypes()
+		public async Task<ActionResult<IEnumerable<FacilityTypeResponseDto>>> GetFacilityTypes()
 		{
-			return await _context.FacilityType
+			var facilityTypes = await _context.FacilityType
 							 .Where(ft => !ft.IsDeleted)
+							 .Select(ft => new FacilityTypeResponseDto
+							 {
+								 Id = ft.Id,
+								 Name = ft.Name,
+								 Description = ft.Description
+							 })
 							 .ToListAsync();
+
+			return Ok(facilityTypes);
 		}
 
 		// GET: api/FacilityType/{id}
 		[HttpGet("{id}")]
-		public async Task<ActionResult<FacilityType>> GetFacilityType(int id)
+		public async Task<ActionResult<FacilityTypeResponseDto>> GetFacilityType(int id)
 		{
 			var facilityType = await _context.FacilityType
 									    .FirstOrDefaultAsync(ft => ft.Id == id && !ft.IsDeleted);
@@ -43,12 +51,17 @@ namespace SZRST.API.Controllers
 				return NotFound();
 			}
 
-			return facilityType;
+			return new FacilityTypeResponseDto
+			{
+				Id = facilityType.Id,
+				Name = facilityType.Name,
+				Description = facilityType.Description
+			};
 		}
 
 		// POST: api/FacilityType
 		[HttpPost]
-		public async Task<ActionResult<FacilityType>> CreateFacilityType([FromBody] FacilityTypeCreateDto facilityTypeDto)
+		public async Task<ActionResult<FacilityTypeResponseDto>> CreateFacilityType([FromBody] FacilityTypeCreateDto facilityTypeDto)
 		{
 			var facilityType = new FacilityType
 			{
@@ -60,7 +73,12 @@ namespace SZRST.API.Controllers
 			_context.FacilityType.Add(facilityType);
 			await _context.SaveChangesAsync();
 
-			return CreatedAtAction(nameof(GetFacilityType), new { id = facilityType.Id }, facilityType);
+			return CreatedAtAction(nameof(GetFacilityType), new { id = facilityType.Id }, new FacilityTypeResponseDto
+			{
+				Id = facilityType.Id,
+				Name = facilityType.Name,
+				Description = facilityType.Description
+			});
 		}
 
 		// PUT: api/FacilityType/{id}
@@ -129,6 +147,13 @@ namespace SZRST.API.Controllers
 
 	public class FacilityTypeCreateDto
 	{
+		public string Name { get; set; }
+		public string Description { get; set; }
+	}
+
+	public class FacilityTypeResponseDto
+	{
+		public int Id { get; set; }
 		public string Name { get; set; }
 		public string Description { get; set; }
 	}

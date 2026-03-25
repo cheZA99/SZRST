@@ -1,3 +1,4 @@
+using System;
 using Microsoft.AspNetCore.Http;
 using System.Linq;
 using System.Security.Claims;
@@ -5,6 +6,7 @@ using System.Security.Claims;
 public interface ICurrentUserService
 {
 	int UserId { get; }
+	[Obsolete("Use HasRole(string role) instead. This property only returns the first role claim and is unreliable for multi-role users.")]
 	string Role { get; }
 	int? TenantId { get; }
 	string Username { get; }
@@ -44,6 +46,7 @@ public class CurrentUserService : ICurrentUserService
 		}
 	}
 
+	[Obsolete("Use HasRole(string role) instead. This property only returns the first role claim and is unreliable for multi-role users.")]
 	public string Role
 	{
 		get

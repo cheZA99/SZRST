@@ -28,7 +28,7 @@
             required
           >
             <option value="">Odaberite vrijeme</option>
-            <option *ngFor="let t of times" [value]="t">{{ t }}</option>
+            <option *ngFor="let t of times" [value]="t" [selected]="t === selectedTime">{{ t }}</option>
           </select>
         </div>
       </div>
@@ -43,7 +43,7 @@
           required
         >
           <option value="">Odaberite lokaciju</option>
-          <option *ngFor="let f of facilities" [value]="f.id">
+          <option *ngFor="let f of facilities" [value]="f.id" [selected]="f.id === selectedFacilityId">
             {{ f.name }}
           </option>
         </select>
@@ -79,7 +79,7 @@
           required
         >
           <option value="">Odaberite korisnika</option>
-          <option *ngFor="let u of users" [value]="u.id">
+          <option *ngFor="let u of users" [value]="u.id" [selected]="u.id.toString() === selectedUserId">
             {{ u.userName }} ({{ u.email }})
           </option>
         </select>

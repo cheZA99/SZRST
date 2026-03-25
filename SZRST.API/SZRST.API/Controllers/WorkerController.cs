@@ -90,7 +90,7 @@ namespace SZRST.API.Controllers
 
 		// POST: api/Worker
 		[HttpPost]
-		public async Task<ActionResult<Worker>> CreateWorker([FromBody] WorkerCreateDto workerDto)
+		public async Task<ActionResult<WorkerDto>> CreateWorker([FromBody] WorkerCreateDto workerDto)
 		{
 			if (!_currentUserService.HasValidTenant)
 				return Forbid();
@@ -139,7 +139,20 @@ namespace SZRST.API.Controllers
 			_context.Worker.Add(worker);
 			await _context.SaveChangesAsync();
 
-			return CreatedAtAction(nameof(GetWorker), new { id = worker.Id }, worker);
+			var workerResponse = new WorkerDto
+			{
+				Id = worker.Id,
+				DateOfEmployment = worker.DateOfEmployment,
+				UserId = user.Id,
+				UserName = user.UserName,
+				WorkerTypeId = workerType.Id,
+				WorkerTypeName = workerType.Name,
+				FacilityId = facility.Id,
+				FacilityName = facility.Name,
+				TenantId = worker.TenantId
+			};
+
+			return CreatedAtAction(nameof(GetWorker), new { id = worker.Id }, workerResponse);
 		}
 
 		// PUT: api/Worker/{id}
