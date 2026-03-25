@@ -53,7 +53,7 @@ namespace SZRST.Tests.Controllers
 		public async Task CreateTenantWithAdmin_ValidData_ReturnsOkWithTenant()
 		{
 			var dbName = $"TestDb_{Guid.NewGuid()}";
-			var context = TestDbContextFactory.Create(dbName);
+			var context = TestDbContextFactory.CreateSuperAdmin(dbName);
 			var userManager = TestUserManagerFactory.Create(context);
 			await SeedRoles(context);
 
@@ -91,7 +91,7 @@ namespace SZRST.Tests.Controllers
 		public async Task CreateTenantWithAdmin_DuplicateEmail_ReturnsBadRequest()
 		{
 			var dbName = $"TestDb_{Guid.NewGuid()}";
-			var context = TestDbContextFactory.Create(dbName);
+			var context = TestDbContextFactory.CreateSuperAdmin(dbName);
 			var userManager = TestUserManagerFactory.Create(context);
 			await SeedRoles(context);
 

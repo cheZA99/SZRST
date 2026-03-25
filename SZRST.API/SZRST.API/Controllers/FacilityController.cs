@@ -176,7 +176,7 @@ namespace SZRST.API.Controllers
 		// POST: api/Facility
 		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}")]
 		[HttpPost]
-		public async Task<ActionResult<Facility>> CreateFacility([FromBody] FacilityCreateDto facilityDto)
+		public async Task<ActionResult<FacilityResponse>> CreateFacility([FromBody] FacilityCreateDto facilityDto)
 		{
 			if (!_currentUserService.IsSuperAdmin && !_currentUserService.HasValidTenant)
 				return Forbid();
@@ -209,13 +209,19 @@ namespace SZRST.API.Controllers
 			_context.Facility.Add(facility);
 			await _context.SaveChangesAsync();
 
-			return CreatedAtAction(nameof(GetFacility), new { id = facility.Id }, facility);
+			var createdFacility = await _context.Facility
+				.Include(f => f.FacilityType)
+				.Include(f => f.Tenant)
+				.Include(f => f.Location).ThenInclude(l => l.City).ThenInclude(c => c.Country)
+				.FirstOrDefaultAsync(f => f.Id == facility.Id);
+
+			return CreatedAtAction(nameof(GetFacility), new { id = facility.Id }, MapFacility(createdFacility));
 		}
 
 		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}")]
 		[RequestSizeLimit(MaxUploadSizeBytes)]
 		[HttpPost("AddFacility")]
-		public async Task<ActionResult<Facility>> CreateFacilityAndLocation([FromForm] FacilityLocationCreateWithImageDto facilityDto)
+		public async Task<ActionResult<FacilityResponse>> CreateFacilityAndLocation([FromForm] FacilityLocationCreateWithImageDto facilityDto)
 		{
 			if (!_currentUserService.IsSuperAdmin && !_currentUserService.HasValidTenant)
 				return Forbid();
@@ -295,7 +301,13 @@ namespace SZRST.API.Controllers
 			_context.Facility.Add(facility);
 			await _context.SaveChangesAsync();
 
-			return CreatedAtAction("GetFacility", new { id = facility.Id }, facility);
+			var createdFacilityWithLocation = await _context.Facility
+				.Include(f => f.FacilityType)
+				.Include(f => f.Tenant)
+				.Include(f => f.Location).ThenInclude(l => l.City).ThenInclude(c => c.Country)
+				.FirstOrDefaultAsync(f => f.Id == facility.Id);
+
+			return CreatedAtAction("GetFacility", new { id = facility.Id }, MapFacility(createdFacilityWithLocation));
 		}
 
 		// PUT: api/Facility/{id}
@@ -325,6 +337,8 @@ namespace SZRST.API.Controllers
 			{
 				return BadRequest("Invalid LocationId");
 			}
+
+			var oldImageUrl = facility.ImageUrl;
 
 			if (location.City.Id != facilityDto.CityId ||
 				location.Country.Id != facilityDto.CountryId ||
@@ -398,13 +412,12 @@ namespace SZRST.API.Controllers
 
 			_context.Entry(facility).State = EntityState.Modified;
 
-			var oldImageUrl = facility.ImageUrl;
-
 			try
 			{
 				await _context.SaveChangesAsync();
 
-				if (!string.Equals(oldImageUrl, facility.ImageUrl, StringComparison.OrdinalIgnoreCase))
+				if (!string.IsNullOrWhiteSpace(oldImageUrl) &&
+				    !string.Equals(oldImageUrl, facility.ImageUrl, StringComparison.OrdinalIgnoreCase))
 				{
 					DeleteLocalFile(oldImageUrl);
 				}

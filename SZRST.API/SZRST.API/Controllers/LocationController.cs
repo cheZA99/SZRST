@@ -28,18 +28,30 @@ namespace SZRST.API.Controllers
 
 		// GET: api/Location
 		[HttpGet]
-		public async Task<ActionResult<IEnumerable<Location>>> GetLocations()
+		public async Task<ActionResult<IEnumerable<LocationResponseDto>>> GetLocations()
 		{
-			return await _context.Location
+			var locations = await _context.Location
 							 .Where(l => !l.IsDeleted)
 							 .Include(l => l.Country)
 							 .Include(l => l.City)
+							 .Select(l => new LocationResponseDto
+							 {
+								 Id = l.Id,
+								 Address = l.Address,
+								 AddressNumber = l.AddressNumber,
+								 CountryId = l.Country != null ? l.Country.Id : (int?)null,
+								 CountryName = l.Country != null ? l.Country.Name : null,
+								 CityId = l.City != null ? l.City.Id : (int?)null,
+								 CityName = l.City != null ? l.City.Name : null
+							 })
 							 .ToListAsync();
+
+			return Ok(locations);
 		}
 
 		// GET: api/Location/{id}
 		[HttpGet("{id}")]
-		public async Task<ActionResult<Location>> GetLocation(int id)
+		public async Task<ActionResult<LocationResponseDto>> GetLocation(int id)
 		{
 			var location = await _context.Location
 									.Include(l => l.Country)
@@ -51,12 +63,21 @@ namespace SZRST.API.Controllers
 				return NotFound();
 			}
 
-			return location;
+			return new LocationResponseDto
+			{
+				Id = location.Id,
+				Address = location.Address,
+				AddressNumber = location.AddressNumber,
+				CountryId = location.Country?.Id,
+				CountryName = location.Country?.Name,
+				CityId = location.City?.Id,
+				CityName = location.City?.Name
+			};
 		}
 
 		// POST: api/Location
 		[HttpPost]
-		public async Task<ActionResult<Location>> CreateLocation([FromBody] LocationCreateDto locationDto)
+		public async Task<ActionResult<LocationResponseDto>> CreateLocation([FromBody] LocationCreateDto locationDto)
 		{
 			var locationResult = await _locationService.CreateLocationAsync(locationDto);
 			if (!locationResult.IsSuccess)
@@ -64,7 +85,22 @@ namespace SZRST.API.Controllers
 				return BadRequest(locationResult.ErrorMessage);
 			}
 
-			return CreatedAtAction(nameof(GetLocation), new { id = locationResult.Location.Id }, locationResult.Location);
+			var loc = locationResult.Location;
+			await _context.Entry(loc).Reference(l => l.Country).LoadAsync();
+			await _context.Entry(loc).Reference(l => l.City).LoadAsync();
+
+			var response = new LocationResponseDto
+			{
+				Id = loc.Id,
+				Address = loc.Address,
+				AddressNumber = loc.AddressNumber,
+				CountryId = loc.Country?.Id,
+				CountryName = loc.Country?.Name,
+				CityId = loc.City?.Id,
+				CityName = loc.City?.Name
+			};
+
+			return CreatedAtAction(nameof(GetLocation), new { id = loc.Id }, response);
 		}
 
 		// PUT: api/Location/{id}
@@ -125,5 +161,16 @@ namespace SZRST.API.Controllers
 		{
 			return _context.Location.Any(e => e.Id == id && !e.IsDeleted);
 		}
+	}
+
+	public class LocationResponseDto
+	{
+		public int Id { get; set; }
+		public string Address { get; set; }
+		public string AddressNumber { get; set; }
+		public int? CountryId { get; set; }
+		public string CountryName { get; set; }
+		public int? CityId { get; set; }
+		public string CityName { get; set; }
 	}
 }

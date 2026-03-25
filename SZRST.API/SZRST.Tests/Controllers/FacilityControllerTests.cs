@@ -51,7 +51,7 @@ namespace SZRST.Tests.Controllers
                 .Options;
 
             var dbName = $"TestDb_{Guid.NewGuid()}";
-            var context = TestDbContextFactory.Create(dbName);
+            var context = TestDbContextFactory.CreateSuperAdmin(dbName);
 
             context.Facility.Add(new Facility
             {

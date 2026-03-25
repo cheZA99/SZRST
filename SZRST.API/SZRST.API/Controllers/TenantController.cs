@@ -14,7 +14,6 @@ using SZRST.Domain.Entities;
 
 namespace SZRST.API.Controllers
 {
-	[Authorize]
 	[Route("api/[controller]")]
 	[ApiController]
 	public class TenantController :ControllerBase

@@ -24,14 +24,24 @@ namespace SZRST.API.Controllers
 
 		// GET: api/WorkerType
 		[HttpGet]
-		public async Task<ActionResult<IEnumerable<WorkerType>>> GetWorkerTypes()
+		public async Task<ActionResult<IEnumerable<WorkerTypeResponseDto>>> GetWorkerTypes()
 		{
-			return await _context.WorkerType.Where(wt => !wt.IsDeleted).ToListAsync();
+			var workerTypes = await _context.WorkerType
+				.Where(wt => !wt.IsDeleted)
+				.Select(wt => new WorkerTypeResponseDto
+				{
+					Id = wt.Id,
+					Name = wt.Name,
+					Description = wt.Description
+				})
+				.ToListAsync();
+
+			return Ok(workerTypes);
 		}
 
 		// GET: api/WorkerType/{id}
 		[HttpGet("{id}")]
-		public async Task<ActionResult<WorkerType>> GetWorkerType(int id)
+		public async Task<ActionResult<WorkerTypeResponseDto>> GetWorkerType(int id)
 		{
 			var workerType = await _context.WorkerType.FirstOrDefaultAsync(wt => wt.Id == id && !wt.IsDeleted);
 
@@ -40,12 +50,17 @@ namespace SZRST.API.Controllers
 				return NotFound();
 			}
 
-			return workerType;
+			return new WorkerTypeResponseDto
+			{
+				Id = workerType.Id,
+				Name = workerType.Name,
+				Description = workerType.Description
+			};
 		}
 
 		// POST: api/WorkerType
 		[HttpPost]
-		public async Task<ActionResult<WorkerType>> CreateWorkerType([FromBody] WorkerTypeCreateDto workerTypeDto)
+		public async Task<ActionResult<WorkerTypeResponseDto>> CreateWorkerType([FromBody] WorkerTypeCreateDto workerTypeDto)
 		{
 			var workerType = new WorkerType
 			{
@@ -57,7 +72,12 @@ namespace SZRST.API.Controllers
 			_context.WorkerType.Add(workerType);
 			await _context.SaveChangesAsync();
 
-			return CreatedAtAction(nameof(GetWorkerType), new { id = workerType.Id }, workerType);
+			return CreatedAtAction(nameof(GetWorkerType), new { id = workerType.Id }, new WorkerTypeResponseDto
+			{
+				Id = workerType.Id,
+				Name = workerType.Name,
+				Description = workerType.Description
+			});
 		}
 
 		// PUT: api/WorkerType/{id}
@@ -126,6 +146,13 @@ namespace SZRST.API.Controllers
 
 	public class WorkerTypeCreateDto
 	{
+		public string Name { get; set; }
+		public string Description { get; set; }
+	}
+
+	public class WorkerTypeResponseDto
+	{
+		public int Id { get; set; }
 		public string Name { get; set; }
 		public string Description { get; set; }
 	}

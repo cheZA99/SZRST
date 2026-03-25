@@ -80,7 +80,7 @@ namespace SZRST.API.Controllers
 
 		// POST: api/City
 		[HttpPost]
-		public async Task<ActionResult<City>> CreateCity([FromBody] CityCreateDto cityDto)
+		public async Task<ActionResult<CityDto>> CreateCity([FromBody] CityCreateDto cityDto)
 		{
 			var country = await _context.Country.FindAsync(cityDto.CountryId);
 			if (country == null)
@@ -98,7 +98,20 @@ namespace SZRST.API.Controllers
 			_context.City.Add(city);
 			await _context.SaveChangesAsync();
 
-			return city;
+			return new CityDto
+			{
+				Id = city.Id,
+				Name = city.Name,
+				CountryId = country.Id,
+				CountryName = country.Name,
+				Country = new CityCountryDto
+				{
+					Id = country.Id,
+					Name = country.Name,
+					ShortName = country.ShortName
+				},
+				IsDeleted = city.IsDeleted
+			};
 		}
 
 		// PUT: api/City/{id}

@@ -143,7 +143,7 @@ namespace SZRST.API.Controllers
 		// POST: api/AppointmentType
 		[Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}")]
 		[HttpPost]
-		public async Task<ActionResult<AppointmentType>> CreateAppointmentType([FromBody] AppointmentTypeCreateDto appointmentTypeDto)
+		public async Task<ActionResult<AppointmentTypeDto>> CreateAppointmentType([FromBody] AppointmentTypeCreateDto appointmentTypeDto)
 		{
 			var validationResult = await _validator.ValidateAsync(appointmentTypeDto);
 			if (!validationResult.IsValid)
@@ -178,7 +178,26 @@ namespace SZRST.API.Controllers
 			_context.AppointmentType.Add(appointmentType);
 			await _context.SaveChangesAsync();
 
-			return CreatedAtAction(nameof(GetAppointmentType), new { id = appointmentType.Id }, appointmentType);
+			var createdAppointmentType = await _context.AppointmentType
+				.Include(at => at.Tenant)
+				.Include(at => at.Currency)
+				.FirstOrDefaultAsync(at => at.Id == appointmentType.Id);
+
+			var responseDto = new AppointmentTypeDto
+			{
+				Id = createdAppointmentType.Id,
+				Name = createdAppointmentType.Name,
+				Duration = createdAppointmentType.Duration,
+				Price = createdAppointmentType.Price,
+				CurrencyId = createdAppointmentType.CurrencyId,
+				CurrencyName = createdAppointmentType.Currency?.ShortName,
+				TenantId = createdAppointmentType.TenantId,
+				TenantName = createdAppointmentType.Tenant?.Name,
+				DateCreated = createdAppointmentType.DateCreated,
+				DateModified = createdAppointmentType.DateModified
+			};
+
+			return CreatedAtAction(nameof(GetAppointmentType), new { id = appointmentType.Id }, responseDto);
 		}
 
 		// PUT: api/AppointmentType/{id}

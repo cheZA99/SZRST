@@ -39,7 +39,7 @@ namespace SZRST.Tests.Controllers
 		public async Task GetFacilities_ClampsPaginationValues_AndReturnsExpectedSlice()
 		{
 			var dbName = $"FacilityPagination_{Guid.NewGuid()}";
-			await using var context = TestDbContextFactory.Create(dbName);
+			await using var context = TestDbContextFactory.CreateSuperAdmin(dbName);
 
 			var tenant = new Tenant { Id = 1, Name = "Tenant A" };
 			context.Set<Tenant>().Add(tenant);

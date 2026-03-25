@@ -23,7 +23,12 @@ namespace SZRST.Tests.Helpers
 	{
 		public static SZRSTContext Create(string dbName)
 		{
-			return Create(dbName, new DummyTenantProvider());
+			return Create(dbName, new DummyTenantProvider(tenantId: 1, isSuperAdminOrUser: false));
+		}
+
+		public static SZRSTContext CreateSuperAdmin(string dbName)
+		{
+			return Create(dbName, new DummyTenantProvider(tenantId: 0, isSuperAdminOrUser: true));
 		}
 
 		public static SZRSTContext Create(string dbName, int tenantId, bool isSuperAdminOrUser = false)
