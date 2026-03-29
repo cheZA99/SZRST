@@ -9,6 +9,7 @@ export interface Employee {
   email: string;
   firstName?: string;
   lastName?: string;
+  jmbg?: string;
   active: boolean;
   isDeleted: boolean;
   tenantId?: number;
@@ -40,6 +41,7 @@ export interface CreateEmployeeDto {
   email: string;
   firstName?: string | null;
   lastName?: string | null;
+  jmbg?: string | null;
   password: string;
   confirmPassword: string;
   tenantId?: number;
@@ -50,6 +52,7 @@ export interface UpdateEmployeeDto {
   email: string;
   firstName?: string | null;
   lastName?: string | null;
+  jmbg?: string | null;
   active: boolean;
   tenantId?: number;
   newPassword?: string;

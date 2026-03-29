@@ -120,6 +120,7 @@
           <th>Korisničko ime</th>
           <th>Ime</th>
           <th>Prezime</th>
+          <th>JMBG</th>
           <th>Email</th>
           <th *ngIf="isSuperAdmin">Organizacija</th>
           <th>Akcije</th>
@@ -134,6 +135,7 @@
           <td>{{ emp.userName }}</td>
           <td>{{ emp.firstName || "-" }}</td>
           <td>{{ emp.lastName || "-" }}</td>
+          <td>{{ emp.jmbg || "-" }}</td>
           <td>{{ emp.email }}</td>
           <td *ngIf="isSuperAdmin">
             <span *ngIf="emp.tenantName" class="badge badge-info">
@@ -349,6 +351,19 @@
               formControlName="lastName"
               placeholder="Unesite prezime"
               class="input input-bordered w-full"
+            />
+          </div>
+
+          <div class="form-control w-full">
+            <label class="label">
+              <span class="label-text">JMBG</span>
+            </label>
+            <input
+              type="text"
+              formControlName="jmbg"
+              placeholder="Unesite JMBG"
+              class="input input-bordered w-full"
+              maxlength="13"
             />
           </div>
         </div>

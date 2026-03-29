@@ -188,6 +188,7 @@ namespace SZRST.WebApi
 			services.AddSingleton<ProblemDetailsFactory, UserManagmentProblemDetailsFactory>();
 			services.AddTransient<IMailService, SendGridMailService>();
 			services.AddScoped<ILocationService, LocationService>();
+			services.AddSingleton<IEncryptionService, AesEncryptionService>();
 
 			services.AddScoped<IAppointmentReportService, AppointmentReportService>();
 			services.AddScoped<ReportService>();

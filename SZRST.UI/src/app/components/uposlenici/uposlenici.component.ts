@@ -179,6 +179,7 @@ export class UposleniciComponent implements OnInit {
         email: [emp.email, [Validators.required, Validators.email]],
         firstName: [emp.firstName ?? ''],
         lastName: [emp.lastName ?? ''],
+        jmbg: [emp.jmbg ?? ''],
         active: [emp.active],
         newPassword: [''],
         newConfirmPassword: [''],
@@ -197,6 +198,7 @@ export class UposleniciComponent implements OnInit {
         email: ['', [Validators.required, Validators.email]],
         firstName: [''],
         lastName: [''],
+        jmbg: [''],
         active: [true],
         password: ['', [Validators.required, Validators.minLength(6)]],
         confirmPassword: ['', Validators.required],
@@ -310,6 +312,7 @@ export class UposleniciComponent implements OnInit {
       email: data.email,
       firstName: data.firstName || null,
       lastName: data.lastName || null,
+      jmbg: data.jmbg || null,
       password: data.password,
       confirmPassword: data.confirmPassword,
       tenantId: data.tenantId,
@@ -339,6 +342,7 @@ export class UposleniciComponent implements OnInit {
       email: data.email,
       firstName: data.firstName || null,
       lastName: data.lastName || null,
+      jmbg: data.jmbg || null,
       active: data.active,
       tenantId: this.isSuperAdmin
         ? data.tenantId

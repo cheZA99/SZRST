@@ -12,6 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using SZRST.API.Security;
+using SZRST.API.Services;
 using SZRST.Domain.Constants;
 using SZRST.Domain.Entities;
 
@@ -28,6 +29,7 @@ namespace SZRST.API.Controllers
 		private readonly IValidator<EmployeeCreateDto> _employeeCreateValidator;
 		private readonly IValidator<EmployeeUpdateDto> _employeeUpdateValidator;
 		private readonly IWebHostEnvironment _environment;
+		private readonly IEncryptionService _encryptionService;
 
 		public UserController(
 			UserManager<User> userManager,
@@ -35,7 +37,8 @@ namespace SZRST.API.Controllers
 			ICurrentUserService currentUserService,
 			IValidator<EmployeeCreateDto> employeeCreateValidator,
 			IValidator<EmployeeUpdateDto> employeeUpdateValidator,
-			IWebHostEnvironment environment)
+			IWebHostEnvironment environment,
+			IEncryptionService encryptionService)
 		{
 			_userManager = userManager;
 			_context = context;
@@ -43,6 +46,7 @@ namespace SZRST.API.Controllers
 			_employeeCreateValidator = employeeCreateValidator;
 			_employeeUpdateValidator = employeeUpdateValidator;
 			_environment = environment;
+			_encryptionService = encryptionService;
 		}
 
 		// GET: api/User
@@ -50,7 +54,8 @@ namespace SZRST.API.Controllers
 		[HttpGet]
 		public async Task<ActionResult<IEnumerable<UserListDto>>> GetUsers()
 		{
-			return Ok(await _userManager.Users
+			var users = await _userManager.Users
+				.Where(x => _currentUserService.IsSuperAdmin || x.TenantId == _currentUserService.TenantId)
 				.Select(u => new UserListDto
 				{
 					Id = u.Id,
@@ -60,10 +65,15 @@ namespace SZRST.API.Controllers
 					IsDeleted = u.IsDeleted,
 					TenantId = u.TenantId,
 					FirstName = u.FirstName,
-					LastName = u.LastName
+					LastName = u.LastName,
+					JMBG = u.JMBG
 				})
-				.Where(x => _currentUserService.IsSuperAdmin || x.TenantId == _currentUserService.TenantId)
-				.ToListAsync());
+				.ToListAsync();
+
+			foreach (var u in users)
+				u.JMBG = _encryptionService.Decrypt(u.JMBG);
+
+			return Ok(users);
 		}
 
 		// GET: api/User/{id}
@@ -82,7 +92,8 @@ namespace SZRST.API.Controllers
 					IsDeleted = u.IsDeleted,
 					TenantId = u.TenantId,
 					FirstName = u.FirstName,
-					LastName = u.LastName
+					LastName = u.LastName,
+					JMBG = u.JMBG
 				})
 				.FirstOrDefaultAsync();
 
@@ -92,6 +103,7 @@ namespace SZRST.API.Controllers
 			if (!_currentUserService.CanAccessTenant(user.TenantId))
 				return Forbid();
 
+			user.JMBG = _encryptionService.Decrypt(user.JMBG);
 			return Ok(user);
 		}
 
@@ -115,6 +127,7 @@ namespace SZRST.API.Controllers
 				TenantId = tenantId,
 				FirstName = dto.FirstName,
 				LastName = dto.LastName,
+				JMBG = _encryptionService.Encrypt(dto.JMBG),
 				DateCreated = DateTime.UtcNow
 			};
 
@@ -148,6 +161,7 @@ namespace SZRST.API.Controllers
 			}
 			user.FirstName = dto.FirstName;
 			user.LastName = dto.LastName;
+			user.JMBG = _encryptionService.Encrypt(dto.JMBG);
 			user.DateModified = DateTime.UtcNow;
 
 			var result = await _userManager.UpdateAsync(user);
@@ -288,6 +302,7 @@ namespace SZRST.API.Controllers
 				TenantId = employee.TenantId,
 				FirstName = employee.FirstName,
 				LastName = employee.LastName,
+				JMBG = _encryptionService.Decrypt(employee.JMBG),
 				Roles = new List<string> { Roles.Uposlenik },
 				TenantName = employee.Tenant?.Name
 			}).ToList();
@@ -332,6 +347,7 @@ namespace SZRST.API.Controllers
 				LastName = dto.LastName,
 				Active = true,
 				TenantId = dto.TenantId,
+				JMBG = _encryptionService.Encrypt(dto.JMBG),
 				DateCreated = DateTime.UtcNow,
 				DateModified = DateTime.UtcNow
 			};
@@ -392,6 +408,7 @@ namespace SZRST.API.Controllers
 			user.FirstName = dto.FirstName;
 			user.LastName = dto.LastName;
 			user.Active = dto.Active;
+			user.JMBG = _encryptionService.Encrypt(dto.JMBG);
 			user.DateModified = DateTime.UtcNow;
 
 			if (currentUserRoles.Contains(Roles.SuperAdmin))
@@ -718,6 +735,7 @@ namespace SZRST.API.Controllers
 		public bool IsDeleted { get; set; }
 		public int? TenantId { get; set; }
 		public string TenantName { get; set; }
+		public string? JMBG { get; set; }
 		public List<string> Roles { get; set; } = new();
 	}
 
@@ -731,6 +749,7 @@ namespace SZRST.API.Controllers
 		public bool Active { get; set; }
 		public int? TenantId { get; set; }
 		public string Role { get; set; }
+		public string? JMBG { get; set; }
 	}
 
 	public class UserUpdateDto
@@ -743,6 +762,7 @@ namespace SZRST.API.Controllers
 		public bool IsDeleted { get; set; }
 		public int? TenantId { get; set; }
 		public string Role { get; set; }
+		public string? JMBG { get; set; }
 	}
 
 	public class EmployeeCreateDto
@@ -754,6 +774,7 @@ namespace SZRST.API.Controllers
 		public string Password { get; set; }
 		public string ConfirmPassword { get; set; }
 		public int? TenantId { get; set; }
+		public string? JMBG { get; set; }
 	}
 
 	public class EmployeeUpdateDto
@@ -764,6 +785,7 @@ namespace SZRST.API.Controllers
 		public string? LastName { get; set; }
 		public bool Active { get; set; }
 		public int? TenantId { get; set; }
+		public string? JMBG { get; set; }
 		public string NewPassword { get; set; }
 		public string ConfirmPassword { get; set; }
 	}
