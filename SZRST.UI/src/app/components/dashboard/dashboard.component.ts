@@ -198,7 +198,33 @@ export class DashboardComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
         this.loadStatistics();
+        this.refreshDashboardData();
       });
+  }
+
+  private refreshDashboardData(): void {
+    this.facilityService.getAll().subscribe({
+      next: (facilitiesData) => {
+        this.facilities = facilitiesData.items;
+
+        if (this.isSuperAdmin || this.isKorisnik) {
+          this.tenantService.getAllTenants().subscribe({
+            next: (data) => {
+              this.tenants = data;
+              if (this.selectedTenantId) {
+                this.selectedTenantFacilities = this.facilities.filter(
+                  (f) => f.tenantId === this.selectedTenantId
+                );
+              }
+            },
+          });
+        } else if (this.isAdmin || this.isUposlenik) {
+          this.filteredFacilities = facilitiesData.items.filter(
+            (f) => f.tenantId === this.currentUserTenantId
+          );
+        }
+      },
+    });
   }
 
 selectTenant(tenant: Tenant): void {
