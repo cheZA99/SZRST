@@ -49,9 +49,6 @@ namespace SZRST.API.Controllers
 			}
 
 			var query = _context.Appointment
-							 .IgnoreQueryFilters()
-							 .Include(a => a.Facility)
-							 .Include(a => a.AppointmentType)
 							 .Where(a => !a.IsDeleted);
 
 			if (_currentUserService.IsKorisnik)
@@ -83,7 +80,6 @@ namespace SZRST.API.Controllers
 		public async Task<ActionResult<AppointmentDto>> GetAppointment(int id)
 		{
 			var appointment = await _context.Appointment
-									  .IgnoreQueryFilters()
 									  .Include(a => a.Facility)
 									  .Include(a => a.AppointmentType)
 									  .FirstOrDefaultAsync(a => a.Id == id && !a.IsDeleted);
@@ -116,9 +112,9 @@ namespace SZRST.API.Controllers
 			if (!_currentUserService.IsKorisnik && !_currentUserService.HasValidTenant)
 				return Forbid();
 
-			var facilityQuery = _context.Facility.IgnoreQueryFilters();
+			var facilityQuery = _context.Facility;
 
-			var appointmentTypeQuery = _context.AppointmentType.IgnoreQueryFilters();
+			var appointmentTypeQuery = _context.AppointmentType;
 
 			var facility = await facilityQuery.FirstOrDefaultAsync(f => f.Id == appointmentDto.FacilityId);
 			if (facility == null)
@@ -185,16 +181,16 @@ namespace SZRST.API.Controllers
 			if (!_currentUserService.IsKorisnik && !_currentUserService.HasValidTenant)
 				return Forbid();
 
-			var appointment = await _context.Appointment.IgnoreQueryFilters().FirstOrDefaultAsync(a => a.Id == id);
+			var appointment = await _context.Appointment.FirstOrDefaultAsync(a => a.Id == id);
 			if (appointment == null)
 				return NotFound();
 
 			if (appointment.IsClosed)
 				return BadRequest("Closed appointment cannot be edited.");
 
-			var facilityQuery = _context.Facility.IgnoreQueryFilters();
+			var facilityQuery = _context.Facility;
 
-			var appointmentTypeQuery = _context.AppointmentType.IgnoreQueryFilters();
+			var appointmentTypeQuery = _context.AppointmentType;
 
 			var facility = await facilityQuery.FirstOrDefaultAsync(f => f.Id == appointmentDto.FacilityId);
 			if (facility == null)
@@ -263,7 +259,7 @@ namespace SZRST.API.Controllers
 		[HttpDelete("{id}")]
 		public async Task<IActionResult> DeleteAppointment(int id)
 		{
-			var appointment = await _context.Appointment.IgnoreQueryFilters().FirstOrDefaultAsync(a => a.Id == id);
+			var appointment = await _context.Appointment.FirstOrDefaultAsync(a => a.Id == id);
 			if (appointment == null)
 				return NotFound();
 
@@ -302,9 +298,6 @@ namespace SZRST.API.Controllers
 				return Forbid();
 
 			var query = _context.Appointment
-				.IgnoreQueryFilters()
-				.Include(a => a.Facility)
-				.Include(a => a.AppointmentType)
 				.Where(a =>
 					a.AppointmentDateTime >= from &&
 					a.AppointmentDateTime <= to &&
@@ -354,7 +347,7 @@ namespace SZRST.API.Controllers
 			{
 				TotalUsers = await query.CountAsync(),
 				TotalAppointmentsToday = await _context.Appointment
-				  .Where(a => a.AppointmentDateTime.Date == today.Date &&
+				  .Where(a => a.AppointmentDateTime.Date == today &&
 						   !a.IsDeleted &&
 						   (!effectiveTenantId.HasValue || a.TenantId == effectiveTenantId.Value))
 				  .CountAsync(),

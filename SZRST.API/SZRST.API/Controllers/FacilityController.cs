@@ -59,7 +59,6 @@ namespace SZRST.API.Controllers
 			}
 
 			IQueryable<Facility> query = _context.Facility
-				.IgnoreQueryFilters()
 				.Include(f => f.FacilityType)
 				.Include(f => f.Tenant)
 				.Include(f => f.Location)
@@ -150,13 +149,12 @@ namespace SZRST.API.Controllers
 		public async Task<ActionResult<FacilityResponse>> GetFacility(int id)
 		{
 			var facility = await _context.Facility
-								    .IgnoreQueryFilters()
-								    .Include(f => f.FacilityType)  // Include related FacilityType
-								    .Include(f => f.Tenant)
-								    .Include(f => f.Location)      // Include related Location
-								    .ThenInclude(f => f.City)
-								    .ThenInclude(f => f.Country)
-								    .FirstOrDefaultAsync(f => f.Id == id && !f.IsDeleted);
+				.Include(f => f.FacilityType)
+				.Include(f => f.Tenant)
+				.Include(f => f.Location)
+					.ThenInclude(f => f.City)
+					.ThenInclude(f => f.Country)
+				.FirstOrDefaultAsync(f => f.Id == id && !f.IsDeleted);
 
 			if (facility == null)
 			{
@@ -316,7 +314,7 @@ namespace SZRST.API.Controllers
 		[HttpPut("{id}")]
 		public async Task<IActionResult> UpdateFacility(int id, [FromForm] FacilityLocationCreateWithImageDto facilityDto)
 		{
-			var facility = await _context.Facility.IgnoreQueryFilters().FirstOrDefaultAsync(f => f.Id == id);
+			var facility = await _context.Facility.FirstOrDefaultAsync(f => f.Id == id);
 			if (facility == null)
 			{
 				return NotFound();
@@ -442,7 +440,7 @@ namespace SZRST.API.Controllers
 		[HttpDelete("{id}")]
 		public async Task<IActionResult> DeleteFacility(int id)
 		{
-			var facility = await _context.Facility.IgnoreQueryFilters().FirstOrDefaultAsync(f => f.Id == id);
+			var facility = await _context.Facility.FirstOrDefaultAsync(f => f.Id == id);
 			if (facility == null)
 			{
 				return NotFound();

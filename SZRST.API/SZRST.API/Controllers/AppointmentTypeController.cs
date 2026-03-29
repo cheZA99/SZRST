@@ -43,30 +43,27 @@ namespace SZRST.API.Controllers
 				return Forbid();
 			}
 
-			var query = _context.AppointmentType.IgnoreQueryFilters();
+			IQueryable<AppointmentType> query = _context.AppointmentType;
 
 			if (!_currentUserService.IsSuperAdmin && !_currentUserService.IsKorisnik)
 				query = query.Where(at => at.TenantId == _currentUserService.TenantId.Value);
 
-			var appointmentTypes = await query
-				.Include(at => at.Tenant)
-				.Include(at => at.Currency)
+			var dtos = await query
 				.Where(at => !at.IsDeleted)
+				.Select(at => new AppointmentTypeDto
+				{
+					Id = at.Id,
+					Name = at.Name,
+					Duration = at.Duration,
+					Price = at.Price,
+					CurrencyId = at.CurrencyId,
+					CurrencyName = at.Currency != null ? at.Currency.ShortName : null,
+					TenantId = at.TenantId,
+					TenantName = at.Tenant != null ? at.Tenant.Name : null,
+					DateCreated = at.DateCreated,
+					DateModified = at.DateModified
+				})
 				.ToListAsync();
-
-			var dtos = appointmentTypes.Select(at => new AppointmentTypeDto
-			{
-				Id = at.Id,
-				Name = at.Name,
-				Duration = at.Duration,
-				Price = at.Price,
-				CurrencyId = at.CurrencyId,
-				CurrencyName = at.Currency != null ? at.Currency.ShortName : null,
-				TenantId = at.TenantId,
-				TenantName = at.Tenant != null ? at.Tenant.Name : null,
-				DateCreated = at.DateCreated,
-				DateModified = at.DateModified
-			});
 
 			return Ok(dtos);
 		}
@@ -76,7 +73,6 @@ namespace SZRST.API.Controllers
 		public async Task<ActionResult<AppointmentTypeDto>> GetAppointmentType(int id)
 		{
 			var appointmentType = await _context.AppointmentType
-				.IgnoreQueryFilters()
 				.Include(at => at.Tenant)
 				.Include(at => at.Currency)
 				.FirstOrDefaultAsync(at => at.Id == id && !at.IsDeleted);
@@ -117,7 +113,7 @@ namespace SZRST.API.Controllers
 			    _currentUserService.TenantId != tenantId)
 				return Forbid();
 
-			var query = _context.AppointmentType.IgnoreQueryFilters();
+			var query = _context.AppointmentType;
 
 			var appointmentTypes = await query
 				.Include(at => at.Currency)
@@ -209,7 +205,7 @@ namespace SZRST.API.Controllers
 			if (!validationResult.IsValid)
 				return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
 
-			var appointmentType = await _context.AppointmentType.IgnoreQueryFilters().FirstOrDefaultAsync(at => at.Id == id);
+			var appointmentType = await _context.AppointmentType.FirstOrDefaultAsync(at => at.Id == id);
 			if (appointmentType == null || appointmentType.IsDeleted)
 				return NotFound();
 
@@ -247,7 +243,7 @@ namespace SZRST.API.Controllers
 		[HttpDelete("{id}")]
 		public async Task<IActionResult> DeleteAppointmentType(int id)
 		{
-			var appointmentType = await _context.AppointmentType.IgnoreQueryFilters().FirstOrDefaultAsync(at => at.Id == id);
+			var appointmentType = await _context.AppointmentType.FirstOrDefaultAsync(at => at.Id == id);
 			if (appointmentType == null)
 				return NotFound();
 

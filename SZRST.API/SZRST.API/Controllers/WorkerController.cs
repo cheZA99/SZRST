@@ -31,9 +31,6 @@ namespace SZRST.API.Controllers
 		public async Task<ActionResult<IEnumerable<WorkerDto>>> GetWorkers()
 		{
 			var workers = await _context.Worker
-							 .Include(w => w.User)
-							 .Include(w => w.WorkerType)
-							 .Include(w => w.Facility)
 							 .Where(w => !w.IsDeleted &&
 								 (_currentUserService.IsSuperAdmin || w.TenantId == _currentUserService.TenantId))
 							 .Select(w => new WorkerDto
@@ -57,9 +54,6 @@ namespace SZRST.API.Controllers
 		public async Task<ActionResult<WorkerDto>> GetWorker(int id)
 		{
 			var worker = await _context.Worker
-								  .Include(w => w.User)
-								  .Include(w => w.WorkerType)
-								  .Include(w => w.Facility)
 								  .Where(w => w.Id == id && !w.IsDeleted)
 								  .Select(w => new WorkerDto
 								  {
