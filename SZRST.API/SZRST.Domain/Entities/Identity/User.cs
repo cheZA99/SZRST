@@ -13,6 +13,7 @@ namespace Domain.Entities
 		public string? LastName { get; set; }
 		public bool IsDeleted { get; set; }
 		public bool Active { get; set; }
+		public string? JMBG { get; set; }
 		public ICollection<UserClaim> Claims { get; set; }
 		public ICollection<UserLogin> Logins { get; set; }
 		public ICollection<UserToken> Tokens { get; set; }
